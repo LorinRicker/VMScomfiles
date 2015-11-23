@@ -1,0 +1,136 @@
+! KED$MEMO.TEMPLATE -- 
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT Memo template <memo>
+
+$RULER
+1234L6T89T1234T6789 123T56789 1T3456789T1234567T9 123456789 123456789 1234R6789
+$END
+
+$TPUINI
+PROCEDURE User$Today ( arg1, arg2 )
+LOCAL rm, here, date, tar, dd, m, mm, yy;
+  rm := GET_INFO( CURRENT_BUFFER, "MODE" );
+  SET( INSERT, CURRENT_BUFFER );
+  date := FAO( "!%D", 0 );
+  here := MARK( NONE );
+  dd := SUBSTR( date, 1, 2 );
+  IF ( INDEX( dd, K$spc ) > 0 ) THEN
+    dd := "0" + SUBSTR( dd, 2, 1 );
+  ENDIF;
+  yy := SUBSTR( date, 10, 2 );
+  mm := SUBSTR( date,  4, 3 );
+  m := ( INDEX( "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC", mm ) + 2 ) / 3;
+  IF ( m < 10 ) THEN
+    mm := "0" + STR( m );
+  ELSE mm := STR( m );
+  ENDIF;
+  POSITION( BEGINNING_OF( CURRENT_BUFFER ) );
+  tar := SEARCH_QUIETLY( arg1, FORWARD );
+  IF ( tar <> 0 ) THEN
+    POSITION( BEGINNING_OF( tar ) );
+    ERASE( tar );
+    COPY_TEXT( yy + mm + dd );
+  ENDIF;
+  IF ( SUBSTR( dd, 1, 1 ) = "0" ) THEN
+    dd := SUBSTR( dd, 2, 1 );
+  ENDIF;
+  mm := F$ELEMENT( m-1, "/", "January/February/March/April/May/June/July/"
+                           + "August/September/October/November/December" );
+  POSITION( BEGINNING_OF( CURRENT_BUFFER ) );
+  tar := SEARCH_QUIETLY( arg2, FORWARD );
+  IF ( tar <> 0 ) THEN
+    POSITION( BEGINNING_OF( tar ) );
+    ERASE( tar );
+    COPY_TEXT( mm + K$spc + dd + ", " + SUBSTR( date, 8, 4 ) );
+  ENDIF;
+  POSITION( here );
+  SET( rm, CURRENT_BUFFER );
+ENDPROCEDURE  !User$Today
+
+PROCEDURE User$Replace ( arg1 )
+LOCAL rm, here, tar;
+  rm := GET_INFO( CURRENT_BUFFER, "MODE" );
+  SET( OVERSTRIKE, CURRENT_BUFFER );
+  here := MARK( NONE );
+  P$page( REVERSE );
+  tar := SEARCH_QUIETLY( arg1, FORWARD, EXACT );
+  IF ( tar <> 0 ) THEN
+    POSITION( BEGINNING_OF( tar ) );
+    GV$_selS := SELECT( NONE );
+    EXECUTE( 'COPY_TEXT(' + arg1 + ');' );
+    P$Surround( K$ANSI_Str_BOLD, K$ANSI_End_BOLD );
+  ENDIF;
+  POSITION( here );
+  SET( rm, CURRENT_BUFFER );
+ENDPROCEDURE  !User$Replace
+
+PROCEDURE User$PageTrim
+LOCAL rm, here, tar;
+  rm := GET_INFO( CURRENT_BUFFER, "MODE" );
+  SET( INSERT, CURRENT_BUFFER );
+  here := MARK( NONE );
+  POSITION( BEGINNING_OF( CURRENT_BUFFER ) );
+  LOOP
+    tar := SEARCH_QUIETLY( K$ff, FORWARD );
+    EXITIF ( tar = 0 );
+    POSITION( BEGINNING_OF( tar ) );
+    IF ( CURRENT_OFFSET > 0 ) THEN
+      P$del_BOL;
+    ENDIF;
+    MOVE_HORIZONTAL( +1 );
+    ENDLOOP;
+  POSITION( here );
+  SET( rm, CURRENT_BUFFER );
+ENDPROCEDURE  !User$PageTrim
+
+$SUBJECT$ := ""; !initialization
+$ENDTPUINI
+
+$TEMPLATE memo
+$TEMPLATE header
+$0 To
+$1 From 
+$2 Subject
+$BEGIN
+)0
+
+
+
+
+    [1mMemorandum[0m
+    oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+                                                        $TODAY1$
+    To:       [1m$0[0m
+    From:     [1m$1[0m
+    Subject:  [1m$2[0m
+    rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+
+
+    $*
+$@ User$Today("$TODAY0","$TODAY1$");
+$@ $SUBJECT$ := $$2;  !save subject text
+$END
+
+$TEMPLATE page
+$0 page number := 2
+$BEGIN
+
+
+
+    [1mMemorandum[0m                                                     Page $0
+    oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+    $SUBJECT$                                           $TODAY1$
+    rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+
+
+    $*
+$@ User$Today("$TODAY0","$TODAY1$");
+$@ User$Replace("$SUBJECT$");  !copy subject text
+$@ User$PageTrim;              !trim leading blanks from <FF>
+$END

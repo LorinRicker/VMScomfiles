@@ -1,0 +1,261 @@
+! KED$SQL.TEMPLATE --
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT SQL template <select>
+
+$RULER
+L2T456789 123456T89 123456789 123T56789 T2345678T 123456T89 1234T6789 123456789 
+$ENDRULER
+
+$TPUINI
+P$WordDelims( GV$_word, ".:,$(" );
+GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE select
+$0 fields := «»
+$1 from := «»
+$BEGIN
+select $0
+  from  $1
+  where $*;
+$END
+
+$TEMPLATE cursor
+$0 cursor name := «»
+$BEGIN
+declare $0 cursor for
+  $*<Select-expr>
+$END
+
+$TEMPLATE sel-into
+$0 fields := «»
+$1 into := «»
+$2 from := «»
+$BEGIN
+select $0
+  into  $1
+  from  $2
+  where $*;
+$END
+
+$TEMPLATE insert
+$0 table := «»
+$1 columns := «»
+$2 values := «»
+$BEGIN
+insert into $0 (
+  $1$* ) values (
+  $2
+  );
+$END
+
+$TEMPLATE update
+$0 table := «»
+$1 where := X.«»
+$BEGIN
+update $0 X
+  set X.$* = «»,
+      X.«» = «»
+  where $1;
+$END
+
+$TEMPLATE delete
+$0 table := «»
+$1 where := X.«»
+$BEGIN
+delete from $0 X
+  where $1$*;
+$END
+
+$TEMPLATE set_transaction
+$0 handle
+$1 read (only/write) := read write
+$2 reserved relation := «»
+$BEGIN
+set transaction $0 $1
+  reserving $2 for $*shared write;
+$END
+
+$TEMPLATE area
+$0 area name := «»
+$1 area filename := «»
+$2 format (uniform, mixed) := UNIFORM
+$3 allocation (in pages) := 100
+$BEGIN
+create storage area $0
+  filename '$1'
+  snapshot filename '$1'
+  format is $2
+  page size is 2 blocks
+  allocation is $*$3 pages
+  snapshot allocation is 50 pages
+$END
+
+$TEMPLATE database
+$0 database root filename := «»
+$1 list storage area := STR$A
+$2 global buffers (enabled, disabled) := ENABLED
+$BEGIN
+create database
+  filename '$*$0'
+  dictionary is NOT REQUIRED
+  list storage area is $1
+  global buffers are $2
+    (number is 2500, user limit 100)
+$END
+
+$TEMPLATE domain
+$0 domain name := «»
+$BEGIN
+create domain $0 is $*;
+$END
+
+$TEMPLATE table
+$0 table name := «»
+$1 column name := «»
+$2 datatype := «»
+$BEGIN
+create table $0(
+  $1 $2$*,
+  );
+$END
+
+$TEMPLATE primary_key
+$0 column := «»
+$BEGIN
+primary key( $0$* ) not deferrable,
+$END$
+
+$TEMPLATE foreign_key
+$0 column := «»
+$1 references table := «»
+$BEGIN
+foreign key( $0 )
+  references $1 ( $0$* ) not deferrable,
+$END$
+
+$TEMPLATE add_constraint
+$BEGIN
+add constraint $*
+$END$
+
+$TEMPLATE notnull_constraint
+$0 constraint name := «»
+$BEGIN
+constraint $0$*
+  not null
+  deferrable,
+$END$
+
+$TEMPLATE check_constraint
+$0 constraint name := «»
+$1 predicate := «»
+$BEGIN
+constraint $0$*
+  check ( $1 )
+  not deferrable,
+$END$
+
+$TEMPLATE unique_constraint
+$0 constraint name := «»
+$1 column name(s) := «»
+$BEGIN
+constraint $0$*
+  unique ( $1 )
+  not deferrable,
+$END$
+
+$TEMPLATE references_constraint
+$0 constraint name := «»
+$1 table name := «»
+$2 column name(s) := «»
+$BEGIN
+constraint $0$*
+  references $1 ( $2 )
+  not deferrable,
+$END$
+
+$TEMPLATE index
+$0 ON TABLE := «»
+$1 column := «»
+$2 type := sorted
+$3 area := «»$A
+$BEGIN
+create unique index $0$S$*
+  on $0 (
+  $1
+  ) type is $2
+    store in $3;
+$END
+
+$TEMPLATE map
+$0 map name := «»
+$1 table := «»
+$2 area := «»$A
+$BEGIN
+create storage map $*$0 for $1 store in $2;
+$END
+
+$TEMPLATE trigger
+$0 trigger name := «»
+$1 before/after := before
+$2 insert/delete/update := insert
+$3 table := «»
+$BEGIN
+create trigger $0
+  $1 $2
+  on $3
+  when $* (
+  «»
+  ) for each row;
+$END
+
+$TEMPLATE view
+$0 view name := «»
+$1 column := «»
+$BEGIN
+create view $0(
+  $1,
+  «»
+  ) as $*<select-expr>
+$END
+
+$TEMPLATE header
+$0 Copyright by := LockWorks LLC
+$1 product name := Lock&Track
+$2 database name := LT$Database
+$BEGIN
+--  filename: $FN0 -- database definition for $1
+
+-- This program is the confidential and proprietary product of $0.
+-- Unauthorized use, reproduction or transfer of this program is prohibited.
+--
+-- Copyright © $YEAR by $0.  All rights reserved.
+
+--  database name: $2
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END
+
+$TEMPLATE copyright
+$0 Copyright by := LockWorks LLC
+$BEGIN
+--  $FN0
+
+-- This program is the confidential and proprietary product of $0.
+-- Unauthorized use, reproduction or transfer of this program is prohibited.
+--
+-- Copyright © $YEAR by $0.  All rights reserved.
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END

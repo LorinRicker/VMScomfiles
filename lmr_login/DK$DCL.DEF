@@ -1,0 +1,179 @@
+! DK$DCL.DEF -- VT Function Key Definition File
+
+t: "DCL Keys"
+
+k: PF1
+s: /SET_STATE=Gold /ERASE /NOTERMINATE
+h: "<Gold>"
+v: "<Gold>"
+
+k: PF1
+s: /IF_STATE=Gold /SET_STATE=DGold /ERASE /NOTERMINATE
+h: "<DGold>"
+v: "<DGold>"
+
+k: PF1              !erases GOLD/DGOLD states
+s: /IF_STATE=DGold /NOSET_STATE /ERASE /NOTERMINATE
+v: ""
+
+k: HELP
+s: /IF_STATE=Gold /ERASE /NOECHO /TERMINATE
+h: "keymap"
+v: "TYPE dcl$keypad"
+
+k: E2
+s: /ERASE /ECHO /NOTERMINATE /SET_STATE=Gold
+h: "SPAWN"
+v: "SPAWN/NOWAIT/NOTIFY/INPUT=NL: "
+
+k: E2
+s: /NOERASE /ECHO /NOTERMINATE /IF_STATE=Gold
+h: "/out=nl"
+v: "/OUTPUT=NL: "
+
+k: PF2
+s: /IF_STATE=Gold /NOSET_STATE /ERASE /ECHO /NOTERMINATE
+h: "dk$make"
+v: "SPAWN /NOWAIT /NOTIFY /INPUT=NL: /OUTPUT=TT: @lmr$login:dk$make DCL "
+
+k: PF3
+s: /ERASE /ECHO /TERMINATE
+h: "Appl"
+v: "SET TERMINAL /APPLICATION_KEYPAD"
+
+k: PF3
+s: /IF_STATE=Gold /ERASE /ECHO /TERMINATE
+h: "Num"
+v: "SET TERMINAL /NUMERIC_KEYPAD"
+
+k: PF4
+s: /NOSET_STATE /ERASE /NOECHO /TERMINATE
+h: "clr"
+v: "clr"
+
+k: KP7
+s: /IF_STATE=Gold /NOSET_STATE /ERASE /TERMINATE /ECHO
+h: "DCLtbl"
+v: "SET COMMAND /TABLE=sys$library:dcltables"
+
+k: KP9
+s: /ERASE /ECHO /TERMINATE
+h: "Kermit"
+v: "@com:kermit"
+
+k: KP9
+s: /IF_STATE=Gold /ERASE /ECHO /TERMINATE
+h: "Server"
+v: "@com:kermit SERVER"
+
+k: KP4
+s: /IF_STATE=Gold /ERASE /TERMINATE /ECHO
+H: "SM$strt"
+v: "@mgr$command:smart$startup startup"
+
+k: KP5
+s: /IF_STATE=Gold /ERASE /TERMINATE /ECHO
+H: "SM$menu"
+v: "@mgr$command:smart$startup menu"
+
+k: KP6
+s: /IF_STATE=Gold /ERASE /TERMINATE /ECHO
+H: "DBM"
+v: "@mgr$command:smart$startup dbm"
+
+k: COMMA
+s: /NOSET_STATE /ERASE /NOECHO /TERMINATE
+H: "light"
+v: "WRITE sys$output _clrscr,_clrscrL"
+
+k: COMMA
+s: /IF_STATE=Gold /NOSET_STATE /ERASE /NOECHO /TERMINATE
+h: "dark"
+v: "WRITE sys$output _clrscr,_clrscrD"
+
+k: KP1
+s: /NOSET_STATE /ERASE /NOECHO /TERMINATE
+h: "80/132"
+v: "@com:scrwidth"
+
+k: KP1
+s: /IF_STATE=Gold /NOSET_STATE /ERASE /NOECHO /TERMINATE
+h: "80-col"
+v: "@com:scrwidth 80"
+
+k: KP1
+s: /IF_STATE=DGold /NOSET_STATE /ERASE /NOECHO /TERMINATE
+h: "132-col"
+v: "@com:scrwidth 132"
+
+k: KP3
+s: /NOSET_STATE /ERASE /ECHO /TERMINATE
+h: "MAIL"
+v: "MAIL"
+
+k: KP3
+s: /IF_STATE=Gold /NOSET_STATE /ERASE /ECHO /TERMINATE
+h: "MailMap"
+v: "TYPE mail$keypad"
+
+! RECALL/PAGE now works for VAX/VMS v6.2...
+k: KP0
+s: /SET_STATE=recall /ERASE /NOTERMINATE
+h: "RECALL /ALL/PAGE"
+v: "RECALL "
+
+k: KP0
+s: /IF_STATE=recall /NOERASE /TERMINATE
+v: "/ALL /PAGE"
+
+k: KP0
+s: /IF_STATE=Gold /ERASE /TERMINATE
+v: "RECALL /ERASE"
+
+k: PERIOD
+s: /IF_STATE=Gold /ERASE /NOECHO /TERMINATE
+h: "KeyMap"
+v: "TYPE dcl$keypad"
+
+k: PERIOD
+s: /IF_STATE=Show /ERASE /TERMINATE /NOECHO
+h: "ShoMap"
+v: "TYPE lmr$login:dk$dcl_keypad.show"
+
+!
+k: PF2
+s: /SET_STATE=Show /ERASE /NOTERMINATE /ECHO
+h: "Show"
+v: "SHOW "
+
+k: PF2
+s: /IF_STATE=Show /SET_STATE=ShowQ /NOERASE /NOTERMINATE /ECHO
+h: "Show"
+v: "QUEUE "
+
+k: PF2              !erases Show/ShowQ states
+s: /IF_STATE=ShowQ /NOSET_STATE /ERASE /NOTERMINATE
+h: "Show"
+v: ""
+
+k: HELP
+s: /IF_STATE=Show /ERASE /TERMINATE /NOECHO
+h: "keymap"
+v: "TYPE lmr$login:dk$dcl_keypad.show"
+
+k: KP5
+s: /IF_STATE=Show /SET_STATE=ShowQ /NOERASE /NOTERMINATE /ECHO
+h: "Queue"
+v: "QUEUE "
+
+k: KP2
+s: /IF_STATE=ShowQ /NOSET_STATE /NOERASE /TERMINATE /ECHO
+h: "Batch"
+v: "/BATCH /ALL"
+
+k: KP5
+s: /IF_STATE=ShowQ /NOSET_STATE /NOERASE /TERMINATE /ECHO
+h: "Print"
+v: "/DEVICE /ALL"
+
+e: !End of Definitions

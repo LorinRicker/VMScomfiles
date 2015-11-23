@@ -1,0 +1,174 @@
+! KED$MAR.TEMPLATE -- for MACRO-32 programs
+
+$PROMPT MACRO-32 template <program>
+
+$RULER
+L23456789 T23456789 1T345678T 123456789 12345T789 123T56789 1T3456789T1234567T9
+$ENDRULER
+
+$TPUINI
+  GV$_LSEmeta := "%";
+  P$WordDelims( GV$_word, "$,.([" );
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE program
+%0 name
+%1 title line
+%2 description
+%3 entry mask
+$BEGIN
+          .TITLE     %0  -  %1
+;+
+;         filename: %FN0
+;         %2
+;-
+          .library   "sys$library:lib.mlb"
+          $IODEF                             ;I/O functions and modifiers
+          $LIBCLIDEF                         ;CLI symbols
+          «»
+
+          .PSECT     Data
+«»
+
+          .PSECT     Code
+          .ENTRY     %0,^M<%3>
+
+$0_1:     %*
+
+Exit:     ret
+          .END       %0
+%@ $0 := GET_INFO(CURRENT_BUFFER,"OUTPUT_FILE");
+%@ IF ( GET_INFO($0,"TYPE") <> STRING ) THEN $0 := NULL; ENDIF;
+%@ $0 := FILE_PARSE($0,NULL,NULL,NAME,TYPE);
+%@ IF ( $0 = "." ) THEN $0 := K$chevrons; ENDIF;
+%@ KED$LSE_Replace("%FN0",$0)
+$END
+
+$TEMPLATE entry
+%0 name
+%1 mask
+$BEGIN
+.ENTRY     %0,^M<%1$*>
+$END
+
+$TEMPLATE calls
+%0 # of args := 1
+%1 name := LIB$«»
+$BEGIN
+calls      #%0,G^%1
+$END
+
+$TEMPLATE subroutine
+%0 name
+%1 mask
+$BEGIN
+.ENTRY     %0,^M<%1>
+$*
+ret
+$END
+
+$TEMPLATE asctim
+%0 timlen
+%1 timbuf
+%2 timadr
+$BEGIN
+$ASCTIM_S  timlen=%0,-
+           timbuf=%1,-
+           timadr=%2
+blbs       R0,%*
+$END$
+
+$TEMPLATE bintim
+%0 timbuf
+%1 timadr
+$BEGIN
+$BINTIM_S  timbuf=%0,-
+           timadr=%1
+blbs       R0,%*
+$END$
+
+$TEMPLATE brkthruw
+%0 msgbuf
+%1 sendto
+%2 sndtyp
+%3 iosb
+%4 reqid := BRK$C_USER1
+%5 timout
+$BEGIN
+$BRKTHRUW_S msgbuf = %0,-
+           sendto = %1,-
+           sndtyp = %2,-
+           iosb   = %3,-
+           reqid  = #%4,-
+           TIMOUT = #%5
+blbs       R0,%*
+$END$
+
+$TEMPLATE fao
+%0 ctrstr
+%1 outlen
+%2 outbuf
+%3 P1
+%4 P2
+%5 P3
+%6 P4
+%7 P5
+$BEGIN
+$FAO_S     ctrstr = %0,-
+           outlen = %1,-
+           outbuf = %2,-
+           P1     = #%3,-
+           P2     = #%4,-
+           P3     = #%5,-
+           P4     = #%6,-
+           P5     = #%7
+blbs       R0,%*
+$END$
+
+$TEMPLATE qio
+%0 chan
+%1 func
+%2 iosb
+%3 astadr := «»
+%4 P1
+%5 P2
+$BEGIN
+$QIO_S     chan = %0,-
+           func = #%1,-
+           iosb = %2,-
+           astadr = %3,-
+           P1   = %4,-
+           P2   = %5
+blbs       R0,%*
+$END$
+
+$TEMPLATE qiow
+%0 chan
+%1 func
+%2 iosb
+%3 astadr := «»
+%4 P1
+%5 P2
+$BEGIN
+$QIOW_S    chan = %0,-
+           func = #%1,-
+           iosb = %2,-
+           astadr = %3,-
+           P1   = %4,-
+           P2   = %5
+blbs       R0,%*
+$END$
+
+$TEMPLATE trnlnm
+%0 attr
+%1 tabnam
+%2 lognam
+%3 itmlst
+$BEGIN
+$TRNLNM_S  attr   = %0,-
+           tabnam = %1,-
+           lognam = %2,-
+           itmlst = %3
+blbs       R0,%*
+$END$

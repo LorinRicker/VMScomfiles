@@ -1,0 +1,159 @@
+From: Peter Weaver [peter.weaver@stelco.ca]
+Sent: Thursday, March 15, 2001 12:10 PM
+To: Info-VAX@Mvb.Saic.Com
+Subject: Calculate Easter in DCL
+
+Frank da Cruz published some code the other day in
+comp.protocols.kermit.misc on how to calculate Easter Sunday in
+Kermit. Since it was all integer math and since I wanted to figure out
+what I could on Kermit's S-expresion feature I converted it to DCL.
+Frank's original post are in the comments. I made a small modification
+at the end to figure out when my wedding anniversary and Easter meet.
+
+Here it is if anyone wants it.
+
+$!
+$! This month's Scientific American (March 2001, p.80) includes an
+article
+$! "Easter as a Quasicrystal" by Ian Stewart, in which the calculation
+of
+$! the date of Easter is explained (and then graphed and compared to a
+$! crystalline lattice).  A ten-step algorithm is given for
+calculating the
+$! Gregorian date of Easter in any given year that is "easy to program
+on a
+$! computer").  Here's an illustration of how to do it in C-Kermit
+7.1,
+$! using its new LISP-like S-expression feature:
+$!
+$!   #!/usr/local/bin/kermit +
+$!   dcl \&m[] = Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+$!   if ( not def \%1 || not numeric \%1 ) exit 1 Usage: \%0 year
+$!   if ( < \%1 1900 || > \%1 2199 ) exit 1 "\0: 1900 <= Year < 2100"
+$!
+$!   (setq x \%1)
+$ if f$integer(p1) .eq. 0 then p1 = f$cvtime("",,"year")
+$ x = 'p1
+$!
+$!   (setq a (mod x 19) b (truncate (/ x 100)) c (mod x 100))
+$ a = x - (x / 19) * 19
+$ b = x / 100
+$ c = x - (x / 100) * 100
+$!
+$!   (setq d (truncate (/ b 4)) e (mod b 4))
+$ d = b / 4
+$ e = b - (b / 4) * 4
+$!
+$!   (setq g (truncate (/ (+ (* 8 b) 13) 25)))
+$ g = ((b * 8) + 13) / 25
+$!   (setq h (mod (+ (* a 19) b (- d) (- g) 15) 30))
+$ h = a * 19 + b - d -g + 15
+$ h = h - (h / 30) * 30
+$!
+$!   (setq m (truncate (/ (+ a (* h 11)) 319)))
+$ m = (h * 11 + a) / 319
+$!   (setq j (truncate (/ c 4)) k (truncate (mod c 4)))
+$ j = c / 4
+$ k = c - (c / 4) * 4
+$!   (setq l (truncate (mod (+ (* 2 e) (* 2 j) m (- k) (- h) 32) 7)))
+$ l = 2 * e + (2 * j) + m - k - h + 32
+$ l = l - (l / 7) * 7
+$!   (setq n (truncate (/ (+ h (- m) l 90) 25)))
+$ n = (h - m + l + 90) / 25
+$!   (setq p (truncate (mod (+ h (- m) l n 19) 32)))
+$ p = h - m + l + n + 19
+$ p = p - (p / 32) * 32
+$!
+$!   echo \fday(\m(x)\flpad(\m(n),2,0)\flpad(\m(p),2,0)) \m(p) \&m[n]
+\m(x)
+$!   exit
+$ month = f$element(n,"-","- - -March-April-May")
+$!
+$ compare_date = f$cvtime("''p'-''f$extract(0,3,month)'-''x'")
+$ if compare_date .lts. "''f$cvtime()'"
+$    then
+$       string := "was"
+$       string2 := "fell"
+$    else
+$       string := "will be"
+$       string2 := "falls"
+$    endif
+$!
+$ suffix = "th"
+$ if p .eq. 2 .or. p .eq. 22 then suffix = "nd"
+$ if p .eq. 3 .or. p .eq. 23 then suffix = "rd"
+$ if p .eq. 1 .or. p .eq. 21 .or. p .eq. 31 then suffix = "st"
+
+$ write sys$output -
+    "''f$fao("Easter Sunday in !UL !AS on the !UL!AS of
+!AS.",x,string,p,suffix,month)'"
+$!
+$!      Customized for PRW
+$!
+$ wedding = ""
+$!
+$ if n .eq. 4 .and. x .ge. 2001
+$    then
+$        if p .eq. 14 then wedding = "Monday"
+$        if p .eq. 15 then wedding = "Sunday"
+$        if p .eq. 16 then wedding = "Saturday"
+$        if p .eq. 17 then wedding = "Friday"
+$!
+$        if wedding .nes. ""
+$            then
+$                anniversary = x - 2000
+$                suffix = "th"
+$                last_two = anniversary - anniversary / 100 * 100
+$                if last_two .lt. 10 .or. last_two .gt. 20
+$                    then
+$                        last_digit = anniversary - anniversary / 10 *
+10
+$                        if last_digit .eq. 1 then suffix = "st"
+$                        if last_digit .eq. 2 then suffix = "nd"
+$                        if last_digit .eq. 3 then suffix = "rd"
+$                    endif
+$                write sys$output -
+   "''f$fao("Our !UL!AS anniversary !AS on Easter
+!AS",anniversary,suffix,string2,wedding)'"
+$            endif
+$    endif
+$!
+$!
+$! See the article for an explanation of the algorithm and see:
+$!
+$!   http://www.columbia.edu/kermit/ckermit3.html#x9
+$!
+$! for an explanation of S-Expressions.  Note that the algorithm
+requires
+$! all arithmetic to be integer, not floating-point, hence the many
+TRUNCATE
+$! expressions (since S-Expressions never discard fractional parts).
+$!
+$! In UNIX, clip the program, left-justify at least the first line and
+change
+$! it to point to your C-Kermit 7.1 binary, save it as "easter", then
+"chmod +x
+$! easter", and then you can type:
+$!
+$!   easter 2001
+$!
+$! (or any other year between 1900 and 2099) to find out the date for
+Easter
+$! in that year (years outside that range require adjustment of the
+algorithm).
+$! On other platforms, type "take easter 2001" (or other year) at the
+Kermit
+$! prompt.
+$!
+$! Exercises:
+$!
+$!  . Write a similar program for Rosh Hashanah, Passover, Ramadan,
+Tet,
+$!    Chinese New Year, or any other holiday based on the Lunar cycle.
+$!
+$!  . Adapt to span a wider range of years.
+$!
+$!  . Adapt to support other calendars.
+$!
+$! - Frank
+

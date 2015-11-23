@@ -1,0 +1,40 @@
+PROCEDURE P$Debug( ; arg )
+LOCAL val, Cbuf, Nwin, siz, lgd, splt;
+ON_ERROR
+ENDON_ERROR
+  val := F$Default( arg, "U", UNSPECIFIED, ( NOT GV$_debug ) );
+  IF ( arg = ON )  THEN val := TRUE;
+  ELSE IF ( arg = OFF ) THEN val := FALSE; ENDIF;
+  ENDIF;
+  IF ( val = GV$_debug ) THEN RETURN; ENDIF;  !no change?
+  Cbuf := CURRENT_BUFFER;
+  GV$_CurWin := CURRENT_WINDOW;
+  lgd  := ( GET_INFO( $$LEGEND_WINDOW, "TYPE" ) = WINDOW );
+  splt := ( GET_INFO( GV$_MWin, "TYPE" ) = ARRAY );
+  IF ( splt ) THEN     !split-windows?
+    Nwin := GET_INFO( GV$_MWin, "LAST" );
+    siz  := GV$_screen / ( Nwin * 3 );
+  ELSE siz := GV$_screen / 3;
+  ENDIF;
+  IF ( lgd ) THEN
+    IF ( siz <= 6 ) THEN siz := 4; ENDIF;
+  ELSE IF ( siz < 2 ) THEN siz := 2; ENDIF;
+  ENDIF;  !RAPT legend is displayed
+  IF ( val ) THEN GV$_debug := TRUE;
+    SET( TRACEBACK, ON );
+    siz := -1 * siz;  !shrink main, increase message
+  ELSE GV$_debug := FALSE;
+    SET( TRACEBACK, OFF );
+  ENDIF;
+  IF ( splt ) THEN
+    ADJUST_WINDOW( GV$_MWin{Nwin}, 0, siz );  !bottom window
+  ENDIF;
+  ADJUST_WINDOW( $$1_WINDOW, 0, siz );
+  ADJUST_WINDOW( $$MESSAGE_WINDOW, siz, 0 );  !becomes current_window
+  SET( SCROLLING, $$MESSAGE_WINDOW, ON, 0, 0, 0 );
+  IF ( lgd ) AND NOT( GV$_debug ) THEN P$RAPTsetup; ENDIF; !reset RAPT key legends
+  MAP( GV$_CurWin, Cbuf );                    !reset current_window
+  MESSAGE( "Debug/Traceback: "
+           + F$Keyword( GV$_debug, TRUE, "TRUE", "FALSE" ) );
+ENDPROCEDURE  !P$Debug
+

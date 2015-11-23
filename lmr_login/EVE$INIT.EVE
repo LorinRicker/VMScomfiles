@@ -1,0 +1,5 @@
+! EVE$INIT.EVE -- Lorin's version
+
+SET KEYPAD EDT
+SET CURSOR BOUND
+

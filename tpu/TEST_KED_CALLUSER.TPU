@@ -1,0 +1,63 @@
+!  TEST_KED_CALLUSER.TPU
+
+!     This program is the confidential and proprietary product of
+!     Evans & Ricker, Inc.  Any unauthorized use, reproduction or
+!     transfer of this program is strictly prohibited.
+!
+!     Copyright © 1998-1999 by Evans & Ricker, Inc.  All rights reserved.
+
+! Routines which can be used "interactively" (within KED/TPU) to test the
+! CALL_USER routines in KED$SHARE (SITE$SOURCES:[KED]KED_CALLUSER.PAS).
+! Note:  logical TPU$CALLUSER = "SITE$UTILS:KED$SHARE.EXE"
+
+PROCEDURE TestLNM
+LOCAL Str, Tbl, Idx, MaxIdx, LNM;
+ON_ERROR
+ENDON_ERROR
+  Str := READ_LINE( "Logical name: " );
+  Tbl := READ_LINE( "LNM table: " );
+  Idx := READ_LINE( "LNM index: " );
+  !      ********
+  LNM := F$TRNLNM( Str, Tbl, Idx, MaxIdx );
+  !      ********
+  MESSAGE( "Logical name translation: `" + LNM + "'" );
+  MESSAGE( "              from table: `" + Tbl + "'" );
+  MESSAGE( "       index / max-index: " + Idx + " / " + MaxIdx );
+ENDPROCEDURE  !TestLNM
+
+PROCEDURE TestSetSym
+LOCAL Sym, Val;
+ON_ERROR
+ENDON_ERROR
+  Sym := READ_LINE( "Symbol: " );
+  Val := READ_LINE( "Value: " );
+! ***********
+!  P$SETSYMBOL( Sym, Val );
+!  P$SETSYMBOL( Sym, Val , LIB$K_CLI_GLOBAL_SYM );
+!  P$SETSYMBOL( Sym, Val , LIB$K_CLI_LOCAL_SYM );
+! ***********
+  GL := INT( READ_LINE( "Global (2) or Local (1)? " ) );
+  IF ( GL < LIB$K_CLI_LOCAL_SYM ) OR ( GL > LIB$K_CLI_GLOBAL_SYM ) THEN
+    GL := LIB$K_CLI_GLOBAL_SYM;
+  ENDIF;
+! ***********
+  P$SETSYMBOL( Sym, Val, GL );
+! ***********
+ENDPROCEDURE  !TestSetSym
+
+PROCEDURE TestGetSym
+LOCAL Sym, Val, GLTable, Tbl;
+ON_ERROR
+ENDON_ERROR
+  Sym := READ_LINE( "Symbol: " );
+!        ***********
+  Val := F$GETSYMBOL( Sym, GLTable );
+!        ***********
+  IF ( GLTable = 1 ) THEN
+    Tbl := "LOCAL"
+  ELSE Tbl := "GLOBAL";
+  ENDIF;
+  MESSAGE( "Symbol's value: `" + Val + "'" );
+  MESSAGE( "      found in: `" + STR( GLTable ) + "' (" + Tbl + " table)" );
+ENDPROCEDURE  !TestGetSym
+

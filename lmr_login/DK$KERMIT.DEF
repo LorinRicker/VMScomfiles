@@ -1,0 +1,10 @@
+! DK$KERMIT.DEF -- 
+
+k: F7
+l: "Connect`M"
+k: F8
+l: "Finish`M"
+k: F9
+l: "take lmr$login:kermit.server`M"
+k: F10
+l: "`]C"

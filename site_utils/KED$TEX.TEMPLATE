@@ -1,0 +1,227 @@
+! KED$TEX.TEMPLATE -- 
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT TeX template <itemize>
+
+$RULER
+L2345678T 123456T89 1234T6789 12T456789 T2345678T 123456T89 1234T6789 12345R789 
+$ENDRULER
+
+$TPUINI
+P$WordDelims( GV$_word, "{}[]|\" );
+GV$TeXItem := FALSE;
+! Key Definitions:
+DEFINE_KEY( 'IF ( GV$TeXItem ) THEN'
+            + ' IF ( CURRENT_OFFSET = 0 )'
+            + ' THEN P$insert("\item "); SPLIT_LINE; MOVE_HORIZONTAL(-1);'
+            + ' ELSE SPLIT_LINE; P$insert("\item "); ENDIF;'
+            + ' ELSE P$Tab; ENDIF;',
+            TAB_KEY, "", G$Base );
+DEFINE_KEY( 'GV$TeXItem := NOT GV$TeXItem;'
+            + ' IF GV$TeXItem THEN GV$UserSLData := "item";'
+            + ' ELSE GV$UserSLData := ""; ENDIF; P$0;',
+            TAB_KEY, "", G$Gold );
+$ENDTPUINI
+
+$TEMPLATE itemize
+$BEGIN
+\begin{itemize}
+\item $*
+\end{itemize}
+$END
+
+$TEMPLATE list
+$0 mark := $\bullet$
+$BEGIN
+\begin{list}{$0}{\setlength{\parsep}{0.1ex}}
+\item $*
+\end{list}
+$END
+
+$TEMPLATE enumerate
+$BEGIN
+\begin{enumerate}
+\item $*
+\end{enumerate}
+$END
+
+$TEMPLATE description
+$BEGIN
+\begin{description}
+\item [$*] «»
+\end{description}
+$END
+
+$TEMPLATE italics
+$TEMPLATE slant
+$0 text
+$BEGIN
+{\sl $0\/} 
+$END$
+!<spc> follows "\/} "
+
+$TEMPLATE bold
+$TEMPLATE bf
+$0 text
+$BEGIN
+{\bf $0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE sanserif
+$TEMPLATE sf
+$0 text
+$BEGIN
+{\sf $0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE roman
+$TEMPLATE rm
+$0 text
+$BEGIN
+{\rm $0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE typewriter
+$TEMPLATE tt
+$0 text
+$BEGIN
+{\tt $0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE underline
+$0 text
+$BEGIN
+\underline{$0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE overline
+$0 text
+$BEGIN
+\overline{$0} 
+$END$
+!<spc> follows "$0} "
+
+$TEMPLATE index
+$BEGIN
+\index{$*} 
+$END$
+!<spc> follows "$*} "
+
+$TEMPLATE verb
+$0 text
+$BEGIN
+\verb|$0|
+$END$
+
+$TEMPLATE verbatim
+$BEGIN
+\medskip\vbox{
+\begin{verbatim}
+$*
+\end{verbatim}
+} %end\vbox
+$END
+
+$TEMPLATE vbox
+$0 skip := \medskip
+$BEGIN
+$0\vbox{
+$*
+} %end\vbox
+$END
+
+$TEMPLATE FileVerbatim
+$TEMPLATE FV
+$0 file
+$BEGIN
+\FileVerbatim{$0}
+$END
+
+$TEMPLATE figure
+$BEGIN
+\begin{figure}[h]  %default is [tbp]
+$*
+\caption{«»}
+\label{«»}
+\end{figure}
+$END
+
+$TEMPLATE quotation
+$BEGIN
+\begin{quotation}
+$*
+\end{quotation}
+$END
+
+$TEMPLATE multicolumn
+$0 # columns := 2
+$1 position := |l
+$2 text := «»
+$BEGIN
+\multicolumn{$0}{$1}{$*$2}
+$END$
+
+$TEMPLATE center
+$BEGIN
+\begin{center}
+$*
+\end{center}
+$END
+
+$TEMPLATE tabular
+$BEGIN
+\begin{center}
+\begin{tabular}{$*ll}
+\hline
+«» & «» \\
+«» & «» \\
+\hline
+\end{tabular}
+\end{center}
+$END
+
+$TEMPLATE tabbing
+$BEGIN
+\begin{tabbing}
+ \=    \=     \kill %%% this line is a ruler only
+ \> $* \> «»  \\
+ \> «» \> «»  \\
+\end{tabbing}
+$END
+
+$TEMPLATE picture
+$0 picture size X := 200
+$1 picture size Y := 100
+$BEGIN
+\begin{picture}($0,$1)
+\put(«»,«»){$*}
+\end{picture}
+$END
+
+$TEMPLATE newcommand
+$0 command-name
+$1 # of parameters := 1
+$2 definition
+$BEGIN
+\newcommand{\$0}[$1]{$*$2}
+$END
+
+$TEMPLATE newenvironment
+$0 environment-name
+$1 # of parameters := 1
+$2 begin-text
+$3 end-text := «»
+$BEGIN
+\newenvironment{\$0}[$1]{$*$2}
+{$3}
+$END

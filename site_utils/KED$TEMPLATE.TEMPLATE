@@ -1,0 +1,48 @@
+! KED$TEMPLATE.TEMPLATE -- Template generation template
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$prompt Template <template>
+
+$ruler
+L2T4T678T 123456T89 1234T6789 12T456789 123456789 123456789 123456789 123456789 
+$endruler
+
+!$tpuini
+!$endtpuini
+
+$template template
+$0 template := name
+$begin
+$$TEMPLATE $0
+$$0 $*
+$$BEGIN
+«»
+$$END
+$end
+
+$template prompt
+$0 prompt text
+$1 prompt list := «»/«»/«»
+$begin
+$$PROMPT $0 ($1)
+$end
+
+$template ruler
+$begin
+$$RULER
+L2345678T 123456T89 1234T6789 12T456789 123456789 123456789 123456789 123456789 
+$$ENDRULER
+$end
+
+$template tpuini
+$begin
+$$TPUINI
+  $*
+$$ENDTPUINI
+$end
+

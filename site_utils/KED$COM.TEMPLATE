@@ -1,0 +1,400 @@
+! KED$COM.TEMPLATE -- for DCL command files
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT DCL template <comfile>
+
+$RULER
+L2T4567T9 12T4567T9 12T4567T9 12T456789 T23456789 123456789 1234567T9 123456789 
+$ENDRULER
+
+$TPUINI
+GV$_LSEmeta := "%";
+P$WordDelims( GV$_word, ".:,$(" );
+GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE comfile
+%0 Copyright by := LockWorks LLC
+%1 description
+$BEGIN
+$ ! %FN0 --                 'F$VERIFY(0)'
+$ !
+$ ! This program is the confidential and proprietary product of %0.
+$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ !
+$ ! Copyright © %YEAR by %0.  All rights reserved.
+$ !
+$ !  «»%1
+$ !
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ !
+%*
+$Done:
+$ EXIT
+$ !
+$Ctrl_Y:
+$ RETURN %X2C
+%@ KED$LSE_Replace("%FN0",KED$FileNameType)
+%@ KED$UserYear("%YEAR");
+$END$
+
+$TEMPLATE context
+%0 item := NODENAME
+%1 search := *
+%2 match := EQL
+$BEGIN
+$ ctx = ""
+$ tmp = F$CONTEXT("PROCESS",ctx,"%0%*","%1","%2")
+$END
+
+$TEMPLATE pid
+%0 context symbol := ctx
+$BEGIN
+F$PID(%0%*)
+$END$
+
+$TEMPLATE cancel_context
+$BEGIN
+$ IF F$TYPE(ctx) .EQS. "PROCESS_CONTEXT" THEN -
+  tmp = F$CONTEXT("PROCESS", ctx, "CANCEL")
+$END
+
+$TEMPLATE cvsi
+%0 bit position := 0
+%1 width := 32
+%2 string := P1
+$BEGIN
+F$CVSI(%0,%1,%2%*)
+$END$
+
+$TEMPLATE cvtime
+%0 input time := P1
+%1 time format := ABSOLUTE
+%2 field := DATETIME
+$BEGIN
+F$CVTIME(%0%*,"%1","%2")
+$END$
+
+$TEMPLATE cvui
+%0 bit position := 0
+%1 width := 32
+%2 string := P1
+$BEGIN
+F$CVUI(%0,%1,%2%*)
+$END$
+
+$TEMPLATE device
+%0 device := MKA500:
+%1 class := TAPE
+%2 type := «»
+$BEGIN
+F$DEVICE("%0%*","%1","%2",%3)
+$END$
+
+$TEMPLATE edit
+%0 string := P1
+%1 edit list := COMPRESS,TRIM,UPCASE
+$BEGIN
+F$EDIT(%0,"%1%*")
+$END$
+
+$TEMPLATE element
+%0 element := 0
+%1 delimiter := ","
+%2 string := P1
+$BEGIN
+F$ELEMENT(%0,%1,%2%*)
+$END$
+
+$TEMPLATE environment
+%0 item := DEFAULT
+$BEGIN
+F$ENVIRONMENT("%0%*")
+$END$
+
+$TEMPLATE extract
+%0 offset := 0
+%1 length := F$LENGTH(%2)
+%2 string := P1
+$BEGIN
+F$EXTRACT(%0,%1,%2%*)
+$END$
+
+$TEMPLATE fao
+%0 control string := %*
+%1 arg-1 := «»
+$BEGIN
+F$FAO("%0",%1)
+$END$
+
+$TEMPLATE file_attributes
+%0 file := name
+%1 item := %*
+$BEGIN
+F$FILE_ATTRIBUTES(%0,"%1")
+$END$
+
+$TEMPLATE getdvi
+%0 device name := dev
+%1 item := %*
+$BEGIN
+F$GETDVI(%0,"%1")
+$END$
+
+$TEMPLATE getjpi
+%0 pid
+%1 item := %*
+$BEGIN
+F$GETJPI("%0","%1")
+$END$
+
+$TEMPLATE getqui
+%0 display := DISPLAY_QUEUE
+%1 item := %*
+%2 object := sys$print
+$BEGIN
+F$GETJPI("%0","%1","%2")
+$END$
+
+$TEMPLATE getsyi
+%0 item := %*
+$BEGIN
+F$GETSYI("%0")
+$END$
+
+$TEMPLATE identifier
+%0 identifier := %*
+%1 conversion type := NUMBER_TO_NAME
+$BEGIN
+F$IDENTIFIER(%0,"%1")
+$END$
+
+$TEMPLATE integer
+%0 expression := %*
+$BEGIN
+F$INTEGER(%0)
+$END$
+
+$TEMPLATE length
+%0 string := %*
+$BEGIN
+F$LENGTH(%0)
+$END$
+
+$TEMPLATE locate
+%0 substring := "%*"
+%1 target string := P1
+$BEGIN
+F$LOCATE(%0,%1)
+$END$
+
+$TEMPLATE message
+%0 status := $STATUS
+$BEGIN
+F$MESSAGE(%0%*)
+$END$
+
+$TEMPLATE parse
+%0 file := %*
+%1 default spec
+%2 related spec
+%3 field := NAME
+%4 parse type := SYNTAX_ONLY
+$BEGIN
+F$PARSE(%0,%1,%2,"%3","%4")
+$END$
+
+$TEMPLATE privilege
+%0 privileges := %*
+$BEGIN
+F$PRIVILEGE("%0")
+$END$
+
+$TEMPLATE search
+%0 filename := %*
+$BEGIN
+F$SEARCH(%0)
+$END$
+
+$TEMPLATE setprv
+%0 privileges := "%*"
+$BEGIN
+F$SETPRV(%0)
+$END$
+
+$TEMPLATE string
+%0 expression := %*
+$BEGIN
+F$STRING(%0)
+$END$
+
+$TEMPLATE trnlnm
+%0 logical := %*
+$BEGIN
+F$TRNLNM(%0)
+$END$
+
+$TEMPLATE type
+%0 symbol := %*
+$BEGIN
+F$TYPE(%0)
+$END$
+
+$TEMPLATE verify
+%0 procedure value := 0
+$BEGIN
+'F$VERIFY(%0)'
+$END$
+
+$TEMPLATE if
+$TEMPLATE ifelse
+%0 condition := «»
+$BEGIN
+$ IF %0%*
+$ THEN «»
+$ ELSE «»
+$ ENDIF
+%@ COM$SpecialIndent(1);
+$END
+
+$TEMPLATE ifthen
+%0 condition := «»
+$BEGIN
+$ IF %0%* -
+  THEN «»
+$END
+
+$TEMPLATE on
+%0 condition := ERROR
+$BEGIN
+ON %0 THEN %*
+$END$
+
+$TEMPLATE open
+%0 logical := %*
+%1 file := sys$disk:[]«»
+%2 mode := /WRITE
+%3 error label := open_error
+$BEGIN
+OPEN %2 /ERROR=%3 %0 %1
+$END$
+
+$TEMPLATE read
+%0 logical := sys$command
+%1 symbol := Answer
+%2 EOF label := Done
+%3 prompt := %*
+$BEGIN
+READ %0 %1 /END_OF_FILE=%2 -
+  /PROMPT="%3"
+$END$
+
+$TEMPLATE subroutine
+%0 subroutine name := «»
+$BEGIN
+$%0:  SUBROUTINE
+$ ON CONTROL_Y THEN GOSUB SCtrl_Y
+$ ON ERROR THEN EXIT %X2C
+$ %*
+$ EXIT 1
+$ !
+$SCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! %0
+$END
+
+$TEMPLATE gosub
+%0 gosub name := «»
+$BEGIN
+$ !
+$%0:
+$ %*
+$ RETURN 1
+$END
+
+$TEMPLATE Ctrl_Y
+$BEGIN
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ !
+$Ctrl_Y:
+$ RETURN %X2C
+$END
+
+$TEMPLATE write
+%0 logical := sys$output
+%1 expression := %*
+$BEGIN
+WRITE %0 %1
+$END$
+
+$TEMPLATE prototype
+%0 Copyright by := LockWorks LLC
+%1 facility := «»
+%2 description
+$BEGIN
+$ ! %FN0 --                                                        'F$VERIFY(0)'
+$ !
+$ ! This program is the confidential and proprietary product of %0.
+$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ !
+$ ! Copyright © %YEAR by %0.  All rights reserved.
+$ !
+$ !  «»%2
+$ !
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ @site$utils:utility START %1 'F$ENVIRONMENT("PROCEDURE")'
+$ !
+$ IF %1$Interactive THEN CLS
+$! OPEN %1-definitions %1$package:definitions.def
+$%1_Main:
+$ IF .NOT. %1$Interactive THEN GOTO S1
+$ TYPE sys$input
+  Typical Menu
+
+  1  First Choice
+  2  Second Choice
+
+$S1:
+$ @site$utils:utility CHOOSE "Make a choice" "12,FS" "F"
+$ SHOW SYMBOL %1$Choice
+$ GOTO %1_'%1$Choice'
+$ @site$utils:utility ASK "Enter a value" "" "Default"
+$ SHOW SYMBOL %1$Answer
+$%1_1:          ! Process First Choice
+$ %*
+$ GOTO %1_Main
+$%1_2:          ! Process Second Choice
+$ GOTO %1_Main
+$%1_0:          ! Ctrl_Z at Main Menu
+$Done:
+$ %1$Status = $STATUS
+$ SET NOON
+$!IF F$TRNLNM("%1-definitions") .NES. "" THEN CLOSE %1-definitions
+$ @site$utils:utility EXIT %1
+$ EXIT (%1$Status .OR. %X10000000)
+$ !
+$Ctrl_Y:
+$ RETURN %X2C
+%@ KED$LSE_Replace("%FN0",KED$FileNameType)
+%@ KED$UserYear("%YEAR");
+$END$
+
+$TEMPLATE copyright
+%0 Copyright by := LockWorks LLC
+$BEGIN
+$ ! This program is the confidential and proprietary product of %0.
+$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ !
+$ ! Copyright © %YEAR by %0.  All rights reserved.
+$ !
+%*
+%@ KED$UserYear("%YEAR");
+$END

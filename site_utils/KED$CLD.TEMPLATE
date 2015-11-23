@@ -1,0 +1,98 @@
+! KED$CLD.TEMPLATE -- LSE template for *.CLD source files
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT CLD template <verb>
+
+$RULER
+L234567T9 1234567T9 1234T6789 123456789 123456789 T23456789 T23456789 T23456789
+$END
+
+$TPUINI
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE verb
+$0 verb name
+$1 routine := «»
+$2 qualifier := «»
+$BEGIN
+DEFINE VERB      $0$*
+       ROUTINE   $1
+       PARAMETER P1
+       QUALIFIER $2
+                 VALUE( TYPE = «»,
+                        LIST,
+                        DEFAULT = "«»" )
+$END
+
+$TEMPLATE qualifier
+$0 qualifier name
+$BEGIN
+QUALIFIER $0$*
+          VALUE( TYPE = «»,
+                 LIST,
+                 DEFAULT = "«»" )
+$END
+
+$TEMPLATE value
+$0 type := «»
+$1 default value := «»
+$BEGIN
+VALUE( TYPE = $0,
+       LIST,
+       DEFAULT = "$1" )
+$END
+
+$TEMPLATE disallow
+$0 qualifier expression
+$BEGIN
+DISALLOW  ( $0$* )
+$END
+
+$TEMPLATE any2
+$0 qualifier list (X,Y,Z)
+$BEGIN
+DISALLOW  ANY2( $0$* )
+$END
+
+$TEMPLATE type
+$0 type name
+$1 default keyword := «»
+$BEGIN
+DEFINE TYPE      $0$*
+       KEYWORD   $1, DEFAULT
+       KEYWORD   «»
+$END
+
+$TEMPLATE syntax
+$0 syntax name
+$1 image name := «»
+$BEGIN
+DEFINE SYNTAX    $0$*
+       IMAGE     "$1"
+       PARAMETER P1
+       QUALIFIER $2
+                 VALUE( TYPE = «»,
+                        LIST,
+                        DEFAULT = "«»" )
+$END
+
+$TEMPLATE copyright
+$0 Copyright by := LockWorks LLC
+$BEGIN
+!  $FN0
+
+! This program is the confidential and proprietary product of $0.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by $0.  All rights reserved.
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END

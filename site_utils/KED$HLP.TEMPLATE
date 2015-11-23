@@ -1,0 +1,55 @@
+! KED$HLP.TEMPLATE -- for HELP files
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT Help template <topic>
+
+$RULER
+1L34567T9 123456T89 1234T6789 12T456789 T2345678T 123456T89 1234R6789 123456789 
+$ENDRULER
+
+!$TPUINI
+!$ENDTPUINI
+
+$TEMPLATE Topic
+$0 topic name
+$BEGIN
+1 $0
+  $0 is $*
+
+  Format
+
+    $ $0 «»
+
+2 Parameters
+  «»
+
+2 Examples
+  «»
+
+2 Qualifiers
+
+/«»
+
+  «»
+$END
+
+$TEMPLATE Section
+$0 level := 1
+$1 title
+$BEGIN
+$0 $1$*
+  «»
+$END
+
+$TEMPLATE Qualifier
+$0 qualifier
+$BEGIN
+/$0
+
+  «»
+$END

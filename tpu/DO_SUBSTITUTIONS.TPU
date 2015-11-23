@@ -1,0 +1,95 @@
+! DO_SUBSTITUTIONS - TPU procedure to do string substitutions in text file
+! 14-May-87
+!
+! Inputs:
+!   input_file arg      file to which substitutions are applied
+!   output_file arg     file after substitutions are applied
+!   SUBS.DAT		file containing substitutions
+
+procedure show_range(label, stuff)
+
+  if stuff = 0 then
+    message(fao('!AS is empty', label));
+  else
+    message(fao('!AS = "!AS", length !UL',
+      label, substr(stuff, 1, length(stuff)), length(stuff)));
+  endif;
+endprocedure;
+
+procedure global_search_replace(old, new)
+! Replace all instances of |old| string or pattern with |new| string 
+! in current buffer.
+local src_range, count, tmp1, tmp2;
+
+  on_error
+    tmp1 := old; tmp2 := """" + new + """";
+    msg_text := fao('Replaced !UL instance!%S of !AS with !AS',
+      count, tmp1, tmp2);
+!   message(msg_text);
+    return;
+  endon_error;
+
+  position(beginning_of(main_buffer));
+
+  count := 0;
+  loop
+    src_range := search(old, forward);
+    erase(src_range);
+    if new <> 0 then
+      position(end_of(src_range));
+      copy_text(new);
+      endif;
+    count := count + 1;
+  endloop;
+endprocedure;
+
+procedure get_subs(old, new)
+! Read next |old|, |new| pair from subs_file
+local match_range, count;
+
+  on_error; endon_error; ! suppress warning message
+
+  position(subs_buffer);
+
+  field_range := "";
+  match_range := search(field_pat, forward);
+  if match_range = 0 then return(0); endif;
+  old := substr(field_range, 1, length(field_range));
+  position(match_range); move_horizontal(length(match_range));
+
+  field_range := "";
+  match_range := search(field_pat, forward);
+  new := substr(field_range, 1, length(field_range));
+  position(match_range); move_horizontal(length(match_range));
+
+  move_horizontal(1);
+  return(1);
+endprocedure;
+
+set(success, off);
+set(informational, off);
+
+tab := ascii(9);
+field_pat := anchor &
+  (span(tab) | line_end |
+    (scan(tab) @field_range & span(tab)) |
+    (remain @field_range & line_end)
+    );
+
+input_file := get_info(command_line, 'file_name');
+main_buffer := create_buffer('main', input_file);
+if get_info(command_line, 'output') then
+  out_file := get_info(command_line, 'output_file');
+  set(output_file, main_buffer, out_file);
+  endif;
+subs_file := file_parse('subs.dat', '', input_file);
+subs_buffer := create_buffer('substitutions', subs_file);
+set(no_write, subs_buffer, on);
+
+old_string := "";
+new_string := "";
+loop
+  exitif not get_subs(old_string, new_string);
+  global_search_replace(old_string, new_string);
+endloop;
+exit;

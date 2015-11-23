@@ -1,0 +1,121 @@
+; CKERMIT.MACROS -- 6/11/96
+echo (ckermit.macros v2.2)
+set parity none
+set command  bytesize 8
+set terminal bytesize 8
+
+define KED ked
+define CF
+define EDIT -
+  if = \v(argc) 2 assign CF \%1, -
+  if not defined CF echo No current file (cf),  -
+  else run \m(KED) \m(CF)
+
+define SD -
+  if = \v(argc) 1 -
+    end 1 \%0: missing [directory], -
+  cd \%1, -
+  remote cd \%1
+
+define BINARY -
+  set file type binary, -
+  remote set file type binary
+
+define IMAGE -
+  set file type image, -
+  remote set file type image
+
+define LABELED -
+  set file type labeled, -
+  remote set file type labeled
+
+define TEXT -
+  set file type text, -
+  remote set file type text
+
+define PACKET -
+  if lgt "\%1" "" define \%p \%1, -
+  else ask \%p {Packet size <1000>: }, -
+  if equal "\%p" "" define \%p 1000, -
+  if lgt "\%p" "500" define \%b 2, -
+  else define \%b 1, -
+  set receive packet \%p, -
+  set block-check \%b, -
+  remote set receive packet \%p, -
+  remote set block-check \%b, -
+  xif not equal "\%2" "" { show protocol }
+
+define WINDOWS -
+  if equal "\%1" "" assign \%w 3, else assign \%w \%1,-
+  set window \%w, -
+  remote set window \%w
+
+define RESET -
+  output {ATH0Z0\13}, -   ;hangup, reset profile 0
+  input 1 {OK},-
+  set dial init ATQ0S2=43\13
+
+define RESET_MODEM -
+  output {ATH0Z0\13},-    ;hangup, reset profile 0
+  show status
+
+define RESET_SUPRA -
+  output {ATH0\13}, -
+  pause 1, -
+  output {AT%C3\\N3\13}  ;reset negotiation parameters
+
+define NO_MNP5 -
+  output {ATH0\13}, -
+  pause 1, -
+  output {AT%C0\\N0\13}  ;disable MNP5 negotiation
+
+define DUMP_MODEM -
+  output {AT&V\13},-    ;show all S-registers, profiles
+  input 10 {OK},-
+  show status
+
+define DIALSYSTEM -  ;  \%1 System-to-dial, \%2 Node, \%3 Username
+  set macro error on,-
+  output {ATH0Z0\13},-                          ;hangup, reset profile 0
+  askq \%p {T/S password: }, assign \%p \Fupper(\%p),-
+  askq \%v {VMS password: }, assign \%v \Fupper(\%v),-
+  set dial timeout 80, dial \%1,-
+  xif not equal "\%p" "" { -
+    output {\13}, pause 1, output {\13}, -
+    input 5 {#}, output {\%p\13}, define \%p, -
+    input 10 {Enter username> },  output {E&R\13}, -
+    pause 1, output {\13}, - ;;;pause 1, output {\13}, -
+    input 1 {Local> },  output {C \%2\13}, -
+    } else { output {\13} }, -
+  input 4 {Username: }, output {\%3\13}, -
+  input 1 {Password: }, output {\%v\13}, define \%v, -
+  connect,-
+  set macro error off
+
+define C_RUGER -
+  if equal "\%1" "" assign \%n PALE, else assign \%n \%1,-
+  if equal "\%2" "" assign \%u L_RICKER, else assign \%u \%2,-
+  set macro error on,-
+  DIALSYSTEM RUGER \%n \%u
+  set macro error off
+
+define C_PPS -
+  if equal "\%1" "" assign \%n BODINE, else assign \%n \%1,-
+  if equal "\%2" "" assign \%u L_RICKER, else assign \%u \%2,-
+  set macro error on,-
+  DIALSYSTEM PPS7 \%n \%u
+  set macro error off
+
+define C_MCC -
+  if equal "\%1" "" assign \%n SWORD, else assign \%n \%1,-
+  if equal "\%2" "" assign \%u L_RICKER, else assign \%u \%2,-
+  set macro error on,-
+  DIALSYSTEM MCC \%n \%u
+  set macro error off
+
+define C_COWLITZ -
+  if equal "\%1" "" assign \%n LTRACK, else assign \%n \%1,-
+  if equal "\%2" "" assign \%u L_RICKER, else assign \%u \%2,-
+  set macro error on,-
+  DIALSYSTEM COWLITZ \%n \%u
+  set macro error off

@@ -1,0 +1,211 @@
+! KED$SCN.TEMPLATE -- LSE template for *.SCN (SCAN) source files
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT SCAN template <macro>
+
+$RULER
+L234T6T89 T2345T789 123T56789 1T3456789 T23456789 T23456789 T23456789 T23456789
+$END
+
+$TPUINI
+  P$WordDelims( GV$_word, "$.,([" );
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE macro
+$0 name := M
+$1 trigger/syntax := TRIGGER
+$2 picture := «»
+$BEGIN
+MACRO $0 $1
+  { $2 };
+  $*;
+  END MACRO /* $0 */;
+$END
+
+$TEMPLATE procedure
+$0 proc-name := P
+$BEGIN
+PROCEDURE $0 ( «», «» );
+  $*
+  END PROCEDURE /* $0 */;
+$END
+
+$TEMPLATE function
+$0 func-name
+$1 func-type
+$BEGIN
+PROCEDURE $0 ( «», «» ) OF $1;
+  $*
+  RETURN ( «» );
+  END PROCEDURE /* $0 */;
+$END
+
+$TEMPLATE efunction
+$0 func-name
+$BEGIN
+EXTERNAL PROCEDURE $0 ( «», «» ) OF INTEGER;
+$END
+
+$TEMPLATE case
+$0 case selector := cvar
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+CASE $0 FROM $1 TO $2;
+  [$1]: $*
+  [$2]: «»;
+  [INRANGE,
+   OUTRANGE]: «»;
+  END CASE /* $0 */;
+$END
+
+$TEMPLATE for
+$0 for-var := i
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+FOR $0 = $1 TO $2 STEP 1;
+  $*
+  END FOR /* $0 */;
+$END
+
+$TEMPLATE if
+$0 conditional := Boolean
+$BEGIN
+IF ( $0 ) THEN
+  $*
+ELSE «»;
+END IF;
+$END
+
+$TEMPLATE while
+$0 conditional := flag
+$BEGIN
+WHILE ( $0 );
+  $*
+  END WHILE /* $0 */;
+$END
+
+$TEMPLATE module
+$0 module name := M
+$BEGIN
+/* filename: $FN0 -- «» */
+
+MODULE $0;
+
+$*
+
+END MODULE /* $0 */;
+$@ $0 := GET_INFO(CURRENT_BUFFER,"OUTPUT_FILE");
+$@ IF ( GET_INFO($0,"TYPE") <> STRING ) THEN $0 := NULL; ENDIF;
+$@ $0 := FILE_PARSE($0,NULL,NULL,NAME,TYPE);
+$@ IF ( $0 = "." ) THEN $0 := K$chevrons; ENDIF;
+$@ KED$LSE_Replace("$FN0",$0)
+$END$
+
+$TEMPLATE scan
+$0 stream := FILE
+$1 input
+$2 output
+$BEGIN
+START SCAN
+  INPUT  $0 '$1'
+  OUTPUT $0 '$2';
+$END
+
+$TEMPLATE variables
+$BEGIN
+DECLARE $* : «»;
+$END
+
+$TEMPLATE constants
+$BEGIN
+CONSTANT $* = «»;
+$END
+
+$TEMPLATE types
+$BEGIN
+TYPE $* : «»;
+$END
+
+$TEMPLATE varying_string
+$0 size := 80
+$BEGIN
+VARYING STRING( $0 )
+$END$
+
+$TEMPLATE dynamic_string
+$BEGIN
+DYNAMIC STRING
+$END$
+
+$TEMPLATE string
+$0 size := 32
+$BEGIN
+FIXED STRING( $0 )
+$END$
+
+$TEMPLATE tree
+$0 branch := STRING
+$1 leaftype := $*
+$BEGIN
+TREE( $0 ) OF $1
+$END$
+
+$TEMPLATE record
+$BEGIN
+RECORD
+  $* : «»,
+  «» : «»
+  END RECORD;
+$END
+
+$TEMPLATE set
+$0 name := S
+$1 definition := $*
+$BEGIN
+SET $0 ( $1 );
+$END$
+
+$TEMPLATE group
+$0 name := G
+$1 definition := $*
+$BEGIN
+GROUP $0 ( $1 );
+$END$
+
+$TEMPLATE token
+$0 name := T
+$1 definition := $*
+$BEGIN
+TOKEN $0 { $1 };
+$END$
+
+$TEMPLATE read
+$0 file-var := f
+$1 prompt := '$*'
+$2 variable := answer
+$BEGIN
+READ FILE ( $0 ) PROMPT ( $1 ) $2;
+$END
+
+$TEMPLATE write
+$0 file-var := f
+$1 expression := $*
+$BEGIN
+WRITE FILE ( $0 ) $1;
+$END
+
+$TEMPLATE open
+$0 file-var     := f
+$1 filename     := '$*'
+$2 i/o          := INPUT
+$BEGIN
+OPEN FILE ( $0 ) AS $1 FOR $2;
+$END

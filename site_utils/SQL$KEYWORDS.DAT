@@ -1,0 +1,75 @@
+ ALL AND ANY AS ASC AUTHORIZATION AVG                                   ! SQL
+ BEGIN BETWEEN BY                                                       ! SQL
+ CHAR CHARACTER CHECK CLOSE COBOL COMMIT                                ! SQL
+ CONTINUE COUNT CREATE CURRENT CURSOR                                   ! SQL
+ DEC DECIMAL DECLARE DEFAULT DELETE DESC DISTINCT DOUBLE                ! SQL
+ END ESCAPE EXEC EXISTS                                                 ! SQL
+ FETCH FLOAT FOR FOREIGN FORTRAN FOUND FROM                             ! SQL
+ GO GOTO GRANT GROUP                                                    ! SQL
+ HAVING                                                                 ! SQL
+ IN INDICATOR INSERT INT INTEGER INTO IS                                ! SQL
+ KEY                                                                    ! SQL
+ LANGUAGE LIKE                                                          ! SQL
+ MAX MIN MODULE                                                         ! SQL
+ NOT NULL NUMERIC                                                       ! SQL
+ OF ON OPEN OPTION OR ORDER                                             ! SQL
+ PASCAL PLI PRECISION PRIMARY PRIVILEGES PROCEDURE PUBLIC               ! SQL
+ REAL REFERENCES ROLLBACK                                               ! SQL
+ SCHEMA SECTION SELECT SET SMALLINT SOME SQL SQLCODE SQLERROR SUM       ! SQL
+ TABLE TO                                                               ! SQL
+ UNION UNIQUE UPDATE USER                                               ! SQL
+ VALUES VIEW                                                            ! SQL
+ WHENEVER WHERE WITH WORK                                               ! SQL
+
+ ABSOLUTE ACTION ADD ALLOCATE ALTER                                     ! SQL2
+ ARE ASSERTION AT                                                       ! SQL2
+ BIT BIT_LENGTH BOTH                                                    ! SQL2
+ CASCADE CASCADED CASE CAST CATALOG CHAR_LENGTH CHARACTER_LENGTH        ! SQL2
+ COALESCE COLLATE COLLATION COLUMN CONNECT CONNECTION                   ! SQL2
+ CONSTRAINT CONSTRAINTS CONVERT CORRESPONDING CROSS                     ! SQL2
+ CURRENT_DATE CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER               ! SQL2
+ DATE DAY DEALLOCATE DEFERRABLE DEFERRED                                ! SQL2
+ DESCRIBE DESCRIPTOR DIAGNOSTICS DISCONNECT DOMAIN DROP                 ! SQL2
+ ELSE END-EXEC                                                          ! SQL2
+ EXCEPT EXCEPTION EXECUTE EXTERNAL EXTRACT                              ! SQL2
+ FALSE FIRST FULL                                                       ! SQL2
+ GET GLOBAL                                                             ! SQL2
+ HOUR                                                                   ! SQL2
+ IDENTITY IMMEDIATE INITIALLY INNER INPUT                               ! SQL2
+ INSENSITIVE INTERSECT INTERVAL ISOLATION                               ! SQL2
+ JOIN                                                                   ! SQL2
+ LAST LEADING LEFT LEVEL LOCAL LOWER                                    ! SQL2
+ MATCH MINUTE MONTH                                                     ! SQL2
+ NAMES NATIONAL NATURAL NCHAR NEXT NO NULLIF                            ! SQL2
+ OCTET_LENGTH ONLY OUTER OUTPUT OVERLAPS                                ! SQL2
+ PAD                                                                    ! SQL2
+ SPACE SQLSTATE SUBSTRING SYSTEM_USER                                   ! SQL2
+ TEMPORARY THEN TIME TIMESTAMP                                          ! SQL2
+ TIMEZONE_HOUR TIMEZONE_MINUTE                                          ! SQL2
+ TRAILING TRANSACTION TRANSLATE TRANSLATION TRIM TRUE                   ! SQL2
+ UNKNOWN UPPER USAGE USING                                              ! SQL2
+ VALUE VARCHAR VARYING                                                  ! SQL2
+ WHEN WRITE                                                             ! SQL2
+ YEAR                                                                   ! SQL2
+ ZONE                                                                   ! SQL2
+
+ ACTOR AFTER ALIAS ASYNC                                                ! SQL3
+ BEFORE BOOLEAN BREADTH                                                 ! SQL3
+ CALL CLASS COMPLETION CONSTRUCTOR CYCLE                                ! SQL3
+ DATA DEPTH DEREF DESTROY DESTRUCTOR DICTIONARY DO                      ! SQL3
+ EACH ELEMENT ELSEIF EQUALS                                             ! SQL3
+ FUNCTION                                                               ! SQL3
+ GENERAL                                                                ! SQL3
+ IF IGNORE INOUT INSTEAD                                                ! SQL3
+ LEAVE LESS LIMIT LIST LOOP                                             ! SQL3
+ MODIFY MOVE MULTISET                                                   ! SQL3
+ NEW NEW_TABLE NONE                                                     ! SQL3
+ OFF OID OLD OLD_TABLE OPERATION OPERATORS OTHERS OUT                   ! SQL3
+ PARAMETERS PENDANT PREORDER PRIVATE PROTECTED                          ! SQL3
+ RECURSIVE REF REFERENCING REPRESENTATION RESIGNAL                      ! SQL3
+ RETURN RETURNS ROLE ROUTINE ROW                                        ! SQL3
+ SAVEPOINT SAVEPOINT SENSITIVE SEQUENCE                                 ! SQL3
+ SIGNAL SIMILAR SPECIFIC SQLEXCEPTION SQLWARNING STRUCTURE              ! SQL3
+ TEMPLATE TEST THAN THERE TRIGGER TUPLE TYPE                            ! SQL3
+ VARIABLE VARIANT VIRTUAL VISIBLE                                       ! SQL3
+ WAIT WHILE WITHOUT                                                     ! SQL3

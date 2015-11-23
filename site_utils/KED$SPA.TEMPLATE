@@ -1,0 +1,335 @@
+! KED$SPA.TEMPLATE -- LSE template for *.SPA source files
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2005 by LockWorks LLC.  All rights reserved.
+! Copyright © 1990-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+$PROMPT SQL$PRE template <function>
+
+$RULER
+L2T4T6T89 T2345T789 123T56789 1T3456789 T23456789 T23456789 T23456789 T23456789
+$END
+
+$TPUINI
+  P$WordDelims( GV$_word, "$.,([" );
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE function
+$0 function name
+$1 function type := INTEGER
+$BEGIN
+FUNCTION $0(
+  «» : «»
+  ) : $1;
+BEGIN  { $0 }
+  $*
+  $0 := «»;
+  END;  { $0 }
+$END
+
+$TEMPLATE efunction
+$0 function name
+$1 function type := INTEGER
+$BEGIN
+FUNCTION $0(
+  $*«» : «»
+  ) : $1; EXTERNAL;
+$END
+
+$TEMPLATE procedure
+$0 procedure name
+$BEGIN
+PROCEDURE $0(
+  «» : «» );
+BEGIN  { $0 }
+  $*
+  END;  { $0 }
+$END
+
+$TEMPLATE eprocedure
+$0 procedure name
+$BEGIN
+PROCEDURE $0(
+  $*«» : «» );
+  EXTERNAL;
+$END
+
+$TEMPLATE case
+$0 case selector := cvar
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+CASE $0 OF
+  $1: $*
+  $2: «»
+  OTHERWISE «»
+  END;  { CASE $0 }
+$END
+
+$TEMPLATE for
+$0 for-var := i
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+FOR $0 := $1 TO $2 DO BEGIN
+  $*
+  END;  { FOR $0 }
+$END
+
+$TEMPLATE forset
+$0 for-var := i
+$1 set := [ «» ]
+$BEGIN
+FOR $0 IN $1 DO BEGIN
+  $*
+  END;  { FOR $0 }
+$END
+
+$TEMPLATE if
+$0 conditional := Boolean
+$BEGIN
+IF ( $0 ) THEN
+  $*
+ELSE «»;  { IF }
+$END
+
+$TEMPLATE repeat
+$0 until-condition := done
+$BEGIN
+REPEAT
+  $*
+  UNTIL ( $0 );
+$END
+
+$TEMPLATE while
+$0 conditional := flag
+$BEGIN
+WHILE ( $0 ) DO BEGIN
+  $*
+  END;  { WHILE }
+$END
+
+$TEMPLATE with
+$0 record-var := «»
+$BEGIN
+WITH $0 DO BEGIN
+  $*
+  END;  { WITH }
+$END
+
+$TEMPLATE compound_statement
+$BEGIN
+BEGIN
+  $*
+  END;
+$END
+
+$TEMPLATE program
+$0 program name := P
+$BEGIN
+{ filename: $FN0 -- «» }
+
+PROGRAM $0( INPUT, OUTPUT );
+
+BEGIN  { $0 -- Main }
+  $*
+  END  { $0 -- Main }.
+$@ $0 := GET_INFO(CURRENT_BUFFER,"OUTPUT_FILE");
+$@ IF ( GET_INFO($0,"TYPE") <> STRING ) THEN $0 := NULL; ENDIF;
+$@ $0 := FILE_PARSE($0,NULL,NULL,NAME,TYPE);
+$@ IF ( $0 = "." ) THEN $0 := K$chevrons; ENDIF;
+$@ KED$LSE_Replace("$FN0",$0)
+$END$
+
+$TEMPLATE module
+$0 module name := M
+$BEGIN
+{ filename: $FN0 -- «» }
+[ IDENT ( «» ),
+  INHERIT ( «» ) ]
+
+MODULE $0( INPUT, OUTPUT );
+
+$*
+
+END  { Module $0 }.
+$@ $0 := GET_INFO(CURRENT_BUFFER,"OUTPUT_FILE");
+$@ IF ( GET_INFO($0,"TYPE") <> STRING ) THEN $0 := NULL; ENDIF;
+$@ $0 := FILE_PARSE($0,NULL,NULL,NAME,TYPE);
+$@ IF ( $0 = "." ) THEN $0 := K$chevrons; ENDIF;
+$@ KED$LSE_Replace("$FN0",$0)
+$END$
+
+$TEMPLATE variable
+$BEGIN
+VAR
+  $* : «»;
+$END
+
+$TEMPLATE sysconstant
+$0 name := $*
+$BEGIN
+$0 : [VALUE, EXTERNAL, READONLY] INTEGER;
+$END
+
+$TEMPLATE constant
+$BEGIN
+CONST
+  $* = «»;
+$END
+
+$TEMPLATE type
+$BEGIN
+TYPE
+  $* = «»;
+$END
+
+$TEMPLATE conformant_array
+$0 lo-limit := $l1
+$1 hi-limit := $u1
+$2 base-type := $*
+$BEGIN
+PACKED ARRAY[$0..$1:INTEGER] OF $2;
+$END$
+
+$TEMPLATE packed_array
+$0 lo-limit := 1
+$1 hi-limit := 10
+$2 base-type := CHAR
+$BEGIN
+PACKED ARRAY[$0..$1] OF $2;
+$END$
+
+$TEMPLATE varying_string
+$0 size := 80
+$BEGIN
+VARYING[$0] OF CHAR;
+$END$
+
+$TEMPLATE record
+$BEGIN
+RECORD
+  $* : «»;
+  «» : «»
+  END;
+$END
+
+$TEMPLATE array
+$0 lo-limit := 1
+$1 hi-limit := 10
+$2 base-type := $*
+$BEGIN
+ARRAY[$0..$1] OF $2;
+$END$
+
+$TEMPLATE file
+$0 component-type := CHAR
+$BEGIN
+FILE OF $0;
+$END$
+
+$TEMPLATE set
+$0 base-type := CHAR
+$BEGIN
+SET OF $0;
+$END$
+
+$TEMPLATE variant_record
+$0 tag-id := tag
+$1 tag-type := INTEGER
+$2 lo-limit := 1
+$3 hi-limit := 2
+$BEGIN
+CASE $0 : $1 OF
+  $2: ( $* : «» );
+  $3: ( «» : «» );
+$END$
+
+$TEMPLATE open
+$0 file-var     := f
+$1 filename     := $*
+$2 default      := '«»'
+$3 history      := OLD
+$4 error        := CONTINUE
+$5 RESET/REWRITE := RESET
+$BEGIN
+OPEN(
+  FILE_VARIABLE := $0,
+  FILE_NAME     := $1,
+  DEFAULT       := $2,
+  HISTORY       := $3,
+  ERROR         := $4 );
+$5( $0 );
+IF ( STATUS( $0 ) <= 0 ) THEN BEGIN
+  «»
+  END;
+$END
+
+$TEMPLATE select
+$0 fields := «»
+$1 from := «»
+$BEGIN
+select $0
+  from  $1
+  where $*;
+$END
+
+$TEMPLATE cursor
+$0 cursor name := «»
+$BEGIN
+declare $0 cursor for
+  $*<Select-expr>
+$END
+
+$TEMPLATE sel-into
+$0 fields := «»
+$1 into := «»
+$2 from := «»
+$BEGIN
+select $0
+  into :$1
+  from  $2
+  where $*;
+$END
+
+$TEMPLATE insert
+$0 table := «»
+$1 columns := «»
+$2 values := «»
+$BEGIN
+insert into $0 (
+  $1$* ) values (
+  :$2 )
+  returning dbkey into :«»;
+$END
+
+$TEMPLATE update
+$0 table := «»
+$1 where := X.«»
+$BEGIN
+update $0 X
+  set X.$* = :«»,
+      X.«» = :«»
+  where $1;
+$END
+
+$TEMPLATE delete
+$0 table := «»
+$1 where := X.«»
+$BEGIN
+delete from $0 X
+  where $1$*;
+$END
+
+$TEMPLATE transaction
+$TEMPLATE set_transaction
+$0 handle
+$1 read (only/write) := read write
+$2 reserved relation := «»
+$BEGIN
+set transaction $0 $1
+  reserving $2 for $*shared write;
+$END

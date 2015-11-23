@@ -1,0 +1,41 @@
+From: system@SendSpamHere.ORG
+Sent: Wednesday, February 28, 2001 8:08 AM
+To: Info-VAX@Mvb.Saic.Com
+Subject: RE: My name is Dean, and I'm a [Un*x|NT] hater.
+
+In article <7DF45F22D904D31192EE00805F578DF2018BC77E@ny-exchange1.maintech1.com>, "Farrell, Michael" <MFarrell@voltdelta.com> writes:
+>	Dean Woodward [deanw@rdrop.com] wrote:
+>	[snip]
+>>  .  You see, in Un*x,
+>> > the program never gets to know what the actual command line was, even if
+>> > it wanted to. 
+>> 
+>	This brings up an interesting question I've always wondered about.
+>
+>	In DCL, is it possible for the called DCL procedure to know the name
+>of the DCL symbol that was used to call it.  
+>	E.G.:
+>	$  myproc = "@my_dcl_proc" 
+>	$ myproc arg1 arg2
+>
+>	And inside my_dcl_proc.com one could determine that the symbol
+>"myproc" was what was used to
+>	invoke my_dcl_proc.com.
+>
+>	If it is possible to do this, could it also be done from inside an
+>executable image written in a compilable language?
+
+$ SYMBOL/SET/LOCAL/DEPTH/EXECUTIVE CTL$AG_CLIDATA
+$ SYMBOL/SET/LOCAL/DEPTH/EXECUTIVE PPD$L_PRC
+$ SYMBOL/SET/LOCAL/DEPTH/EXECUTIVE PRC_L_RECALLPTR
+$
+$ PRC = 'F$fao("%x!@XL",CTL$AG_CLIDATA+PPD$L_PRC)
+$ NXT = 'F$fao("%x!@XL",PRC+PRC_L_RECALLPTR)-1
+$ CMD = NXT-'F$fao("%x!@XB",NXT)-1
+$ WRITE SYS$OUTPUT "''F$fao("!AC",CMD)'"
+
+
+--
+VAXman- OpenVMS APE certification number: AAA-0001     VAXman(at)TMESIS(dot)COM
+           
+city, n., 1. a place where trees are cut down and streets are named after them.
