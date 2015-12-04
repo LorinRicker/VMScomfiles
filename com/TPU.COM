@@ -1,7 +1,15 @@
 $ ! TPU.COM -- defines KED/TTK editor environment                  'F$VERIFY(0)'
 $ !
-$ ! P1: [ "" | "KJ" | "BJ" ] for KED$JOURNAL
-$ ! P2: [ "" | "VT" | "PC" | "PCDECW" ] for KED$KEYBOARD
+$ !  This program is the confidential and proprietary product of
+$ !  Lorin Ricker.  Any unauthorized use, reproduction or transfer
+$ !  of this program is strictly prohibited.
+$ !
+$ !  Copyright © 2000-2015 by Lorin Ricker, Inc.  All rights reserved.
+$ !  Copyright © 1986-2000 by Evans & Ricker, Inc.  All rights reserved.
+$ !
+$ ! P1: [ "" | "EVE" ] for TPU$SECTION
+$ ! P2: [ "" | "KJ" | "BJ" ] for KED$JOURNAL
+$ ! P3: [ "" | "VT" | "PC" | "PCDECW" ] for KED$KEYBOARD
 $ !
 $ LBase = F$TRNLNM("sys$login_device") -
         + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
@@ -16,14 +24,23 @@ $ DEFINE tpu$arc   'Lbase'.$tpu.arc]
 $ !
 $ DEFINE tpu$character_set ISO_LATIN1   !instead of DEC_MCS
 $ !
+$ IF ( F$EDIT(P1,"UPCASE") .EQS. "EVE" )
+$ THEN eve = 1
+$      DEASSIGN /NOLOG /JOB tpu$section  ! revert to system logical
+$      DEFINE eve$init    sys$login:eve$init.ini
+$      DEFINE ked$section eve$section
+$      GOTO Common
+$ ELSE eve = 0
+$ ENDIF
+$ !
 $ ln = "ked$journal"
-$ IF ( P1 .NES. "" )
-$ THEN DEFINE 'ln' 'P1'
+$ IF ( P2 .NES. "" )
+$ THEN DEFINE 'ln' 'P2'
 $ ELSE IF F$TRNLNM(ln,"LNM$JOB") .NES. "" THEN DEASSIGN /JOB 'ln'
 $ ENDIF
 $ ln = "ked$keyboard"
-$ IF ( P2 .NES. "" )
-$ THEN DEFINE 'ln' 'P2'
+$ IF ( P3 .NES. "" )
+$ THEN DEFINE 'ln' 'P3'
 $ !!! ELSE IF F$TRNLNM(ln,"LNM$JOB") .NES. "" THEN DEASSIGN /JOB 'ln'
 $ ENDIF
 $ !
@@ -61,8 +78,26 @@ $      KED == "EDIT /TPU /SECTION=ked$section"
 $ ENDIF
 $ !
 $Common:
-$ WRITE sys$error "%TPU-I-KED, editor: [1m",F$TRNLNM("ked$section"), -
-                  "[0m (",F$TRNLNM("ked$keyboard"),")"
+$ IF .NOT. eve
+$ THEN Term = F$GETJPI("","TERMINAL")
+$      IF F$LOCATE("FTA",Term) .LT. F$LENGTH(Term)
+$      THEN Keyboard = "PC"
+$      ELSE wso ""
+$           !! READ sys$command Keyboard /END_OF_FILE=Done /PROMPT="Keyboard ([1mP[0mC,[1mD[0mECWPC,[1mV[0mT) <P>? "
+$           READ sys$command Keyboard /END_OF_FILE=Done /PROMPT="Keyboard ([1mP[0mC,[1mV[0mT) <P>? "
+$           Keyboard = F$PARSE(Keyboard,"P",,"NAME","SYNTAX_ONLY")
+$           !! IF Keyboard .EQS. "D" THEN Keyboard = "PCDECW"
+$           IF Keyboard .EQS. "P" THEN Keyboard = "PC"
+$           IF Keyboard .EQS. "V" THEN Keyboard = "VT"
+$      ENDIF
+$      IF F$TRNLNM("RMG$Keyboard","lnm$system") .NES. Keyboard THEN DEFINE /JOB /NOLOG RMG$Keyboard 'Keyboard'
+$      IF F$TRNLNM("KED$Keyboard","lnm$system") .NES. Keyboard THEN DEFINE /JOB /NOLOG KED$Keyboard 'Keyboard'
+$      Keyboard = " (''F$TRNLNM("ked$keyboard")')"
+$ ELSE Keyboard = ""
+$ ENDIF
+$ !
+$ WRITE sys$output ""
+$ WRITE sys$output "%TPU-I-KED, editor: [1m''F$TRNLNM("ked$section")'[0m''Keyboard'"
 $ EXIT
 $ !
 $No_Ed:

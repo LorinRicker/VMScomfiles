@@ -1,10 +1,10 @@
 $ ! KED.COM -- editor command file                                 'F$VERIFY(0)'
 $ !
 $ !  This program is the confidential and proprietary product of
-$ !  Evans & Ricker, Inc.  Any unauthorized use, reproduction or
-$ !  transfer of this program is strictly prohibited.
+$ !  Lorin Ricker.  Any unauthorized use, reproduction or transfer
+$ !  of this program is strictly prohibited.
 $ !
-$ !  Copyright © 2000-2013 by Lorin Ricker, Inc.  All rights reserved.
+$ !  Copyright © 2000-2015 by Lorin Ricker, Inc.  All rights reserved.
 $ !  Copyright © 1986-2000 by Evans & Ricker, Inc.  All rights reserved.
 $ !
 $ !  use:  @KED [ filename | com_symbol ] [ outfile ]

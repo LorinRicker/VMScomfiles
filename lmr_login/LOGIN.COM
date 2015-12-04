@@ -1,7 +1,8 @@
 $ ! [L_RICKER]LOGIN.COM --                                         'F$VERIFY(0)'
 $ !
-$ ! This program is the confidential and proprietary product of LockWorks LLC.
-$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ !  This program is the confidential and proprietary product of
+$ !  Lorin Ricker.  Any unauthorized use, reproduction or transfer
+$ !  of this program is strictly prohibited.
 $ !
 $ ! Copyright © 2004-2015 by Lorin Ricker.  All rights reserved.
 $ ! Copyright © 2002-2003 by LockWorks LLC.  All rights reserved.
@@ -136,6 +137,7 @@ $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
+$      SET PROMPT="''LNode'$ "
 $      CALL SearchAt lmr$login:delsymbols NO
 $      CALL SearchAt dcl$init
 $      CALL SearchAt mgr$login
@@ -143,32 +145,19 @@ $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) -
        THEN cjobs  !check periodic jobs
 $      CALL SearchAt lmr$login:symbols.com REDEFINE
 $      CALL SearchAt com:tpu.com
-$      SET PROMPT="''LNode'$ "
-$      IF F$LOCATE("TNA",Term) .LT. F$LENGTH(Term)
-$      THEN Keyboard = "PC"
-$      ELSE wso ""
-$           READ sys$command Keyboard /END_OF_FILE=Done /PROMPT="Keyboard ([1mP[0mC,[1mD[0mECWPC,[1mV[0mT) <P>? "
-$           Keyboard = F$PARSE(Keyboard,"P",,"NAME","SYNTAX_ONLY")
-$           IF Keyboard .EQS. "D" THEN Keyboard = "PCDECW"
-$           IF Keyboard .EQS. "P" THEN Keyboard = "PC"
-$           IF Keyboard .EQS. "V" THEN Keyboard = "VT"
-$      ENDIF
-$      IF F$TRNLNM("RMG$Keyboard","lnm$system") .NES. Keyboard THEN DEFINE /JOB /NOLOG RMG$Keyboard 'Keyboard'
-$      IF F$TRNLNM("KED$Keyboard","lnm$system") .NES. Keyboard THEN DEFINE /JOB /NOLOG KED$Keyboard 'Keyboard'
-$ !
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
 $      IF atHome .AND. ( dbginit .NES. "" )
 $      THEN DEFINE /JOB /NOLOG dbg$init 'dbginit'
 $           wso "%LOGIN-I-DBG$INIT, VMS debugger initialization: "
 $           wso "                   DBG$INIT = """,F$TRNLNM("dbg$init"),""""
 $      ENDIF
-$      IF atHome .AND. ( Keyboard .EQS. "PCDECW" )
-$      THEN xset = "$decw$utils:xset"  !enable auto-repeat for eXcursion
-$           xset r on
-$         ! Under eXcursion, debug to TCP/IP PC display:
-$           IF F$TYPE(IP_Address) .EQS. "STRING" -
-            THEN DEFINE /JOB /NOLOG dbg$decw$display "''IP_Address':0.0"
-$      ENDIF
+$! $      IF atHome .AND. ( Keyboard .EQS. "PCDECW" )
+$! $      THEN xset = "$decw$utils:xset"  !enable auto-repeat for eXcursion
+$! $           xset r on
+$! $         ! Under eXcursion, debug to TCP/IP PC display:
+$! $           IF F$TYPE(IP_Address) .EQS. "STRING" -
+$!             THEN DEFINE /JOB /NOLOG dbg$decw$display "''IP_Address':0.0"
+$! $      ENDIF
 $      ! Setup interactive context:
 $      CALL SearchAt sys$disk:[]context.com IN where
 $      ! Used for routine/common CD commands, etc.:
