@@ -137,13 +137,15 @@ $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
-$      SET PROMPT="''LNode'$ "
-$      CALL SearchAt lmr$login:delsymbols NO
+$      !!!SET PROMPT="''LNode'$ "
+$      SET PROMPT="''LMR$promptstr'"
+$      !!! CALL SearchAt lmr$login:delsymbols.com NO
+$      CALL SearchAt com:ansiseq.com
+$      CALL SearchAt lmr$login:symbols.com REDEFINE
 $      CALL SearchAt dcl$init
 $      CALL SearchAt mgr$login
 $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) -
        THEN cjobs  !check periodic jobs
-$      CALL SearchAt lmr$login:symbols.com REDEFINE
 $      CALL SearchAt com:tpu.com
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
 $      IF atHome .AND. ( dbginit .NES. "" )

@@ -107,10 +107,10 @@ $ IF   F$PRIVILEGE("BYPASS")  .OR. F$PRIVILEGE("CMKRNL")   -
   .OR. F$PRIVILEGE("READALL") .OR. F$PRIVILEGE("SECURITY") -
   .OR. F$PRIVILEGE("SYSNAM")  .OR. F$PRIVILEGE("SYSPRV")   -
   .OR. F$PRIVILEGE("WORLD")   .OR. (P2 .EQS. "REPORT")
-$ THEN LNode = "[1m''LNode'$[0m " !Priv prompt
-$ ELSE LNode = "''LNode'$ "         !Non-priv'd
+$ THEN promptstr = LMR$promptprv    ! Privileged
+$ ELSE promptstr = LMR$promptstr    ! Non-privileged
 $ ENDIF
-$ SET PROMPT="''LNode'"
+$ SET PROMPT="''promptstr'"
 $ !
 $ EXIT 1
 $ !

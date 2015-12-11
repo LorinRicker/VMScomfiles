@@ -65,6 +65,15 @@ $      IF LName .EQS. "" THEN LName = UName
 $      !Process name becomes "LName TName" (15-char max):
 $      IF TName .NES. PName THEN SET PROCESS /NAME="''F$EXTRACT(0,7,LName)' ''TName'"
 $ ENDIF
+$ !
+$ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ IF F$TYPE(RED) .EQS. "STRING"
+$ THEN LMR$promptstr == "''BOLD'''PURPLE_BG'''WHITE'''LNode'''NORM'$ "
+$      LMR$promptprv == "''BOLD'''RED_BG'''YELLOW'''LNode'''NORM'$ "
+$ ELSE LMR$promptstr == "''LNode'$ "
+$      LMR$promptprv == "[1m''LNode'[0m$ " !Priv prompt
+$ ENDIF
+$ !
 $ IF ( F$TYPE(LMR_Name) .EQS. "" ) THEN LMR_Name = UName
 $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PName)
 $ !

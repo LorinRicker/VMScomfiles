@@ -1,6 +1,9 @@
 $ ! ANSISEQ.COM --                                                 'F$VERIFY(0)'
 $ !
-$ esc[0,32]= %X1B                   ! 27 decimal, 033 octal
+$ WRITE sys$output "%ANSISEQ-I-DEFSYM, defining ANSI Escape Sequences, including color..."
+$ !
+$ esc[0,8]== %X1B                   !  27 decimal,  033 octal - ESCape character
+$ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character,
 $ !
 $ ! ANSI renditions:
 $         NORM == esc + "[0m"       ! Normal rendition

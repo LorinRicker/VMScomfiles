@@ -57,7 +57,7 @@ $ ! Manufacture a SYS$BATCH logical name, if possible and necessary:
 $ ON ERROR THEN GOTO dispatch
 $ SMan = F$GETQUI("DISPLAY_MANAGER",,"SYS$QUEUE_MANAGER")
 $ IF SMan .EQS. ""
-$ THEN WRITE sys$output "%LOGICALS-W-NOQUEMGR, default queue manager SYS$QUEUE_MANAGER is not started"
+$ THEN !! not for PARSEC: -> WRITE sys$output "%LOGICALS-W-NOQUEMGR, default queue manager SYS$QUEUE_MANAGER is not started"
 $      GOTO dispatch
 $ ENDIF
 $ SQue = F$GETQUI("DISPLAY_QUEUE","QUEUE_NAME","SYS$BATCH")
