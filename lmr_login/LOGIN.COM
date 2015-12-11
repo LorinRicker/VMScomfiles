@@ -137,11 +137,11 @@ $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
-$      !!!SET PROMPT="''LNode'$ "
-$      SET PROMPT="''LMR$promptstr'"
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
 $      CALL SearchAt com:ansiseq.com
 $      CALL SearchAt lmr$login:symbols.com REDEFINE
+$      !!!SET PROMPT="''LNode'$ "
+$      SET PROMPT="''LMR$promptstr'"
 $      CALL SearchAt dcl$init
 $      CALL SearchAt mgr$login
 $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) -
