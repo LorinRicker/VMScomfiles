@@ -4,7 +4,7 @@ $ !  This program is the confidential and proprietary product of
 $ !  Lorin Ricker.  Any unauthorized use, reproduction or transfer
 $ !  of this program is strictly prohibited.
 $ !
-$ !  Copyright © 2000-2015 by Lorin Ricker, Inc.  All rights reserved.
+$ !  Copyright © 2000-2016 by Lorin Ricker, Inc.  All rights reserved.
 $ !  Copyright © 1986-2000 by Evans & Ricker, Inc.  All rights reserved.
 $ !
 $ ! P1: [ "" | "EVE" ] for TPU$SECTION
@@ -27,7 +27,7 @@ $ !
 $ IF ( F$EDIT(P1,"UPCASE") .EQS. "EVE" )
 $ THEN eve = 1
 $      DEASSIGN /NOLOG /JOB tpu$section  ! revert to system logical
-$      DEFINE eve$init    sys$login:eve$init.ini
+$      DEFINE eve$init    sys$login:eve$init.eve
 $      DEFINE ked$section eve$section
 $      GOTO Common
 $ ELSE eve = 0
@@ -74,7 +74,9 @@ $Arch:
 $ IF Architecture .NES. "ALPHA"
 $ THEN ! Fallback for when we don't have the right kind of KED*.EXE's:
 $      sec  = "tpu$src:tpk.tpu$section"
-$      KED == "EDIT /TPU /SECTION=ked$section"
+$      DEFINE tpu$section 'sec'
+$      DEFINE ked$section 'sec'
+$      KED == "EDIT /TPU /SECTION=''sec'"
 $ ENDIF
 $ !
 $Common:

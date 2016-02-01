@@ -4,7 +4,7 @@ $ !  This program is the confidential and proprietary product of
 $ !  Lorin Ricker.  Any unauthorized use, reproduction or transfer
 $ !  of this program is strictly prohibited.
 $ !
-$ ! Copyright © 2004-2015 by Lorin Ricker.  All rights reserved.
+$ ! Copyright © 2004-2016 by Lorin Ricker.  All rights reserved.
 $ ! Copyright © 2002-2003 by LockWorks LLC.  All rights reserved.
 $ ! Copyright © 1986-2002 by Evans & Ricker, Inc.  All rights reserved.
 $ !
@@ -140,6 +140,7 @@ $ THEN wso "..."   !type-ahead ok...
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
 $      CALL SearchAt com:ansiseq.com
 $      CALL SearchAt lmr$login:symbols.com REDEFINE
+$      CALL SearchAt lmr$login:Ruby_Setup.com
 $      !!!SET PROMPT="''LNode'$ "
 $      SET PROMPT="''LMR$promptstr'"
 $      CALL SearchAt dcl$init

@@ -1,5 +1,20 @@
 $ ! LOGICALS.COM -- make unconditional logical name assignments    'F$VERIFY(0)'
 $ !
+$TestDir:  SUBROUTINE
+$ ! P1 : Subdirectory name to detect, create if missing
+$ ! P2 : Logical name to create for subdirectory
+$ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
+$ ON CONTROL_Y THEN GOSUB TDCtrl_Y
+$ ON ERROR THEN EXIT %X2C
+$ dirspec = "sys$login:''P1'.dir"
+$ dir     = "''P3'.''P1']"
+$ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
+$ DEFINE 'P2' 'dir'
+$ EXIT 1
+$TDCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! TestDir
+$ !
 $NCDefine:  SUBROUTINE     !Node-Conditional DEFINE
 $ ! P1 : node1 [|node2 ...]
 $ ! P2 : logical name
@@ -46,9 +61,12 @@ $ DEFINE sys$scratch  'Lbase'.scratch]
 $ DEFINE jnk          sys$scratch
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
+$ CALL TestDir "vmsaudits" "v$audit" "''LBase'"
 $ IF ( F$SEARCH("SYS$LOGIN:VMSAUDITS.DIR") .NES. "" )
 $ THEN DEFINE va  'LBase'.vmsaudits]
 $      DEFINE var 'LBase'.vmsaudits.reports'Rooted'
+$      ! Logical VMS$AUDITCONFIG required by VMS$AUDIT.COM;40(+)
+$      DEFINE vms$auditconfig v$audit:vms$audit_lricker.config
 $ ENDIF
 $ !
 $ DEFINE DCL$Path []       !current directory only...
@@ -93,13 +111,6 @@ $ IF F$TRNLNM("ER$development")
 $ THEN DEFINE Lorin   L_Ricker
 $      DEFINE Rick    R_Evans
 $      CALL NCDefine OUTLAW|BANDIT Dean    D_Woodward
-$      CALL NCDefine OUTLAW|BANDIT Jill    Jill_R     !Reichensperger
-$! $      CALL NCDefine OUTLAW|BANDIT Dixie   D_Ricker
-$ !
-$ ! Watch: Complicated quoting rules:  P3's target text is "SMTP%"J_User@node""
-$! $      !! CALL NCDefine OUTLAW DEFINE «» "SMTP%""""«»@bodine"""""
-$! $      CALL NCDefine OUTLAW Michele "SMTP%""""Murphy_MM@judson"""""
-$! $      CALL NCDefine OUTLAW Rich    "SMTP%""""Petrelli_R@judson"""""
 $ !
 $ ELSE IF F$TRNLNM("site$sources") .EQS. ""
 $      THEN Src = F$SEARCH("disks$mounted:[smart]sources.dir")
@@ -110,21 +121,13 @@ $           ENDIF
 $      ENDIF
 $ ENDIF
 $ !
-$!! $ CALL NCDefine EAGLE                Morrie   M_Volkov
-$!! $ CALL NCDefine EAGLE                Wendy    W_Guest
-$!! $ CALL NCDefine EAGLE                Jennifer J_Rodriguez
-$!! $ CALL NCDefine EAGLE                Judy     J_Robbins
-$!! $ CALL NCDefine EAGLE                Ted      T_Nelson
+$ ! PARSEC
+$ DEFINE storage vmspr1::disk$storage:
 $ !
 $ EXIT
 $ !
 $BATCH:
 $NETWORK:
 $OTHER:
-$!! $ CALL NCDefine BRUINS|CELTIC|REDSOX DZ        sys$user4:[scs.$dropzone]
-$!! $ CALL NCDefine OUTLAW|BANDIT        DZ        sys$user1:[scs.$dropzone]
-$ !
-$!! $ CALL NCDefine BODINE|JUDSON|TAYLOR sys$batch BODINE_BATCH  !force this!
-$!! $ CALL NCDefine BODINE|JUDSON|TAYLOR LLZ       disk$user_4:[pps.LandingZone]
 $ !
 $ EXIT
