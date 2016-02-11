@@ -1,0 +1,164 @@
+! KED$RDO.TEMPLATE --
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+$PROMPT RDO template <for>
+
+$RULER
+L2T4567T9 123456T89 1234T6789 12T456789 T2345678T 123456T89 1234T6789 123456789 
+$ENDRULER
+
+$TPUINI
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE for
+$0 relation := «»
+$1 CROSS clause
+$2 WITH clause
+$3 action := PRINT x.$*
+$BEGIN
+FOR x IN $0 $1 $2
+  $3
+  END_FOR;
+$END
+
+$TEMPLATE store
+$0 context-var := x
+$1 relation := «»
+$BEGIN
+STORE $0 IN $1 USING
+  $0.$* = «»;
+  $0.«» = «»;
+  END_STORE;
+$END
+
+$TEMPLATE modify
+$0 context-var := x
+$BEGIN
+MODIFY $0 USING
+  $0.$* = «»;
+  $0.«» = «»;
+  END_MODIFY;
+$END
+
+$TEMPLATE start_transaction
+$0 handle
+$1 READ_(ONLY/WRITE) := READ_WRITE
+$2 reserved relation := «»
+$BEGIN
+START_TRANSACTION $0 $1
+  RESERVING $2 FOR $*SHARED WRITE
+$END
+
+$TEMPLATE field
+$0 field name := «»
+$1 description := «»
+$BEGIN
+DEFINE FIELD $0
+  DESCRIPTION IS /* $1 */
+  DATATYPE IS $*.
+$END
+
+$TEMPLATE relation
+$0 relation name := «»
+$1 description := «»
+$BEGIN
+DEFINE RELATION $0
+  DESCRIPTION IS /* $1 */.
+  $*.
+  «».
+END RELATION.
+$END
+
+$TEMPLATE index
+$0 index name := «»
+$1 description := «»
+$2 FOR relation := «»
+$3 (DUPLICATES) ARE/NOT := ARE NOT
+$BEGIN
+DEFINE INDEX $0
+    DESCRIPTION IS /* $1 */
+    FOR $2
+    DUPLICATES $3 ALLOWED.
+  $*.
+END INDEX.
+$END
+
+$TEMPLATE trigger
+$0 trigger name := «»
+$1 description := /* «» */
+$2 BEFORE/AFTER := BEFORE
+$3 STORE/ERASE/MODIFY := STORE
+$4 context variable := x
+$5 relation name := «»
+$6 RSE := «»
+$BEGIN
+DEFINE TRIGGER $0
+  DESCRIPTION IS /* $1 */
+  $2 $3
+  FOR $4 IN $5
+    WITH $6
+  EXECUTE
+    $*
+  FOR EACH RECORD.
+$END
+
+$TEMPLATE view
+$0 view name := «»
+$1 RSE := x IN «»
+$BEGIN
+DEFINE VIEW $0
+  OF $1.
+  $*.
+  «».
+END VIEW.
+$END
+
+$TEMPLATE constraint
+$0 constraint name := «»
+$1 description := /* «» */
+$2 RSE := x IN «»
+$3 CHECK ON COMMIT/UPDATE := UPDATE
+$BEGIN
+DEFINE CONSTRAINT $0
+  DESCRIPTION IS /* $1 */
+  FOR $2
+  REQUIRE $*
+  CHECK ON $3.
+$END
+
+$TEMPLATE datatype
+$0 datatype := TEXT SIZE $* CHARACTERS
+$BEGIN
+DATATYPE IS $0
+$END$
+
+$TEMPLATE based_on
+$0 based on := fieldname
+$BEGIN
+BASED ON $0
+$END$
+
+$TEMPLATE missing_value
+$0 missing value := "«»"
+$BEGIN
+MISSING_VALUE IS $0
+$END$
+
+$TEMPLATE valid_if
+$0 valid if := Boolean
+$BEGIN
+VALID IF $0
+$END$

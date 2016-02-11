@@ -1,0 +1,222 @@
+! KED$C.TEMPLATE -- LSE template for *.C and *.SC source files
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+$PROMPT C template <function>
+
+$RULER
+L2T4T6T89 T2345T789 123T56789 1T3456789 T23456789 T23456789 T23456789 T23456789
+$END
+
+$TPUINI
+P$WordDelims( GV$_word, "$.,([" );
+GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE function
+$0 func-name := «»
+$1 func-type
+$BEGIN
+$1 $0( «» );
+{
+  $*
+  $0 = «»;
+} /* $0 */
+$END
+
+$TEMPLATE procedure
+$0 proc-name := «»
+$BEGIN
+void $0( «» );
+{
+  $*
+} /* $0 */
+$END
+
+$TEMPLATE efunction
+$TEMPLATE function
+$0 func-name := «»
+$1 func-type := int
+$BEGIN
+$1 $0();
+
+$END
+
+$TEMPLATE if
+$0 conditional := Boolean
+$BEGIN
+if ( $0 )
+{
+  $*
+}
+else
+{
+  «»
+}
+$END
+
+$TEMPLATE switch
+$0 switch variable := num
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+switch ($0)
+{
+  case $1:
+    $*
+    break;
+  case $2:
+    «»
+    break;
+  default:
+    «»
+    break;
+} /* switch $0 */
+$END
+
+$TEMPLATE case
+$0 lo-limit := 1
+$1 hi-limit := n
+$BEGIN
+  case $0:
+    $*
+    break;
+  case $1:
+    «»
+    break;
+  default:
+    «»
+    break;
+$END
+
+$TEMPLATE for
+$0 for-var := i
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+for ($0 = $1; $0 <= $2; $0++)
+{
+  $*
+} /* for $0 */
+$END
+
+$TEMPLATE while
+$0 conditional := boolean
+$BEGIN
+while ( $0 )
+{
+  $*
+} /* while $0 */
+$END
+
+$TEMPLATE do
+$0 conditional := boolean
+$BEGIN
+do {
+  $*
+} while ( $0 );
+$END
+
+$TEMPLATE compound_statement
+$BEGIN
+{
+  $*
+}
+$END
+
+$TEMPLATE printf
+$0 format := %s
+$BEGIN
+printf( "$0$*", «» );
+$END$
+
+$TEMPLATE struct
+$0 tag := «»
+$1 var
+$BEGIN
+struct $0 {
+  $*
+} $1;
+$END
+
+$TEMPLATE union
+$0 tag := «»
+$1 var
+$BEGIN
+union $0 {
+  $*
+} $1;
+$END
+
+$TEMPLATE enum
+$0 tag := «»
+$1 values := «», «»
+$2 var
+$BEGIN
+enum $0 {
+  $*$1
+} $2;
+$END
+
+$TEMPLATE array
+$0 name := «»
+$1 type := char
+$2 size := 11
+$BEGIN
+$*$1 $0[$2];
+$END$
+
+$TEMPLATE cond
+$0 conditional := «»
+$1 true expr := «»
+$0 false expr := «»
+$BEGIN
+$0 ? $1 : $2$*;
+$END$
+
+$TEMPLATE copyright
+$0 Copyright by := LockWorks LLC
+$BEGIN
+/* filename: $FN0 -- «» */
+
+/* This program is the confidential and proprietary product of $0.
+ * Unauthorized use, reproduction or transfer of this program is prohibited.
+ *
+ * Copyright © $YEAR by $0.  All rights reserved.
+ *   -------------------------------------------------------------- */
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END
+
+$TEMPLATE program
+$0 Copyright by := LockWorks LLC
+$BEGIN
+/* filename: $FN0 -- «» */
+
+/* This program is the confidential and proprietary product of $0.
+ * Unauthorized use, reproduction or transfer of this program is prohibited.
+ *
+ * Copyright © $YEAR by $0.  All rights reserved.
+ *   -------------------------------------------------------------- */
+
+main()
+{ /* $FN1 -- Main */
+  $*
+} /* $FN1 -- Main */
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$LSE_Replace("$FN1",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END$

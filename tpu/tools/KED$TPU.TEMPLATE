@@ -1,0 +1,86 @@
+! KED$TPU.TEMPLATE -- 
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+$PROMPT TPU template <procedure>
+
+$RULER
+L2T4T6789T1T3456T8T 123T56789 1T3456789 T23456789T12345678T 123456T89 1234T6789
+$END
+
+$TPUINI
+  P$WordDelims( GV$_word, ",()" );
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE procedure
+$0 procedure name := P$«»
+$1 argument := «»
+$BEGIN
+PROCEDURE $0( $1 )
+LOCAL «»;
+  $*
+ENDPROCEDURE  !$0
+$END
+
+$TEMPLATE if
+$0 conditional := Boolean
+$BEGIN
+IF ( $0 ) THEN
+  $*
+ELSE «»
+ENDIF;
+$END$
+
+$TEMPLATE loop
+$0 exit conditional := Boolean
+$BEGIN
+LOOP
+  EXITIF ( $0 );
+  $*
+  ENDLOOP;
+$END$
+
+$TEMPLATE case
+$0 case-selector := c
+$1 lo-limit := 1
+$2 hi-limit := n
+$BEGIN
+CASE $0 FROM $1 TO $2
+  [$1]: $*
+  [$2]: «»
+  ENDCASE;
+$END$
+
+$TEMPLATE on_error
+$BEGIN
+ON_ERROR
+  $*
+ENDON_ERROR
+$END
+
+$TEMPLATE copyright
+$0 Copyright by := LockWorks LLC
+$BEGIN
+!  $FN0
+
+! This program is the confidential and proprietary product of $0.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by $0.  All rights reserved.
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END

@@ -1,0 +1,419 @@
+! KED$DEF.TEMPLATE -- LSE template for RAPT *.DEF definition files
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+$PROMPT RAPT template <field>
+
+$RULER
+L2T4T6T89 T2345T789 123T56789 1T3456789 T23456789 T23456789 T23456789 T23456789
+$ENDRULER
+
+$TPUINI
+  P$WordDelims( GV$_word, "	
+ _$.,(=" );
+  GV$_autotab := TRUE;
+$ENDTPUINI
+
+$TEMPLATE field
+$0 field name := «»
+$1 position   := «»
+$2 datatype   := VARCHAR:«»
+$3 size       := 10
+$4 attributes := «»
+$5 tip        := «»
+$BEGIN
+FIELD $0$* /POS=($1) /DATATYPE=$2 /SIZE=$3 -
+  /ATTR=($4) -
+  /TIP="$5"
+$END
+
+$TEMPLATE callback
+$0 after/before/init := AFTER
+$1 function name := «»
+$BEGIN
+/CALLBACK=($0=($1$*))
+$END$
+
+$TEMPLATE database
+$0 database name := «»
+$1 type          := RDB
+$2 access        := RW
+$BEGIN
+DATABASE $0$* /TYPE=$1 /ACCESS=$2
+$END
+
+$TEMPLATE background
+$0 text     := «»
+$1 position := «»
+$BEGIN
+BACKGROUND "$0$*" /POS=($1)
+$END
+
+$TEMPLATE GUIbackground
+$0 text     := «»
+$1 position := «»
+$BEGIN
+BACKGROUND "$0$*" /POS=($1) /GUI
+$END
+
+$TEMPLATE table
+$0 table name := «»
+$1 access     := RW
+$BEGIN
+TABLE $0$* /ACCESS=$1
+$END
+
+$TEMPLATE screen
+$0 screen size := 19,78
+$1 position    := 2,2
+$2 border text := «»
+$3 status text := Lock&Track © $YEAR LockWorks LLC.
+$BEGIN
+OPTIONS /KEYBOARD=PC
+SCREEN $FN0 /SIZE=($0) /POSITION=($1) /BORDER=" $2 " -
+  /STATUS=TEXT="$3" -
+  /LEGEND=(SHOW=(PGUP,PGDN,F9,F10,F11,F12),-
+     PGUP="GoBack",-
+     PGDN="«»",-
+     F9="«»",-
+     F12="«»" ) -
+  /NAV=(PGDN=«», F9=«», F12=«» )
+
+$*
+EOSCREEN $FN0
+
+$@ KED$LSE_Replace("$FN0",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END
+
+$TEMPLATE copyright
+$0 Copyright by := LockWorks LLC
+$BEGIN
+! $FN0
+
+! This program is the confidential and proprietary product of $0.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by $0.  All rights reserved.
+
+$*
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$UserYear("$YEAR");
+$END
+
+$TEMPLATE export
+$0 name := «»
+$BEGIN
+$*/EXPORT=$0 /IMPORT=$0
+$END$
+
+$TEMPLATE import
+$0 name := «»
+$BEGIN
+$*/IMPORT=$0
+$END$
+
+$TEMPLATE validate
+$BEGIN
+/VALIDATE=($*)
+$END$
+
+$TEMPLATE value
+$BEGIN
+/VALUE=($*)
+$END$
+
+$TEMPLATE default
+$0 default value := «»
+$BEGIN
+DEFAULT="$0"$*
+$END$
+
+$TEMPLATE in
+$TEMPLATE popup
+$0 validation list := «»
+$BEGIN
+IN=$0$*,POPUP
+$END$
+
+$TEMPLATE list
+$0 validation list := «»
+$BEGIN
+LIST=$0$*,POPUP
+$END$
+
+$TEMPLATE template
+$0 template := 999
+$BEGIN
+TEMPLATE="$0$*"
+$END$
+
+$TEMPLATE DateTime
+$0 date template := 99/99/9999 99:99
+$1 date format   := !MN0/!D0/!Y4|!H04:!M0:!S0.!C2
+$BEGIN
+TEMPLATE="|$0$*|$1|"
+$END$
+
+$TEMPLATE DateOnly
+$0 date template := 99/99/9999
+$1 date format   := !MN0/!D0/!Y4
+$BEGIN
+TEMPLATE="|$0$*|$1|"
+$END$
+
+$TEMPLATE TimeOnly
+$0 time template := 99:99:99
+$1 time format   := !H04:!M0:!S0.!C2
+$BEGIN
+TEMPLATE="|$0$*|$1|"
+$END$
+
+$TEMPLATE keystroke
+$0 keystroke := F17
+$1 action    := «»
+$2 subaction := «»
+$BEGIN
+KEYSTROKE $0$* /ACTION=$1 /SUBACTION=$2
+$END
+
+
+$TEMPLATE LTDetailScreen
+$0 Primary table := Offenders
+$BEGIN
+! $FN0
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by LockWorks LLC.  All rights reserved.
+
+OPTIONS /KEYBOARD=PC
+DATABASE LT$Database /TYPE=RDB /ACCESS=RW
+TABLE $0 /ACCESS=RW
+TABLE «» /ACCESS=RO
+
+SCREEN $FN1 /SIZE=(19,78) /POSITION=(2,2) /BORDER=" «» " -
+  /ATTR=(FIND=(AUTO,QUALIFIED,AFTER_IO)) -  !!  /SCROLL=(«») -
+  /CALL=(«») -
+  /STATUS=TEXT="Lock&Track © $YEAR LockWorks LLC." -
+  /LEGEND=(SHOW=(PGUP,PGDN,F9,F10,F11,F12), -
+     PGUP=("GoBack"), -
+     PGDN=("«»"), -
+       F9=("«»"), -
+      F10=("«»"), -
+      F11=("«»"), -
+      F12=("«»") ) -
+  /NAV=( PGDN=(«»), -
+           F9=(«»), -
+          F10=(«»), -
+          F11=(«»), -
+          F12=(«») ) -
+  /HELP=(RELATED=(T=( "General", "Reports", "«»" ), -
+     L=( HOWTO_GENERAL, «»_REPORT_MENU, HOWTO_«» ) ) )
+
+$*
+EOSCREEN $FN1
+
+!«!» Add BACKGROUND /GUI statements with the FIX BACKGROUND utility «!»
+!«!» *after* basic TUI layout is complete and (mostly) stable...    «!»
+
+FIELD «»
+
+ORDER_BY «» /DESCENDING
+
+KEYSTROKE «»
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$LSE_Replace("$FN1",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END$
+
+
+$TEMPLATE LTSummaryScreen
+$0 Primary table := Offenders
+$BEGIN
+! $FN0
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by LockWorks LLC.  All rights reserved.
+
+OPTIONS /KEYBOARD=PC
+DATABASE LT$Database /TYPE=RDB /ACCESS=RW
+TABLE $0 /ACCESS=RO
+TABLE «» /ACCESS=RO
+
+SCREEN $FN1 /SIZE=(19,78) /POSITION=(2,2) /BORDER=" «» " -
+  /ATTR=(FIND=(AUTO,QUALIFIED)) -  
+  /SCROLL=(6,12,4,76) -
+  /STATUS=TEXT="Lock&Track © $YEAR LockWorks LLC." -
+  /LEGEND=(SHOW=(PGUP,PGDN,F9,F10,F11,F12), -
+     PGUP=("GoBack"), -
+     PGDN=("«»"), -
+       F9=("«»"), -
+      F10=("«»"), -
+      F11=("«»"), -
+      F12=("«»") ) -
+  /NAV=( PGDN=(«»), -
+           F9=(«»), -
+          F10=(«»), -
+          F11=(«»), -
+          F12=(«») ) -
+  /HELP=(RELATED=(T=( "General", "Reports", "«»" ), -
+     L=( HOWTO_GENERAL, «»_REPORT_MENU, HOWTO_«» ) ) )
+
+$*
+EOSCREEN $FN1
+
+!«!» Add BACKGROUND /GUI statements with the FIX BACKGROUND utility «!»
+!«!» *after* basic TUI layout is complete and (mostly) stable...    «!»
+
+FIELD «»
+
+ORDER_BY «» /DESCENDING
+
+KEYSTROKE «»
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$LSE_Replace("$FN1",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END$
+
+
+$TEMPLATE LTZoomScreen
+$0 Primary table := Charges
+$BEGIN
+! $FN0
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by LockWorks LLC.  All rights reserved.
+
+OPTIONS /KEYBOARD=PC
+DATABASE LT$Database /TYPE=RDB /ACCESS=RW
+TABLE $0 /ACCESS=RW
+TABLE «» /ACCESS=RO
+
+SCREEN $FN1 /SIZE=(8,60) /POSITION=(9,11) /BORDER=" «» " -
+  /ATTR=(FIND=(AUTO,QUALIFIED:«»)) -  
+  /STATUS=TEXT="Lock&Track © $YEAR LockWorks LLC." -
+  /LEGEND=(SHOW=(PGUP,PGDN,F9,F10,F11,F12), -
+     PGUP=("GoBack"), -
+     PGDN=("«»"), -
+       F9=("«»"), -
+      F10=("«»"), -
+      F11=("«»"), -
+      F12=("«»") ) -
+  /NAV=( PGDN=(«»), -
+           F9=(«»), -
+          F10=(«»), -
+          F11=(«»), -
+          F12=(«») ) -
+  /HELP=(RELATED=(T=( "General", "Reports", "«»" ), -
+     L=( HOWTO_GENERAL, «»_REPORT_MENU, HOWTO_«» ) ) )
+
+$*
+EOSCREEN $FN1
+
+!«!» Add BACKGROUND /GUI statements with the FIX BACKGROUND utility «!»
+!«!» *after* basic TUI layout is complete and (mostly) stable...    «!»
+
+FIELD «»
+
+ORDER_BY «» /DESCENDING
+
+KEYSTROKE «»
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$LSE_Replace("$FN1",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END$
+
+
+$TEMPLATE LTMenuScreen
+$BEGIN
+! $FN0
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © $YEAR by LockWorks LLC.  All rights reserved.
+
+SCREEN $FN1 /SIZE=(16,40) /POSITION=(2,2) /BORDER=" «» " -
+  /ATTR=(MENU) -  
+  /SCROLL=(2,15,1,4,38) -
+  /STATUS=TEXT="Lock&Track © $YEAR LockWorks LLC." -
+  /LEGEND=(SHOW=(PGUP,PGDN), PGDN=("GoTo")), -
+  /HELP=(DESKTOP=(TOPIC="About the «» desktop",LINK="desktop_«»")
+         RELATED=(T=( "General", "Reports", "«»" ), -
+                  L=( HOWTO_GENERAL, «»_REPORT_MENU, HOWTO_«» ) ) )
+EOSCREEN $FN1
+
+ITEM $*                   /NAVIGATE /TEXT="«»"
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM Separator          /SEPARATOR /TEXT=""
+
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM Separator          /SEPARATOR /TEXT=""
+
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM «»                 /NAVIGATE /TEXT="«»"
+ITEM «»                 /NAVIGATE /TEXT="«»"
+
+KEYSTROKE PGDN  /ACTION=MENU
+$@ KED$LSE_Replace("$FN0",KED$FileNameType)
+$@ KED$LSE_Replace("$FN1",KED$FileName)
+$@ KED$UserYear("$YEAR");
+$END$
+
+
+$TEMPLATE LTONameGroup
+$BEGIN
+FIELD Facility  /NOTABLE /DATATYPE=CHAR:10 -
+  /ATTR=(HIDDEN,NOCLEAR) /IMPORT=FACILITY
+FIELD Offender /TABLE=Offenders /DATATYPE=INTEGER -
+  /ATTR=(HIDDEN,QUALIFIER) /IMPORT=OJOIN /EXPORT=OJOIN
+FIELD POEmployee /DATATYPE=INTEGER /ATTR=(HIDDEN) /EXPORT=POEMPLOYEE
+FIELD NameTag   /DATATYPE=INTEGER /ATTR=(HIDDEN) /EXPORT=NAMETAG
+FIELD Encounter /DATATYPE=INTEGER /ATTR=(HIDDEN) /EXPORT=ENCOUNTER
+FIELD Offender /TABLE=Aliases /EQUIJOIN=OFFENDERS.OFFENDER
+FIELD NameTag  /TABLE=Aliases /EQUIJOIN=OFFENDERS.NAMETAG
+FIELD LName /POS=(1,2)  /SIZE=26 /DATATYPE=VARCHAR:30 -
+  /ATTR=(CASE=UPPER,USERDATA=0) /VALIDATE=COMPRESS -
+  /CALL=(AFTER=(SOUNDEX)) /ALIAS=LSoundex -
+  /TIP="Last name: Smith (Sm*th, Smythe#)"
+FIELD LSoundex /DATATYPE=CHAR:4 /ATTR=(HIDDEN)
+FIELD RName /POS=(1,29) /SIZE=26 /DATATYPE=VARCHAR:30 -
+  /ATTR=(CASE=UPPER,USERDATA=0) /VALIDATE=COMPRESS -
+  /CALL=(AFTER=(SOUNDEX)) /ALIAS=RSoundex -
+  /TIP="First and middle names: John A., John Andrew (J*A*, John Andr#)"
+FIELD RSoundex /DATATYPE=CHAR:4 /ATTR=(HIDDEN)
+$END
+
+$TEMPLATE LTODescrGroup
+$BEGIN
+FIELD Height /TABLE=Offenders /POS=(13,11) /SIZE=4 /DATATYPE=INTEGER -
+  /VALUE=(TEMPLATE="9'99")
+FIELD Weight /POS=(14,11) /SIZE=3 /DATATYPE=INTEGER -
+  /ATTR=(JUST=RIGHT) /VALUE=(TEMPLATE="999")
+FIELD Hair /POS=(13,32) /SIZE=10 /DATATYPE=CHAR:10
+FIELD Eyes /POS=(14,32) /SIZE=10 /DATATYPE=CHAR:10
+FIELD Sex /POS=(13,55) /SIZE=10 /DATATYPE=CHAR:10
+FIELD Race /POS=(14,55) /SIZE=10 /DATATYPE=CHAR:10
+FIELD SexOffender /POS=(15,55) /SIZE=10 /DATATYPE=CHAR:10
+FIELD Marks /POS=(16,5) /SIZE=64 /DATATYPE=VARCHAR:80
+FIELD CMarks /POS=(17,5) /SIZE=64 /DATATYPE=VARCHAR:80
+$END

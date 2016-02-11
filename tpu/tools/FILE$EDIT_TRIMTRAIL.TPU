@@ -1,0 +1,209 @@
+! FILE$EDIT_TRIMTRAIL.TPU -- a PlugIn component for FILE$EDIT.COM
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+!     Version 1.0 - Base release.                                      01/24/97
+
+! ABSTRACT:
+! Trims trailing blanks from a source file.
+
+
+! === DCL LEXICALS (mimics) === !
+
+CONSTANT
+  NULL := "",  !null string
+
+  ! OpCodes for CALL_USER:             ! Related arguments for CALL_USER:
+  K$OpCode_EchoCheck     := 0,
+  K$OpCode_Define_LNM    := 1,         KED$ExitLNM := "KED$EXIT_INFO",
+  K$OpCode_Delete_LNM    := 2,
+  K$OpCode_Check_ifQue   := 3,
+  K$OpCode_Que_File      := 4,
+  K$OpCode_Translate_LNM := 5,
+  K$OpCode_Set_Symbol    := 6,
+  K$OpCode_Get_Symbol    := 7,
+
+  LIB$K_CLI_LOCAL_SYM    := 1,
+  LIB$K_CLI_GLOBAL_SYM   := 2,
+
+  ! Character constants:
+  K$tab := ASCII(  9 ),  K$spc       := ASCII(  32 ),
+  K$lf  := ASCII( 10 ),  K$dquote    := ASCII(  34 ),  !double quote "
+  K$vt  := ASCII( 11 ),  K$squote    := ASCII(  39 ),  !single quote '
+  K$ff  := ASCII( 12 ),  K$comma     := ASCII(  44 ),
+  K$cr  := ASCII( 13 ),  K$period    := ASCII(  46 ),
+  K$so  := ASCII( 14 ),  K$semicolon := ASCII(  59 ),
+  K$si  := ASCII( 15 ),  K$csi       := ASCII( 155 ),
+  K$esc := ASCII( 27 ),  K$ss3       := ASCII( 143 ),
+                         K$pilcrow   := ASCII( 182 )   !"¶"
+  ;  !End CONSTANTs
+
+
+PROCEDURE F$Default( Arg, Op, PTyp, Def )
+LOCAL rval;
+  CASE SUBSTR( Op, 1, 1 ) FROM "<" TO "u"
+    ["U",
+     "u"]: IF ( GET_INFO( Arg, "TYPE" ) = UNSPECIFIED ) THEN rval := Def;
+           ELSE rval := Arg; ENDIF;
+    ["<"]: IF ( GET_INFO( Arg, "TYPE" ) <> PTyp ) THEN rval := Def;
+           ELSE rval := Arg; ENDIF;
+    ["="]: IF ( GET_INFO( Arg, "TYPE" ) = PTyp ) THEN rval := Arg;
+           ELSE rval := Def; ENDIF;
+    ENDCASE;
+  RETURN( rval );
+ENDPROCEDURE  !F$Default
+
+PROCEDURE F$ELEMENT( n, Sep, Strg )
+LOCAL i, j, E, S;
+  i := -1;
+  j := n;
+  E := Sep;
+  S := Strg + Sep;
+  LOOP
+    EXITIF ( j < 0 ) OR ( i = 0 );
+    i := INDEX( S, Sep );
+    IF ( i > 0 ) THEN
+      j := j - 1;
+      E := SUBSTR( S, 1, i - 1 );
+      S := SUBSTR( S, i + 1, LENGTH( S ) - i );
+    ENDIF;
+    ENDLOOP;
+  !distinguish NULL value from "no such element":
+  IF ( i = 0 ) THEN E := Sep; ENDIF;
+  RETURN( E );
+ENDPROCEDURE  !F$ELEMENT
+
+PROCEDURE F$TRNLNM( LNM, Tbl, Idx, MaxIdx )
+LOCAL Table, Ndx, ArgStr, ResStr, EqvStr;
+ON_ERROR
+!  MESSAGE( "%F$TRNLNM-F-NOLOGNAME, no logical name match" );
+!  MESSAGE( FAO( "  logical: `!AS'", LNM ) );
+!  message( error_text + " at line " + str( error_line ) );
+!  P$0; ABORT;
+ENDON_ERROR
+  ! Argument-String: "Logical¶Table¶Index"
+  IF ( GET_INFO( Tbl, "TYPE" ) = STRING ) THEN
+    Table := Tbl;
+  ELSE Table := NULL;
+  ENDIF;
+  IF ( GET_INFO( Idx, "TYPE" ) = INTEGER ) THEN
+    Ndx := Idx;
+  ELSE Ndx := 0;
+  ENDIF;
+  ArgStr := LNM + K$pilcrow + Table + K$pilcrow + STR( Ndx );
+  ResStr := CALL_USER( K$OpCode_Translate_LNM, ArgStr );
+  ! Return-String: "EquivStr¶Logical¶TblFoundIn¶Index¶MaxIndex"
+  EqvStr := F$ELEMENT( 0, K$pilcrow, ResStr );
+  Lnm    := F$ELEMENT( 1, K$pilcrow, ResStr );
+  Tbl    := F$ELEMENT( 2, K$pilcrow, ResStr );
+  !Idx & MaxIdx are returned as strings...
+  !  caller should convert to INT() only if needed
+  Idx    := F$ELEMENT( 3, K$pilcrow, ResStr );
+  MaxIdx := F$ELEMENT( 4, K$pilcrow, ResStr );
+  RETURN( EqvStr );
+ENDPROCEDURE  !F$TRNLNM
+
+PROCEDURE F$TranslateLNM( LNM, DefVal; Table, Ndx )
+LOCAL Val, Tmp, Tbl, Idx, MaxIdx;
+ON_ERROR
+ENDON_ERROR
+  Tmp := LNM;   !If parameter LNM is "LiteralString", need this Tmp assignment!
+  Tbl := F$Default( Table, "=", STRING, NULL );
+  Idx := F$Default( Ndx,   "=", INTEGER, 0 );
+  Val := F$TRNLNM( Tmp, Tbl, Idx, MaxIdx );
+  IF ( Val = NULL ) THEN
+    Val := DefVal;     !give back the default if the translation fails
+  ENDIF;
+  RETURN( Val );
+ENDPROCEDURE  !F$TranslateLNM
+
+PROCEDURE P$SETSYMBOL( Sym, Val; GLFlag )
+LOCAL GLF, ArgStr, ResStr;
+ON_ERROR
+  MESSAGE( "%F$SETSYMBOL-F-SETFAIL, failed to set symbol" );
+  MESSAGE( FAO( "  symbol: `!AS'", Sym ) );
+  P$0; ABORT;
+ENDON_ERROR
+  IF ( LENGTH( Sym ) > 255 ) THEN
+    MESSAGE( "%P$SETSYMBOL-E-SYMTOOLONG, length of symbol name exceeds 255 characters" );
+    ABORT;
+  ENDIF;
+  IF ( LENGTH( Val ) > 255 ) THEN
+    MESSAGE( "%P$SETSYMBOL-E-VALTOOLONG, symbol's value exceeds 255 characters" );
+    ABORT;
+  ENDIF;
+  ! Argument-String: "Symbol¶Value¶GlobalLocalFlag"
+  GLF := F$Default( GLFlag, "=", INTEGER, LIB$K_CLI_GLOBAL_SYM );
+  ArgStr := Sym + K$pilcrow + Val + K$pilcrow + STR( GLF );
+  ResStr := CALL_USER( K$OpCode_Set_Symbol, ArgStr );
+ENDPROCEDURE  !P$SETSYMBOL
+
+PROCEDURE F$GETSYMBOL( Sym, GLFlag )
+LOCAL ArgStr, ResStr, Val;
+ON_ERROR
+  MESSAGE( "%F$GETSYMBOL-F-NOSUCHSYM, no such symbol" );
+  MESSAGE( FAO( "  symbol: `!AS'", Sym ) );
+  P$0; ABORT;
+ENDON_ERROR
+  IF ( LENGTH( Sym ) > 255 ) THEN
+    MESSAGE( "%P$GETSYMBOL-E-SYMTOOLONG, length of symbol name exceeds 255 characters" );
+    ABORT;
+  ENDIF;
+  ! Argument-String: "Symbol"
+  ResStr := CALL_USER( K$OpCode_Get_Symbol, Sym );
+  ! Result-String: "Value¶GlobalLocalFlag"
+  ! (LIB$GET_SYMBOL returns table where if found symbol: Local or Global)
+  Val    := F$ELEMENT( 0, K$pilcrow, ResStr );
+  GLFlag := INT( F$ELEMENT( 1, K$pilcrow, ResStr ) );
+  RETURN( Val );
+ENDPROCEDURE  !F$GETSYMBOL
+
+
+! Main program
+
+  G$GLTable := 0;  !initialize...
+
+  G$Debug := SUBSTR( F$TranslateLNM( "TOOLS$Debug", NULL ), 1, 1 );
+  G$Debug := ( INDEX( "YT1", G$Debug ) > 0 );  !Yes, True or 1?
+
+  G$IFile := GET_INFO( COMMAND_LINE, "FILE_NAME" );
+  Source_Buffer := CREATE_BUFFER( "Source", G$IFile );
+
+  G$WS  := " " + ASCII( 9 );
+  G$Pat := ( SPAN( G$WS ) @G$V ) + LINE_END;
+
+  G$Count := 0;
+  POSITION( BEGINNING_OF( Source_Buffer ) );
+  LOOP
+    G$Rng := SEARCH_QUIETLY( G$Pat, FORWARD );
+    EXITIF( G$Rng = 0 );
+    POSITION( G$Rng );
+    ERASE( G$V );
+    G$Count := G$Count + 1;
+    ENDLOOP;
+
+  IF G$Debug THEN
+    MESSAGE( NULL );
+    MESSAGE( FAO( "Trimmed blanks on !ZL line!%S in !AS", G$Count, G$IFile ) );
+    MESSAGE( NULL );
+  ENDIF;
+
+  IF GET_INFO( Source_Buffer, "MODIFIED" ) THEN
+    WRITE_FILE( Source_Buffer );
+    P$SETSYMBOL( "FED$Modified", "TRUE" );
+    EXIT;
+  ELSE
+    P$SETSYMBOL( "FED$Modified", "FALSE" );
+    QUIT;
+  ENDIF;

@@ -1,0 +1,62 @@
+! KED$HLP.TEMPLATE -- for HELP files
+
+! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+$PROMPT Help template <topic>
+
+$RULER
+1L34567T9 123456T89 1234T6789 12T456789 T2345678T 123456T89 1234R6789 123456789 
+$ENDRULER
+
+!$TPUINI
+!$ENDTPUINI
+
+$TEMPLATE Topic
+$0 topic name
+$BEGIN
+1 $0
+  $0 is $*
+
+  Format
+
+    $ $0 «»
+
+2 Parameters
+  «»
+
+2 Examples
+  «»
+
+2 Qualifiers
+
+/«»
+
+  «»
+$END
+
+$TEMPLATE Section
+$0 level := 1
+$1 title
+$BEGIN
+$0 $1$*
+  «»
+$END
+
+$TEMPLATE Qualifier
+$0 qualifier
+$BEGIN
+/$0
+
+  «»
+$END
