@@ -1,9 +1,24 @@
 $ ! RUBY_SETUP.COM                                                 'F$VERIFY(0)'
 $ !
+$ ! Copyright © 2015-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! use, modification and/or distribution permissions as granted and controlled
+$ ! by and under the GPL described herein.
+$ !
+$ ! This program (software) is Free Software, licensed under the terms and
+$ ! conditions of the GNU General Public License Version 3 as published by
+$ ! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+$ ! which is hereby incorporated into this software and is a non-severable
+$ ! part thereof.  You have specific rights and obligations under this GPL
+$ ! which are binding if and when you accept, use, modify and/or distribute
+$ ! this software program (source code file) and/or derivatives thereof.
+$ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
 $ wso = "WRITE sys$output"
+$ !
+$ RubyVolumeOkay == 0  ! initial assumptions
+$ RubyVolumeODS5 == 0
 $ !
 $ RubyStartup  == "sys$startup:ruby$startup.com"
 $ RubyShutdown == "sys$startup:ruby$shutdown.com"
@@ -19,6 +34,10 @@ $      CALL VolCheck "''vol'" "''rdir'"
 $      IF .NOT. RubyVolumeOkay
 $      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
 $           CALL VolCheck "''vol'" "''rdir'"
+$      ENDIF
+$      IF RubyVolumeODS5
+$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
+$           wso "%''Fac'-I-DCLPARSE, parse style set to extended..."
 $      ENDIF
 $ !
 $ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not installed..."

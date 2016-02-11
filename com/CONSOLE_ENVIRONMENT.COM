@@ -1,9 +1,16 @@
 $ ! CONSOLE_ENVIRONMENT.COM --                                     'F$VERIFY(0)'
 $ !
-$ ! This program is the confidential and proprietary product of Lorin Ricker.
-$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! use, modification and/or distribution permissions as granted and controlled
+$ ! by and under the GPL described herein.
 $ !
-$ ! Copyright © 2013 by Lorin Ricker.  All rights reserved.
+$ ! This program (software) is Free Software, licensed under the terms and
+$ ! conditions of the GNU General Public License Version 3 as published by
+$ ! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+$ ! which is hereby incorporated into this software and is a non-severable
+$ ! part thereof.  You have specific rights and obligations under this GPL
+$ ! which are binding if and when you accept, use, modify and/or distribute
+$ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !  mini-report of the Console Environment Variables
 $ !

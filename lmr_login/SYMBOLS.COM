@@ -1,11 +1,16 @@
 $ ! SYMBOLS.COM - define personal commands                         'F$VERIFY(0)'
 $ !
-$ ! This program is the confidential and proprietary product of LockWorks LLC.
-$ ! Unauthorized use, reproduction or transfer of this program is prohibited.
+$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! use, modification and/or distribution permissions as granted and controlled
+$ ! by and under the GPL described herein.
 $ !
-$ ! Copyright © 2004-2015 by Lorin Ricker.  All rights reserved.
-$ ! Copyright © 2002-2004 by LockWorks LLC.  All rights reserved.
-$ ! Copyright © 1987-2002 by Evans & Ricker, Inc.  All rights reserved.
+$ ! This program (software) is Free Software, licensed under the terms and
+$ ! conditions of the GNU General Public License Version 3 as published by
+$ ! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+$ ! which is hereby incorporated into this software and is a non-severable
+$ ! part thereof.  You have specific rights and obligations under this GPL
+$ ! which are binding if and when you accept, use, modify and/or distribute
+$ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !    use:  @symbols [ REDEFINE | REFRESH ]
 $ !
@@ -164,9 +169,9 @@ $ F = "lmr$login:smart$shutdown.com"
 $ IF ( F$SEARCH( F ) .NES. "" ) THEN -
     @'F' COMMANDS
 $ !
-$ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
-$ IF F$SEARCH("com:show_cluster$init.ini") .NES. ""
+$ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
 $ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init com:show_cluster$init.ini
+$      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !
 $ IF F$SEARCH("com:where.com") .NES. ""
@@ -249,19 +254,6 @@ $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
 $ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
 $ !
-$ !! ! Testing:
-$ !! $ CALL CDefine "Test*Symbol" "@com:test_unavailable.com"
-$ !! $ CALL CDefine "Test*Symbol1" "@com:test_unavailable.com"
-$ !
-$ ! TCP/IP address(es):
-$! IP$Outlaw  == "209.95.47.35"
-$! IP$Bandit  == "10.0.1.2"
-$ ! Suffolk Co./Boston:
-$! IP$Suffolk == "141.154.88.226"  !"gateway" system to REDSOX/BRUINS/CELTIC
-$! IP$Bruins  == "140.241.134.3"
-$! IP$Celtic  == "140.241.134.4"
-$! IP$RedSox  == "140.241.134.5"
-$ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""
 $ THEN IF LMR$Unavailable .NES. ""
@@ -273,21 +265,3 @@ $      ENDIF
 $ ENDIF
 $ EXIT
 $ !
-$ !
-$ ! Resurrect on Alpha-AXP (?):
-$ !! case*convert == "$site$utils:case$convert"
-$ !! replace      == "$site$utils:repl$text"
-$ !
-$ ! --- Retired stuff ---
-$ !! cvt       == "@com:convert_tools"             !RMS/FDL tools
-$ !! findr*tl  == "@com:find_rtl.com"
-$ !! _smoscr   == esc + "[?4h" !smooth scroll
-$ !! _jmpscr   == esc + "[?4l" !jump scroll
-$ !! setf*orm  == "@com:setform.com"
-$ !! showf*orm == "@com:setform.com SHOW"
-$ !! acl       == "EDIT /ACL /NOJOURNAL "
-$ !! ptail     == "@com:pattail"
-$ !! settime   == "@com:settime.com"
-$ !! sw*itch   == "@site$utils:switch.com"
-$ !! tll       == "LIBR /TEXT /LIST"
-$ !! watch*tt  == "@mgr$command:watch_tt"
