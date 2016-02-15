@@ -1,5 +1,8 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
+$ VA$ProcVersion = "V1.18-02 (15-Feb-2016)"
+$ VA$Copyright   = "Copyright © 2014-2016"
+$ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
@@ -291,7 +294,7 @@ $ msg = F$FAO( "!AS", P5 )
 $ CALL CenterLine "''msg'"
 $ msg = F$FAO( "by !AS (login: !AS)", P6, F$EDIT(F$GETJPI("","USERNAME"),"TRIM") )
 $ CALL CenterLine "''msg'"
-$ msg = "Copyright © 2014 by The PARSEC Group.  All rights reserved."
+$ msg = "''VA$Copyright' by The PARSEC Group.  All rights reserved."
 $ CALL CenterLine "''msg'"
 $ wso ""
 $ wso F$FAO( "!#*=", VA$PgWi )
@@ -525,7 +528,6 @@ $ SET CONTROL=(Y,T)
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
-$ ProcVersion = "V1.18-01 (15-Feb-2016)"
 $ !
 $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
@@ -640,7 +642,7 @@ $ !! $      READ sys$command dummy /PROMPT="<Enter> or <Ctrl/Z>: " /END_OF_FILE=
 $      DEFINE /NOLOG /PROCESS sys$output 'VA$AuditReport'
 $      OutToFile = "TRUE"
 $      GOTO vaccontinue
-$ ELSE wserr F$FAO( "!/%!AS-I-START, [4mVMS Audit Report[0m !AS starting at [1m!AS[0m...!/", Fac, ProcVersion, VA$TimeStamp )
+$ ELSE wserr F$FAO( "!/%!AS-I-START, [4mVMS Audit Report[0m !AS starting at [1m!AS[0m...!/", Fac, VA$ProcVersion, VA$TimeStamp )
 $      READ sys$command VA$User /END_OF_FILE=Done /PROMPT="Enter your full name: "
 $      VA$User = F$EDIT(VA$User,"TRIM,COMPRESS")
 $ !
@@ -678,7 +680,7 @@ $ !
 $ !
 $ ! ========================
 $ !
-$ CALL ReportHeader "''Fac'" "''Proc'" "''ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'"
+$ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'"
 $ !
 $ IF ( VMSver .GES. "V7.1" )         ! PIPE command in VMS v7.1 and higher...
 $ THEN CALL NetInstalled "DECnet"
@@ -815,7 +817,7 @@ $ !
 $ ! ========================
 $ !
 $ ! VI.b. & k. Security -- Audit and Accounting Files
-$ CALL AuditStep "SHOW AUDIT /ALL"
+$ CALL AuditStep "SHOW AUDIT"
 $ CALL AuditStep "V$DIR SYS$MANAGER:SECURITY*.AUDIT$JOURNAL;*" "NOPAGE" "DIRECTORY SYS$MANAGER:SECURITY*.AUDIT$JOURNAL;*"
 $ !
 $ ! VI.c. & j. Security -- Accounting
