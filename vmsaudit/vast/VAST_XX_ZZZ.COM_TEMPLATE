@@ -1,0 +1,139 @@
+$ ! VAST_«»_«».COM --                  'F$VERIFY(0)'
+$ !
+$ !  use: @VAST_«»_«»
+$ !
+$ ! Copyright (C) 2012-2013 Lorin Ricker <lorin@rickernet.us>
+$ ! Version: 2.0, 05/17/2013
+$ !
+$ ! This program is free software, under the terms and conditions of the
+$ ! GNU General Public License published by the Free Software Foundation.
+$ !
+$ ! === Main ===
+$Main:
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ !
+$ GOSUB INCLUDE
+$ Fac = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ !
+$ ! --- --- --- ---
+$ !
+$ MajorStep = "«»"
+$ MajorName = "«» -- «» Checks"
+$ MajorCat  = "«»"
+$ !
+$ wso F$FAO( "!/!AS!/%!AS-I-CHECKLIST, starting Checklist !AS", HRul, Fac, MajorStep )
+$ wso F$FAO( "%!AS-I-COLLDATA, collecting audit data for system !AS!/!AS", Fac, AUD$Node, HRul )
+$ !
+$ MinorStep = "a"
+$ bpsection = "«»"
+$ AUD$BPSections == bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptLong'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! ---
+$ ClrScrn
+$ $ bpsection =
+MinorStep = "«»"+ SEP + "«»"
+$ AUD$BPSections == AUD$BPSections bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptShort'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! ---
+$ ClrScrn
+$ MinorStep = "«»"
+$ bpsection = "«»"
+$ AUD$BPSections == AUD$BPSections + SEP + bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptShort'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! ---
+$ ClrScrn
+$ MinorStep = "«»"
+$ bpsection = "«»"
+$ AUD$BPSections == AUD$BPSections + SEP + bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptShort'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! ---
+$ ClrScrn
+$ MinorStep = "«»"
+$ bpsection = "«»"
+$ AUD$BPSections == AUD$BPSections + SEP + bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptShort'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! ---
+$ ClrScrn
+$ MinorStep = "«»"
+$ bpsection = "«»"
+$ AUD$BPSections == AUD$BPSections + SEP + bpsection
+$ wso F$FAO( "!/  [1mStep !AS.!AS.[0m", MajorStep, MinorStep )
+$ TYPE SYS$INPUT
+  «»
+
+$ DoStep "''MajorStep'" "''MinorStep'" "''PromptShort'" -
+    "«»" -  ! short description
+    "«»" -
+    "«»"    !"''WSOmark'Have you «»?"
+$ !
+$ ! --- --- --- ---
+$ !
+$Report:
+$ @'AUD$NodeAcc'VAST_RESULTS
+$Done:
+$ IF Fac .EQS. AUD$Fac THEN @'AUD$NodeAcc'VAST_CLEANEXIT
+$ !
+$ EXIT 1   !'F$VERIFY(0)'
+$ !
+$Ctrl_Y:
+$ RETURN %X2C
+$ !
+$ ! ====================================================
+$ ! (See VAST_INCLUDE.COM file for purpose/comments...)
+$INCLUDE:
+$ OPEN /READ InclF 'AUD$IncludeFile'
+$INCL0:
+$ READ /END_OF_FILE=INCLDONE InclF IncLine
+$ IncLine = F$EDIT(IncLine,"UNCOMMENT,COMPRESS")
+$ IF F$EXTRACT(0,2,IncLine) .EQS. "$ " -
+  THEN IncLine = F$EDIT(F$EXTRACT(2,F$LENGTH(IncLine)-2,IncLine),"TRIM")
+$ IF IncLine .EQS. "" THEN GOTO INCL0
+$ 'IncLine'
+$ IF Debugging THEN wso F$FAO( "$ [1m!AS[0m", IncLine )
+$ GOTO INCL0
+$INCLDONE:
+$ CLOSE InclF
+$ RETURN 1
+$ ! end INCLUDE
+$ ! --------

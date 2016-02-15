@@ -1,0 +1,96 @@
+! VMS$AUDIT_TRIMTRAIL.TPU --
+
+! Copyright © 2014 by Lorin Ricker.  All rights reserved, with acceptance,
+! use, modification and/or distribution permissions as granted and controlled
+! by and under the GPL described herein.
+!
+! This program (software) is Free Software, licensed under the terms and
+! conditions of the GNU General Public License Version 3 as published by
+! the Free Software Foundation: http://www.gnu.org/copyleft/gpl.txt,
+! which is hereby incorporated into this software and is a non-severable
+! part thereof.  You have specific rights and obligations under this GPL
+! which are binding if and when you accept, use, modify and/or distribute
+! this software program (source code file) and/or derivatives thereof.
+!
+
+!     Version 1.0 - Base release.                                      05/29/2014
+
+! ABSTRACT:
+! Trims trailing blanks from a source file.
+
+
+CONSTANT
+  NULL := "",  !null string
+
+  ! Character constants:
+  K$tab := ASCII(  9 ),  K$spc       := ASCII(  32 ),
+  K$lf  := ASCII( 10 ),  K$dquote    := ASCII(  34 ),  !double quote "
+  K$vt  := ASCII( 11 ),  K$squote    := ASCII(  39 ),  !single quote '
+  K$ff  := ASCII( 12 ),  K$comma     := ASCII(  44 ),
+  K$cr  := ASCII( 13 ),  K$period    := ASCII(  46 ),
+  K$so  := ASCII( 14 ),  K$semicolon := ASCII(  59 ),
+  K$si  := ASCII( 15 ),  K$csi       := ASCII( 155 ),
+  K$esc := ASCII( 27 ),  K$ss3       := ASCII( 143 ),
+                         K$pilcrow   := ASCII( 182 )   !"¶"
+  ;  !End CONSTANTs
+
+
+PROCEDURE F$Default( Arg, Op, PTyp, Def )
+LOCAL rval;
+  CASE SUBSTR( Op, 1, 1 ) FROM "<" TO "u"
+    ["U",
+     "u"]: IF ( GET_INFO( Arg, "TYPE" ) = UNSPECIFIED ) THEN rval := Def;
+           ELSE rval := Arg; ENDIF;
+    ["<"]: IF ( GET_INFO( Arg, "TYPE" ) <> PTyp ) THEN rval := Def;
+           ELSE rval := Arg; ENDIF;
+    ["="]: IF ( GET_INFO( Arg, "TYPE" ) = PTyp ) THEN rval := Arg;
+           ELSE rval := Def; ENDIF;
+    ENDCASE;
+  RETURN( rval );
+ENDPROCEDURE  !F$Default
+
+PROCEDURE F$ELEMENT( n, Sep, Strg )
+LOCAL i, j, E, S;
+  i := -1;
+  j := n;
+  E := Sep;
+  S := Strg + Sep;
+  LOOP
+    EXITIF ( j < 0 ) OR ( i = 0 );
+    i := INDEX( S, Sep );
+    IF ( i > 0 ) THEN
+      j := j - 1;
+      E := SUBSTR( S, 1, i - 1 );
+      S := SUBSTR( S, i + 1, LENGTH( S ) - i );
+    ENDIF;
+    ENDLOOP;
+  !distinguish NULL value from "no such element":
+  IF ( i = 0 ) THEN E := Sep; ENDIF;
+  RETURN( E );
+ENDPROCEDURE  !F$ELEMENT
+
+
+! Main program
+
+  G$IFile := GET_INFO( COMMAND_LINE, "FILE_NAME" );
+  Source_Buffer := CREATE_BUFFER( "Source", G$IFile );
+
+  G$WS  := " " + ASCII( 9 );
+  G$Pat := ( SPAN( G$WS ) @G$V ) + LINE_END;
+
+  G$Count := 0;
+  POSITION( BEGINNING_OF( Source_Buffer ) );
+  LOOP
+    G$Rng := SEARCH_QUIETLY( G$Pat, FORWARD );
+    EXITIF( G$Rng = 0 );
+    POSITION( G$Rng );
+    ERASE( G$V );
+    G$Count := G$Count + 1;
+    ENDLOOP;
+
+  IF GET_INFO( Source_Buffer, "MODIFIED" ) THEN
+    WRITE_FILE( Source_Buffer );
+    EXIT;
+  ELSE
+    QUIT;
+  ENDIF;
