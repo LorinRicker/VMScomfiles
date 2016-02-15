@@ -170,7 +170,7 @@ $ IF ( F$SEARCH( F ) .NES. "" ) THEN -
     @'F' COMMANDS
 $ !
 $ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
-$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init com:show_cluster$init.ini
+$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init lmr$login:show_cluster$init.ini
 $      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !

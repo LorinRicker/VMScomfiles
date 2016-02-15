@@ -153,8 +153,8 @@ $ sysgen   == "MCR SYSGEN"
 $ ssys     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT"
 $ !
 $ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
-$ IF F$SEARCH("com:show_cluster$init.ini") .NES. ""
-$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init com:show_cluster$init.ini
+$ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
+$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init lmr$login:show_cluster$init.ini
 $ ENDIF
 $ !
 $ ! Search & conditionally build zip/unzip symbols:
@@ -175,11 +175,11 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.$com]privilege.com;,where.com;,show_cluster$init.ini;" -
-          + ",''LBase'.$com]reset_backup_saveset_attributes.com;"            -
-          + ",''LBase'.$login]zips.com;"                                     -
-          + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;"      -
-          + ",mgr$root:[commands]DCLwho.com;"                                -
+$ comlist = "''LBase'.$com]privilege.com;,where.com;" -
+          + ",''LBase'.$com]reset_backup_saveset_attributes.com;"       -
+          + ",''LBase'.$login]zips.com;,show_cluster$init.ini;"         -
+          + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
+          + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
 $ !!DEFINE /USER_MODE /PROCESS sys$output NLA0:
 $ !!DEFINE /USER_MODE /PROCESS sys$error  NLA0:
