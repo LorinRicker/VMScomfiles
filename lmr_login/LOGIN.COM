@@ -81,12 +81,31 @@ $VMIDone:
 $ EXIT 1
 $ ENDSUBROUTINE  ! VMS$Install
 $ !
+$PureDCL: SUBROUTINE
+$ SET NOON
+$ ! Sanity check for site-specific global string, make it go away!...
+$ IF ( F$TYPE('P1') .EQS. "STRING" )
+$ THEN DELETE = "DELETE"
+$      DEFINE /NOLOG /USER_MODE sys$output NLA0:
+$      DEFINE /NOLOG /USER_MODE sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'P1'
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! PureDCL
+$ !
 $ !
 $MAIN:
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
+$ !
+$ CALL PureDCL "DELETE"
+$ CALL PureDCL "COPY"
+$ CALL PureDCL "RENAME"
+$ CALL PureDCL "PURGE"
+$ CALL PureDCL "DIRECTORY"
+$ !
 $ Interactive = ( F$MODE() .EQS. "INTERACTIVE" )
 $ Lprv = ""
 $ wso  = "WRITE sys$output"

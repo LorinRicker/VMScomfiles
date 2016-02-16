@@ -65,9 +65,31 @@ $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! CDefine
 $ !
+$PureDCL: SUBROUTINE
+$ SET NOON
+$ ! Sanity check for site-specific global string, make it go away!...
+$ IF ( F$TYPE('P1') .EQS. "STRING" )
+$ THEN DELETE = "DELETE"
+$      DEFINE /NOLOG /USER_MODE sys$output NLA0:
+$      DEFINE /NOLOG /USER_MODE sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'P1'
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! PureDCL
+$ !
 $ !
 $ ! ==========
 $MAIN:
+$ ON ERROR THEN GOTO Done
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ SET CONTROL=(T,Y)
+$ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
+$ !
+$ CALL PureDCL "DELETE"
+$ CALL PureDCL "COPY"
+$ CALL PureDCL "RENAME"
+$ CALL PureDCL "PURGE"
+$ CALL PureDCL "DIRECTORY"
 $ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
@@ -106,7 +128,8 @@ $ GOTO 'F$MODE()'
 $ !
 $INTERACTIVE:
 $ !
-$ SET NOON
+$ ON ERROR THEN GOTO Done
+$ ON CONTROL THEN GOSUB Ctrl_Y
 $ !
 $ SET TERMINAL /INQUIRE
 $ SET TERMINAL /INSERT /PAGE=48 /WIDTH=132 /DEVICE=VT300 -
@@ -201,3 +224,9 @@ $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF
 $ EXIT 1
 $ !
+$Done:
+$ SET NOON
+$ EXIT 1
+$ !
+$Ctrl_Y:
+$ RETURN %X2C
