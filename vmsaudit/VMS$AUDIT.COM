@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.18-02 (15-Feb-2016)"
+$ VA$ProcVersion = "V1.19-01 (16-Feb-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -20,22 +20,27 @@ $ !   administrative (system management) level commands and utilties.
 $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
-$ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D) | CLEANUP
-$ !                      | REVIEW | TYPE | EDIT | HELP ]    -
-$ !                    [ VMS$AUDITCONFIG_filespec ]         -
-$ !                    [ SHORT (D) | EXTENDED ]
+$ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D) | EXTENDED |   -
+$ !                      CLEANUP | REVIEW | TYPE | EDIT | HELP ] -
+$ !                    [ SHORT (D) | EXTENDED ]                  -
+$ !                    [ VMS$AUDITCONFIG_filespec ]
 $ !
 $ ! where: P1 -- audit operation, default AUDIT (or GENERATE),
 $ !              but also can simply REVIEW, TYPE or EDIT the
 $ !              current report, can CLEANUP, or display HELP
-$ !        P2 -- file-spec for the VMS$AUDIT configuration file,
-$ !              defaults to the logical name "VMS$AUDITCONFIG"
-$ !        P3 -- audit report to generate, SHORT is the default,
+$ !        P2 -- audit report to generate, SHORT is the default,
 $ !              EXTENDED on demand, which runs deeper/extended
 $ !              reporting not needed for monthly audits
+$ !        P3 -- file-spec for the VMS$AUDIT configuration file,
+$ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  16-FEB-2016 : Swap P2 and P3, make the EXTENDED report option the second
+$ !                parameter (more frequent, convenient to use).
+$ !                Make VA$Extended logic actually work (bug).
+$ !  15-FEB-2016 : Add P3 parameter to make certain EXTENDED report components
+$ !                optional; other minor tweaks.
 $ !  15-JAN-2016 : Add parameters for FTP/Edit/Type to VMS$AUDIT.CONFIG file;
 $ !                see VMS$AUDIT_LRICKER.CONFIG and VMS$AUDIT_TEMPLATE.CONFIG
 $ !                as exemplars. Also renamed local symbol User to VA$User.
@@ -539,8 +544,8 @@ $ VMSver = F$GETSYI("VERSION")
 $ !
 $ Debugging = F$TRNLNM("TOOLS$DEBUG")
 $ !
-$ VA$Extended = "FALSE"  ! initial, can be overridden by VMS$AUDITCONFIG configuration file,
-$ !                      ! or by P3 ("EXTENDED") on the command line
+$ VA$Extended = 0  ! initial, can be overridden by VMS$AUDITCONFIG configuration file,
+$ !                ! or by P2 ("EXTENDED") on the command line
 $ !
 $ V$AUTH     = "MCR AUTHORIZE"
 $ V$LANCP    = "MCR LANCP"
@@ -578,15 +583,12 @@ $ VA$UAFbrief     = "''DD'''Fac'_''Node'_SYSUAF_BRIEF.LIS"
 $ VA$UTCreport    = "''DD'''Fac'_''Node'_utctime.lis"
 $ !
 $ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
-$ ! or given as P2, but have reasonable fallback default behavior, too:
-$ config = F$PARSE("VMS$AUDITCONFIG",P2,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
+$ ! or given as P3, but have reasonable fallback default behavior, too:
+$ config = F$PARSE("VMS$AUDITCONFIG",P3,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
 $ IF ( F$SEARCH(config) .NES. "" )
 $ THEN VA$ConfigFile == config - F$PARSE(config,,,"VERSION","SYNTAX_ONLY")
 $ ELSE VA$ConfigFile == ""
 $ ENDIF
-$ !
-$ IF ( P3 .NES. "" ) -  ! No P3?  Then leave VA$Extended as set by default or config-file...
-  THEN VA$Extended = ( F$EXTRACT( 0, 3, F$EDIT( P3, "TRIM,UPCASE" ) ) .EQS. "EXT" ) ! EXTENDED?
 $ !
 $ ! Default targets for FTP file transfer of reports:
 $ VA$FTPurl   = "class8.parsec.com"
@@ -666,6 +668,9 @@ $      ENDIF
 $ ENDIF
 $vaccontinue:
 $ CLOSE /NOLOG vac
+$ !
+$ IF ( P2 .NES. "" ) -  ! No P2?  Then leave VA$Extended as set by default or config-file...
+  THEN VA$Extended = ( F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) ) .EQS. "EXT" ) ! EXT[ENDED]?
 $ !
 $ ! Define a global command symbol, just for convenience:
 $ IF F$TYPE(vmsaudit) .EQS. "" THEN vmsau*dit == "@''DD'VMS$Audit.com AUDIT ''VA$ConfigFile'"
