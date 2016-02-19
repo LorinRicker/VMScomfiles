@@ -114,7 +114,7 @@ $ CALL CDefine "spy"          "@com:showproc.com"
 $ CALL CDefine "loop*iso"     "@com:loop$iso"
 $ !!CALL CDefine "mcd"          "@com:cdrom"
 $ !
-$ IF F$SEARCH("lmr$login:zips.com") .NES. "" THEN @lmr$login:zips  ! zip,gzip,unzip, etc.
+$ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !
 $ ! DCL:
 $ CALL CDefine "cd"        "@com:cd"
@@ -155,14 +155,15 @@ $ !
 $ ! Useful with PIPEs
 $ CALL CDefine "tee" "@com:tee"
 $ !
-$ ai        == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
-$ cftp      == "COPY /FTP /LOG"
-$ dsk*s     == "SHOW DEVICE /MOUNTED D"
-$ glo*bal   == "SHOW SYMBOL /GLOBAL"
-$ ssys*tem  == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "  !requires string-arg
-$ SUBM*IT   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ chksum    == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
-$ upt*ime   == "PIPE SHOW SYSTEM /NOPROCESS | SEARCH /HIGHLIGHT=UNDERLINE sys$input uptime"
+$ ai           == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
+$ cftp         == "COPY /FTP /LOG"
+$ dsk*s        == "SHOW DEVICE /MOUNTED D"
+$ glo*bal      == "SHOW SYMBOL /GLOBAL"
+$ ssys*tem     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "  !requires string-arg
+$ stalledq*ues == "PIPE SHOW QUEUE | SEARCH SYS$INPUT stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS | SEARCH /HIGHLIGHT=UNDERLINE sys$input uptime"
 $ !
 $ ! Define commands for REBOOT/SHUTDOWN, LOGINS/NOLOGINS, etc.
 $ F = "lmr$login:smart$shutdown.com"

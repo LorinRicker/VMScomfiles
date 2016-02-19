@@ -90,7 +90,7 @@ $ IF ( fcount .GT. 0 )
 $ THEN WRITE out ""
 $      WRITE out F$FAO( "Total files found having version >= ;!ZL: !ZL", filemaxv, fcount )
 $      WRITE out ""
-$      WRITE out F$FAO( "  Maximun version found: ;!ZL", MaxV )
+$      WRITE out F$FAO( "  Maximum version found: ;!ZL", MaxV )
 $      WRITE out F$FAO( "               for file: !AS", MasFS )
 $ ELSE WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $      WRITE out ""
@@ -136,6 +136,9 @@ $ wso       = "WRITE sys$output"
 $ !
 $ DIRECTORY = "DIRECTORY"  ! override any global symbol...
 $ !
+$ ! Principle of Least Privilege:
+$ Prv = F$SETPRV("READALL")
+$ !
 $ IF ( P1 .NES. "" )
 $ THEN Devices = P1
 $ ELSE Devices = "SYS$SYSDEVICE"
@@ -161,5 +164,9 @@ $Done:
 $ SET NOON
 $ ! cleanup
 $ IF ( F$SEARCH(tmpfspec) .NES. "" ) THEN DELETE /NOLOG 'tmpfspec';*
+$ !
+$ ! Principle of Least Privilege:
+$ IF ( F$TYPE(Prv) .EQS. "STRING" ) THEN Prv = F$SETPRV(Prv)
+$ !
 $ EXIT  ! 'F$VERIFY(0)'
 $ !
