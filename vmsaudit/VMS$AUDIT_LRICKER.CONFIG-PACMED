@@ -12,8 +12,8 @@ VA$Disposition  = "FTP"                 ! one of: FTP, Type or Edit
 
 ! For FILE$FINDVERSIONS.COM: a comma-separated list of nodenames (one per VMScluster)
 ! that are permitted to run this script...
-VA$FFV_Permitted = "CLASS8,VMSPR1"
-VA$FFV_Disks     = "SYS$SYSDEVICE:,STAFF_DISK:"
+VA$FFV_Permitted = "DRAGON,EPIC2"
+VA$FFV_Disks     = ""
 VA$FFV_Version   = ";32700"
 
 ! Remote (PARSEC) FTP targets:
