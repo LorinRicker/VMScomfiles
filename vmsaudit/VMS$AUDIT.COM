@@ -595,11 +595,11 @@ $ V$Star     = "*"
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
              + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
-             + ",vms$audit_*.config;"
+             + ",vms$audit_*.config*;,file$findversions.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com ''Fac'_*.tpu ''Fac'_boot_options.answers que$stalled.com" -
              + " uaf$detailed_analysis.com uaf$quick_analysis.com quick_audit.com"   -
-             + " vms$audit_*.config"
+             + " vms$audit_*.config* file$findversions.com"
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
