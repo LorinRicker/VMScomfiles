@@ -17,7 +17,7 @@ $ !   administrative (system management) level commands and utilties.
 $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
-$ ! usage:  @FILE$FINDVERSIONS [ disk_device[,...] ] [ version_no ]
+$ ! usage:  @FILE$FINDVERSIONS [ disk_device[,...] ] [ version_no ] [ NOTYPE ]
 $ !
 $ ! where: P1 -- Disk device list to scan for files over the specified
 $ !              or default version limit; default is SYS$SYSDEVICE;
@@ -91,7 +91,7 @@ $ THEN WRITE out ""
 $      WRITE out F$FAO( "Total files found having version >= ;!ZL: !ZL", filemaxv, fcount )
 $      WRITE out ""
 $      WRITE out F$FAO( "  Maximum version found: ;!ZL", MaxV )
-$      WRITE out F$FAO( "               for file: !AS", MasFS )
+$      WRITE out F$FAO( "               for file: !AS", MaxFS )
 $ ELSE WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $      WRITE out ""
 $      WRITE out F$FAO( "No files found having version >= ;!ZL", filemaxv )
@@ -103,7 +103,7 @@ $ !
 $ CLOSE out
 $ CLOSE in
 $ IF ( F$SEARCH("''outfspec';-1") .NES. "" ) THEN PURGE /NOLOG /KEEP=2 'outfspec'
-$ TYPE /PAGE 'outfspec'
+$ IF typereport THEN TYPE /PAGE 'outfspec'
 $ EXIT 1
 $ !
 $ReadErr:
@@ -150,6 +150,8 @@ $ ELSE filevmax = ";32700"
 $ ENDIF
 $ filevmax = filevmax - SEMICOLON
 $ !
+$ typereport = ( F$EXTRACT(0,4,P3) .NES. "NOTY" )
+$ !
 $ devcount = 0
 $ !
 $Loop0:
@@ -168,5 +170,5 @@ $ !
 $ ! Principle of Least Privilege:
 $ IF ( F$TYPE(Prv) .EQS. "STRING" ) THEN Prv = F$SETPRV(Prv)
 $ !
-$ EXIT  ! 'F$VERIFY(0)'
+$ EXIT 1   ! 'F$VERIFY(0)'
 $ !

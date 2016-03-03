@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.19-01 (16-Feb-2016)"
+$ VA$ProcVersion = "V1.20-01 (03-Mar-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,14 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  03-MAR-2016 : Enable (stich-in) invocation of FILE$FINDVERSIONS.COM --
+$ !                always run on a stand-alone VMS system; check configuration
+$ !                parameter VA$FFV_Permitted for VMScluster nodes (the node
+$ !                must be named in the config-parameter in order to run; this
+$ !                limits a run to one/single cluster member; only need one).
+$ !                Also uses VA$FFV_Disks to name the disks to be checked
+$ !                (comma-separated list of disk/device names), and
+$ !                VA$FFV_Version as the max-version to search/report.
 $ !  16-FEB-2016 : Swap P2 and P3, make the EXTENDED report option the second
 $ !                parameter (more frequent, convenient to use).
 $ !                Make VA$Extended logic actually work (bug).
@@ -526,13 +534,40 @@ $ClCtrl_Y:
 $ EXIT %X2C
 $ ENDSUBROUTINE  ! Cleaner
 $ !
+$Spawn_FFV: SUBROUTINE
+$ ! P1 : Filename of com-file to run in sub-proc
+$ !
+$ VA$FFV = DD + P1 + ".COM"
+$ VA$FFV_run = "FALSE"
+$ IF ( .NOT. F$GETSYI("CLUSTER_MEMBER") )  ! Stand-alone VMS system?
+$ THEN VA$FFV_run = "TRUE"
+$ ELSE IF F$TYPE(VA$FFV_Permitted) .EQS. "STRING"  ! Named/permitted VMScluster member?
+$      THEN ffvperm = ",''VA$FFV_Permitted'," 
+$           IF ( F$LOCATE( ",''Node',", ffvperm ) .LT. F$LENGTH( ffvperm ) )
+$           THEN VA$FFV_run = "TRUE"
+$           ELSE wso F$FAO( "%!AS-I-NO_RUN, no run of !AS on this node", Fac, P1 )
+$           ENDIF
+$      ELSE wso F$FAO( "%!AS-W-NO_CONFIG, !AS not configured for this VMScluster", Fac, P1 )
+$      ENDIF
+$ ENDIF
+$ IF VA$FFV_run
+$ THEN IF ( F$SEARCH( VA$FFV ) .NES. "" )
+$      THEN wso "%''Fac'-I-SPAWN, launching subprocess for ''P1'..."
+$           wso F$FAO( "!20* !AS", "Wait for this subprocess to complete before you LOGOUT..." )
+$           wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" ""''VA$FFV_Version'"" ; LOGOUT"
+$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' "''VA$FFV_Disks'" "''VA$FFV_Version'" ; LOGOUT
+$           wso ""
+$      ENDIF
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! Spawn_FFV
+$ !
 $ !
 $ ! ========================
 $MAIN:                                                           ! 'F$VERIFY(0)'
 $ SET CONTROL=(Y,T)
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
-$ !
 $ !
 $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
@@ -634,13 +669,15 @@ $      GOTO vacloop
 $vacloopdone:
 $      ! VMS$AUDIT_*.CONFIG file may either redefine VA$AuditReport, or
 $      !   it may just leave the above-calculated value alone...
-$      ! In either case, output is redirected here:
-$      wso F$FAO( "%!AS-I-OUTPUT, output redirected to !AS", Fac, VA$AuditReport )
+$ !! $      show symbol /local VA$FFV*
 $ !! $      show symbol /local VA$User
 $ !! $      show symbol /local VA$FTPurl
 $ !! $      show symbol /local VA$FTPuser
 $ !! $      show symbol /local VA$Disposition
 $ !! $      READ sys$command dummy /PROMPT="<Enter> or <Ctrl/Z>: " /END_OF_FILE=Done
+$      CALL Spawn_FFV "FILE$FINDVERSIONS"
+$      ! In either case, output is redirected here:
+$      wso F$FAO( "%!AS-I-OUTPUT, output redirected to !AS", Fac, VA$AuditReport )
 $      DEFINE /NOLOG /PROCESS sys$output 'VA$AuditReport'
 $      OutToFile = "TRUE"
 $      GOTO vaccontinue
@@ -671,6 +708,8 @@ $ CLOSE /NOLOG vac
 $ !
 $ IF ( P2 .NES. "" ) -  ! No P2?  Then leave VA$Extended as set by default or config-file...
   THEN VA$Extended = ( F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) ) .EQS. "EXT" ) ! EXT[ENDED]?
+$ !
+$ ! ========================
 $ !
 $ ! Define a global command symbol, just for convenience:
 $ IF F$TYPE(vmsaudit) .EQS. "" THEN vmsau*dit == "@''DD'VMS$Audit.com AUDIT ''VA$ConfigFile'"
@@ -725,6 +764,8 @@ $ ! System Auditing --
 $ CALL AuditStep "SHOW INTRUSION"
 $ CALL AuditStep "SHOW AUDIT /ALL" "NOPAGE"
 $ CALL FindSAJournal  ! sets global VA$SAJournal
+$ !
+$ wso ""
 $ CALL AnalyzeAudit "''VA$SAJournal'" "BREAKIN" "PLOT"  "''FirstofLastMonth'" "''Node'"
 $ CALL AnalyzeAudit "''VA$SAJournal'" "LOGFAIL" "PLOT"  "''FirstofLastMonth'" "''Node'"
 $ !! CALL AnalyzeAudit "''VA$SAJournal'" "SYSUAF"  "PLOT"  "''FirstofLastMonth'" "''Node'"
@@ -1073,6 +1114,13 @@ $ wso ""
 $ SET NOON
 $ CLOSE /NOLOG vac
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
+$ !
+$ IF ( F$GETJPI("","JOBPRCCNT") .GE. 1 )
+$ THEN SHOW PROCESS /SUBPROCESS
+$      wso ""
+$      wso F$FAO( "%!AS-W-SUBPROC, subprocess still running, don't LOGOUT yet...", Fac )
+$ ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
+$ ENDIF
 $ !
 $ IF F$TYPE(prv)             .NES. "" THEN prv = F$SETPRV(prv)
 $ IF F$TYPE(VA$SAJournal)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$SAJournal
