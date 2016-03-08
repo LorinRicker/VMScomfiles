@@ -62,6 +62,11 @@ $SDLoop:
 $ READ /END_OF_FILE=Cleanup in record
 $ fvers = F$PARSE( record, , , "VERSION", "SYNTAX_ONLY") - SEMICOLON
 $ fvers = F$INTEGER( fvers )
+$ fs    = F$FAO( "!4* !AS!AS!AS!AS" -
+                 , F$PARSE( record, , , "DIRECTORY", "SYNTAX_ONLY" ) -
+                 , F$PARSE( record, , , "NAME", "SYNTAX_ONLY" )      -
+                 , F$PARSE( record, , , "TYPE", "SYNTAX_ONLY" )      -
+                 , F$PARSE( record, , , "VERSION", "SYNTAX_ONLY" ) )
 $ IF ( fvers .GE. filemaxv )
 $ THEN IF ( fcount .EQ. 0 )
 $      THEN ! write this output file's header information...
@@ -69,17 +74,12 @@ $           WRITE out ""
 $           WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $           WRITE out ""
 $      ENDIF
-$      fs = F$FAO( "!4* !AS!AS!AS!AS" -
-                   , F$PARSE( record, , , "DIRECTORY", "SYNTAX_ONLY" ) -
-                   , F$PARSE( record, , , "NAME", "SYNTAX_ONLY" )      -
-                   , F$PARSE( record, , , "TYPE", "SYNTAX_ONLY" )      -
-                   , F$PARSE( record, , , "VERSION", "SYNTAX_ONLY" ) )
 $      WRITE out fs
 $      fcount = fcount + 1
-$      IF ( fvers .GT. MaxV )
-$      THEN MaxV  = fvers
-$           MaxFS = fs
-$      ENDIF
+$ ENDIF
+$ IF ( fvers .GT. MaxV )
+$ THEN MaxV  = fvers
+$      MaxFS = F$EDIT( fs, "TRIM" )
 $ ENDIF
 $ GOTO SDLoop
 $ !
@@ -89,13 +89,13 @@ $ ! write output file's trailer information and close it...
 $ IF ( fcount .GT. 0 )
 $ THEN WRITE out ""
 $      WRITE out F$FAO( "Total files found having version >= ;!ZL: !ZL", filemaxv, fcount )
-$      WRITE out ""
-$      WRITE out F$FAO( "  Maximum version found: ;!ZL", MaxV )
-$      WRITE out F$FAO( "               for file: !AS", MaxFS )
 $ ELSE WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $      WRITE out ""
 $      WRITE out F$FAO( "No files found having version >= ;!ZL", filemaxv )
 $ ENDIF
+$ WRITE out ""
+$ WRITE out F$FAO( "!6* Maximum version found: ;!ZL", MaxV )
+$ WRITE out F$FAO( "!19* for file: !AS", MaxFS )
 $ WRITE out ""
 $ WRITE out F$FAO( "%!AS-I-ELAPSED_TIME, !AS", Fac, elapsed )
 $ WRITE out ""

@@ -20,18 +20,18 @@ $ !   administrative (system management) level commands and utilties.
 $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
-$ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D) | EXTENDED |   -
-$ !                      CLEANUP | REVIEW | TYPE | EDIT | HELP ] -
-$ !                    [ SHORT (D) | EXTENDED ]                  -
+$ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D)
+$ !                      | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
+$ !                    [ SHORT (D) | EXTENDED ]
 $ !                    [ VMS$AUDITCONFIG_filespec ]
 $ !
-$ ! where: P1 -- audit operation, default AUDIT (or GENERATE),
+$ ! where: P1 -- Audit operation, default AUDIT (or GENERATE),
 $ !              but also can simply REVIEW, TYPE or EDIT the
 $ !              current report, can CLEANUP, or display HELP
-$ !        P2 -- audit report to generate, SHORT is the default,
+$ !        P2 -- Audit report to generate: SHORT is the default,
 $ !              EXTENDED on demand, which runs deeper/extended
 $ !              reporting not needed for monthly audits
-$ !        P3 -- file-spec for the VMS$AUDIT configuration file,
+$ !        P3 -- File-spec for the VMS$AUDIT configuration file,
 $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
@@ -538,13 +538,12 @@ $Spawn_FFV: SUBROUTINE
 $ ! P1 : Filename of com-file to run in sub-proc
 $ !
 $ VA$FFV = DD + P1 + ".COM"
-$ VA$FFV_run = "FALSE"
 $ IF ( .NOT. F$GETSYI("CLUSTER_MEMBER") )  ! Stand-alone VMS system?
-$ THEN VA$FFV_run = "TRUE"
+$ THEN VA$FFV_run == "TRUE"
 $ ELSE IF F$TYPE(VA$FFV_Permitted) .EQS. "STRING"  ! Named/permitted VMScluster member?
 $      THEN ffvperm = ",''VA$FFV_Permitted'," 
 $           IF ( F$LOCATE( ",''Node',", ffvperm ) .LT. F$LENGTH( ffvperm ) )
-$           THEN VA$FFV_run = "TRUE"
+$           THEN VA$FFV_run == "TRUE"
 $           ELSE wso F$FAO( "%!AS-I-NO_RUN, no run of !AS on this node", Fac, P1 )
 $           ENDIF
 $      ELSE wso F$FAO( "%!AS-W-NO_CONFIG, !AS not configured for this VMScluster", Fac, P1 )
@@ -552,10 +551,10 @@ $      ENDIF
 $ ENDIF
 $ IF VA$FFV_run
 $ THEN IF ( F$SEARCH( VA$FFV ) .NES. "" )
-$      THEN wso "%''Fac'-I-SPAWN, launching subprocess for ''P1'..."
-$           wso F$FAO( "!20* !AS", "Wait for this subprocess to complete before you LOGOUT..." )
-$           wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" ""''VA$FFV_Version'"" ; LOGOUT"
-$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' "''VA$FFV_Disks'" "''VA$FFV_Version'" ; LOGOUT
+$      THEN wso "%''Fac'-I-SPAWN, launching subprocess for ''P1' --"
+$           wso F$FAO( "!20* !AS", "wait for this subprocess to complete before you LOGOUT..." )
+$           !!! wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" ""''VA$FFV_Version'"" ""NOTYPE"" ; LOGOUT"
+$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' /OUTPUT=NLA0: "''VA$FFV_Disks'" "''VA$FFV_Version'" "NOTYPE" ; LOGOUT
 $           wso ""
 $      ENDIF
 $ ENDIF
@@ -638,6 +637,7 @@ $ VA$PgNo      ==  1
 $ VA$PgWi      == 78
 $ VA$Dashes    == F$FAO( "!#*-", VA$PgWi )
 $ VA$DblDashes == F$FAO( "!#*=", VA$PgWi )
+$ VA$FFV_run   == "FALSE"
 $ !
 $ ! ========================
 $ !
@@ -1005,49 +1005,8 @@ $           CALL Cleaner "''VA$AuditReport'" "''CleanCRLF'" "''fsCRLF'"
 $           CALL Cleaner "''VA$AuditReport'" "''CleanTrim'" "''fsTrim'"
 $      ENDIF
 $ ENDIF
-$ ! ...and fall-through to Review:
 $ !
-$ ! ========================
-$ !
-$REV$:   ! Review the Audit Report File
-$ IF OutToFile
-$ THEN V$DEASSIGN /PROCESS sys$output
-$      msg = "=== " + Fac + " reports "
-$      len = VA$PgWi - F$LENGTH( msg )
-$      wso F$FAO( "!/!AS !#*=", msg, len )
-$      V$DIR /SINCE /SIZE=ALL 'Fac'_'Node'*.*;0
-$      IF ( VA$ConfigFile .EQS. "" )
-$      THEN wso ""
-$           Rfile = F$PARSE(VA$AuditReport,,,"NAME","SYNTAX_ONLY") + F$PARSE(VA$AuditReport,,,"TYPE","SYNTAX_ONLY")
-$           READ sys$command Answer /END_OF_FILE=Done -
-            /PROMPT="''Rfile' -- FTP, Type or Edit it [F/t/e]? "
-$           VA$Disposition = F$PARSE(Answer,"FTP",,"NAME","SYNTAX_ONLY")
-$      ! ELSE : using VA$Disposition from VMS$AUDIT_*.CONFIG file
-$      ENDIF
-$      GOTO 'F$EXTRACT(0,1,VA$Disposition)'$
-$ !
-$F$:    ! FTP Audit Report File to home-base (PARSEC)
-$FTP$:
-$      DEFINE /USER_MODE sys$input sys$command
-$      FTP 'VA$FTPurl' /USER='VA$FTPuser'
-$      GOTO Done
-$T$:    ! Type/display Audit Report File
-$TYP$:
-$      IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
-$      DEFINE /USER_MODE sys$input sys$command
-$      TYPE /PAGE=SAVE=5 'VA$AuditReport'
-$      GOTO Done
-$ !
-$E$:    ! Edit Audit Report File
-$EDI$:
-$      IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
-$      IF F$TYPE(ked) .EQS. "STRING" THEN edit = "@com:ked.com"  !(LMR tweak, all others use EDIT /EVE)
-$      DEFINE /USER_MODE sys$input sys$command
-$      EDIT 'VA$AuditReport'
-$      GOTO Done
-$ !
-$ ELSE GOTO Done
-$ ENDIF
+$ GOTO REV$
 $ !
 $ !
 $ ! ========================
@@ -1105,22 +1064,78 @@ $ DEFINE /USER_MODE sys$input sys$command   ! unzip goes interactive...
 $ unzip 'V$ZipArc'
 $ GOTO Done
 $ !
-$ ! ========================
 $ !
+$ ! ========================
+$ !
+$REV$:   ! Review the Audit Report File
+$ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
+$ !
+$FFVREV$:
+$ int = 0
+$ IF VA$FFV_run
+$ THEN SHOW PROCESS /SUBPROCESS
+$      wso ""
+$      wso F$FAO( "%!AS-W-SUBPROC, subprocess still running, don't LOGOUT yet...", Fac )
+$SpinLock:
+$      IF ( F$GETJPI("","JOBPRCCNT") .GE. 1 )
+$      THEN IF ( int .LE. 1 ) THEN int = 10
+$           wso F$FAO( "!#* wait...", 32-int )
+$           WAIT 00:00:0'int'.5
+$           int = int - 2
+$           GOTO SpinL0
+$      ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
+$           wso ""
+$           TYPE /SINCE /PAGE=SAVE=4 'DD'FILE$FINDVERSIONS_*.VERSION_REPORT
+$           GOTO Reviews$
+$      ENDIF
+$SpinL0:
+$ GOTO SpinLock
+$ ENDIF
+$ !
+$Reviews$:
+$ msg = "=== " + Fac + " reports "
+$ len = VA$PgWi - F$LENGTH( msg )
+$ wso F$FAO( "!/!AS !#*=", msg, len )
+$ V$DIR /SINCE /SIZE=ALL 'Fac'_'Node'*.*;0
+$ IF ( VA$ConfigFile .EQS. "" )
+$ THEN wso ""
+$      Rfile = F$PARSE(VA$AuditReport,,,"NAME","SYNTAX_ONLY") + F$PARSE(VA$AuditReport,,,"TYPE","SYNTAX_ONLY")
+$      READ sys$command Answer /END_OF_FILE=Done -
+         /PROMPT="''Rfile' -- FTP, Type or Edit it [F/t/e]? "
+$      VA$Disposition = F$PARSE(Answer,"FTP",,"NAME","SYNTAX_ONLY")
+$ ! ELSE : using VA$Disposition from VMS$AUDIT_*.CONFIG file
+$ ENDIF
+$ GOTO 'F$EXTRACT(0,1,VA$Disposition)'$
+$ !
+$F$:    ! FTP Audit Report File to home-base (PARSEC)
+$FTP$:
+$ DEFINE /USER_MODE sys$input sys$command
+$ FTP 'VA$FTPurl' /USER='VA$FTPuser'
+$ GOTO Done
+$T$:    ! Type/display Audit Report File
+$TYP$:
+$ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
+$ DEFINE /USER_MODE sys$input sys$command
+$ TYPE /PAGE=SAVE=5 'VA$AuditReport'
+$ GOTO Done
+$ !
+$E$:    ! Edit Audit Report File
+$EDI$:
+$ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
+$ IF F$TYPE(ked) .EQS. "STRING" THEN edit = "@com:ked.com"  !(LMR tweak, all others use EDIT /EVE)
+$ DEFINE /USER_MODE sys$input sys$command
+$ EDIT 'VA$AuditReport'
+$ GOTO Done
+$ !
+$ !
+$ ! ========================
+$ !
 $Done:
 $ wso ""
 $ wso F$FAO( "%!AS-I-DONE, cleanup...", Fac )
 $ wso ""
 $ SET NOON
-$ CLOSE /NOLOG vac
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
-$ !
-$ IF ( F$GETJPI("","JOBPRCCNT") .GE. 1 )
-$ THEN SHOW PROCESS /SUBPROCESS
-$      wso ""
-$      wso F$FAO( "%!AS-W-SUBPROC, subprocess still running, don't LOGOUT yet...", Fac )
-$ ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
-$ ENDIF
 $ !
 $ IF F$TYPE(prv)             .NES. "" THEN prv = F$SETPRV(prv)
 $ IF F$TYPE(VA$SAJournal)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$SAJournal
@@ -1130,6 +1145,7 @@ $ IF F$TYPE(VA$MultinetInst) .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$MultinetIns
 $ IF F$TYPE(VA$PgNo)         .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgNo
 $ IF F$TYPE(VA$PgWi)         .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgWi
 $ IF F$TYPE(VA$PgStr)        .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgStr
+$ IF F$TYPE(VA$FFV_run)      .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$FFV_run
 $ IF F$TYPE(VA$TimeStamp)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$TimeStamp
 $ IF F$TYPE(VA$DECnet)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$DECnet
 $ IF F$TYPE(VA$Dashes)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$Dashes
@@ -1191,14 +1207,32 @@ $ TYPE /PAGE sys$input
   which appears in the Report's header for accountability purposes.
 
   use: $ [1m@VMS$AUDIT [ AUDIT (D) | GENERATE (D)
-                      | REVIEW | TYPE | EDIT | CLEANUP
-                      | BACKUP | RESTORE | ZIP | UNZIP | HELP ][0m
+                      | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
+                    [ SHORT (D) | EXTENDED ]
+                    [ VMS$AUDITCONFIG_filespec ][0m
 
-  where:
-  
+  where: P1 -- Audit operation, default AUDIT (or GENERATE),
+               but also can simply REVIEW, TYPE or EDIT the
+               current report, can CLEANUP, or display HELP
+         P2 -- Audit report to generate: SHORT is the default,
+               EXTENDED on demand, which runs deeper/extended
+               reporting not needed for monthly audits
+         P3 -- File-spec for the VMS$AUDIT configuration file,
+               defaults to the logical name "VMS$AUDITCONFIG"
+
         [1mAUDIT[0m    -- Both of these keywords generate a new Audit Report
         [1mGENERATE[0m    which is also the default operation (no keyword)
                     specified.
+
+        [1mCLEANUP[0m  -- Certain of the system administration DCL commands
+                    used to generate the Audit Report File embed literal
+                    <CR><LF> and trailing-space characters, which can be
+                    confuse the display when the Report is opened in a
+                    text editor.  This CLEANUP step uses two TPU command
+                    scripts, REPLACECRLF and TRIMTRAIL, to replace any
+                    <CR><LF> characters with a newline(s) and to trim
+                    any trailing spaces from all lines.  This step is
+                    idempotent (can be run multiple times).
 
         [1mREVIEW[0m   -- Prompts the user for the method to use in reviewing
                     the current Audit Report File, either TYPE /PAGE or
@@ -1216,20 +1250,10 @@ $ TYPE /PAGE sys$input
                     and/or exit correctly if you don't want to change
                     the file accidentally.
 
-        [1mCLEANUP[0m  -- Certain of the system administration DCL commands
-                    used to generate the Audit Report File embed literal
-                    <CR><LF> and trailing-space characters, which can be
-                    confuse the display when the Report is opened in a
-                    text editor.  This CLEANUP step uses two TPU command
-                    scripts, REPLACECRLF and TRIMTRAIL, to replace any
-                    <CR><LF> characters with a newline(s) and to trim
-                    any trailing spaces from all lines.  This step is
-                    idempotent (can be run multiple times).
-
-        [1mBACKUP[0m      Backup and restore will save all VMS$AUDIT suite file
+        [1mBACKUP[0m   -- Backup and restore will save all VMS$AUDIT suite file
         [1mRESTORE[0m     components into/from a saveset called VMS$AUDIT.BCK.
 
-        [1mZIP[0m         If the (unsupported) utilities ZIP.EXE and UNZIP.EXE are
+        [1mZIP[0m      -- If the (unsupported) utilities ZIP.EXE and UNZIP.EXE are
         [1mUNZIP[0m       available on the system (usually found in SYS$SYSTEM),
                     these command options will zip/unzip all VMS$AUDIT file
                     components into a VMS$AUDIT.ZIP archive into/from the

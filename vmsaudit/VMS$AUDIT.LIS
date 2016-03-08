@@ -3,8 +3,8 @@ Listing of save set(s)
 Save set:          VMS$AUDIT.BCK
 Written by:        LRICKER     
 UIC:               [000007,000035]
-Date:              16-FEB-2016 14:00:52.49
-Command:           BACKUP/LIST=VMS$AUDIT/NOCRC/GROUP_SIZE=0/INTERCHANGE VMS$AUDIT.com;,VMS$AUDIT_*.tpu;,VMS$AUDIT_boot_options.answers;,que$stalled.com;,uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;,vms$audit_*.config; VMS$AUDIT.BCK/SAVE_SET
+Date:               8-MAR-2016 16:16:46.79
+Command:           BACKUP/LIST=VMS$AUDIT/NOCRC/GROUP_SIZE=0/INTERCHANGE VMS$AUDIT.com;,VMS$AUDIT_*.tpu;,VMS$AUDIT_boot_options.answers;,que$stalled.com;,uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;,vms$audit_*.config*;,file$findversions.com; VMS$AUDIT.BCK/SAVE_SET
 Operating system:  hp OpenVMS I64 version V8.4
 BACKUP version:    V8.4
 CPU ID register:   80000000
@@ -13,7 +13,7 @@ Written on:        _DSA2:
 Block size:        32256
 Buffer count:      1238
 
-[LRICKER.VMSAUDITS]VMS$AUDIT.COM;50                         98  16-FEB-2016 13:57
+[LRICKER.VMSAUDITS]VMS$AUDIT.COM;67                        105   8-MAR-2016 16:12
 [LRICKER.VMSAUDITS]VMS$AUDIT_REPLACECRLF.TPU;2               7  16-JUN-2014 11:05
 [LRICKER.VMSAUDITS]VMS$AUDIT_TRIMTRAIL.TPU;2                 7  16-JUN-2014 11:05
 [LRICKER.VMSAUDITS]VMS$AUDIT_BOOT_OPTIONS.ANSWERS;1          1  28-MAY-2014 11:16
@@ -21,9 +21,15 @@ Buffer count:      1238
 [LRICKER.VMSAUDITS]UAF$DETAILED_ANALYSIS.COM;4              23  29-MAY-2015 11:38
 [LRICKER.VMSAUDITS]UAF$QUICK_ANALYSIS.COM;3                  5  29-MAY-2015 11:23
 [LRICKER.VMSAUDITS]QUICK_AUDIT.COM;2                         3  16-JUN-2014 11:07
-[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG;3                2  16-FEB-2016 13:52
-[LRICKER.VMSAUDITS]VMS$AUDIT_TEMPLATE.CONFIG;3               2  16-FEB-2016 13:57
+[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG;4                2   3-MAR-2016 15:16
+[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG-CBC-RADIO-CANADA;2
+                                                             2   4-MAR-2016 10:48
+[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG-PACMED;1         2   3-MAR-2016 15:16
+[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG-SWOCA;1          2   3-MAR-2016 15:16
+[LRICKER.VMSAUDITS]VMS$AUDIT_LRICKER.CONFIG-VWR;1            2   3-MAR-2016 15:16
+[LRICKER.VMSAUDITS]VMS$AUDIT_TEMPLATE.CONFIG;4               2   3-MAR-2016 15:16
+[LRICKER.VMSAUDITS]FILE$FINDVERSIONS.COM;11                 12   8-MAR-2016 16:08
 
-Total of 10 files, 156 blocks
+Total of 15 files, 183 blocks
 End of save set
 
