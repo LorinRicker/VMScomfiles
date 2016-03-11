@@ -105,6 +105,7 @@ $ CALL PureDCL "COPY"
 $ CALL PureDCL "RENAME"
 $ CALL PureDCL "PURGE"
 $ CALL PureDCL "DIRECTORY"
+$ CALL PureDCL "SEARCH"
 $ !
 $ Interactive = ( F$MODE() .EQS. "INTERACTIVE" )
 $ Lprv = ""
@@ -133,24 +134,10 @@ $ IF Term .NES. "" THEN isTerm = F$GETDVI(Term,"TRM")
 $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LBase  = F$TRNLNM("sys$login_device") -
          + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
-$ !
-$ HomeNodes = ",MWC304,"   !,BANDIT,COLT,HARLEY,OUTLAW,"          ! <== customized <== !
-$ atHome    = ( F$LOCATE(",''LNode',",HomeNodes) .LT. F$LENGTH(HomeNodes) )
-$ !
-$ ! Customize this IP-address for client-server PC/VMS-Debug --
-$ !  this IP is unwrapped and used by LTSETUP.COM (and others):
-$ IF atHome
-$ THEN DEFINE /JOB /NOLOG dbg$decw$My_IPAddress "192.169.27.99"  ! mwc304
-$ ! "10.0.1.6"    ! <== pony <== !
-$ ENDIF
-$ !
 $ DEFINE /JOB /NOLOG lmr$login 'LBase'.$login],'LBase'.$decw$]
-$ DEFINE /JOB /NOLOG decw$user_defaults -
-     'LBase'.$DECW$.'LNode'],'LBase'.$DECW$],'LBase']
-$ IF Debug
-$ THEN SHOW LOGICAL decw$user_defaults
-$      dir decw$user_defaults:decw$xdefaults.*
-$ ENDIF
+$ !
+$ HomeNodes = ",CLASS8,VMSPR1,VMSPR3,"   ! <== customized <== !
+$ atHome    = ( F$LOCATE(",''LNode',",HomeNodes) .LT. F$LENGTH(HomeNodes) )
 $ !
 $ GOTO 'F$MODE()'
 $ !
@@ -158,38 +145,28 @@ $INTERACTIVE:
 $ LMR$Unavailable == ""
 $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com
+$ show logical com
+$ show logical lmr$login
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
 $      CALL SearchAt com:ansiseq.com
 $      CALL SearchAt lmr$login:symbols.com REDEFINE
 $      CALL SearchAt lmr$login:Ruby_Setup.com
-$      !!!SET PROMPT="''LNode'$ "
-$      SET PROMPT="''LMR$promptstr'"
+$      IF ( F$TYPE( LMR$promptstr ) .EQS. "STRING" )
+$      THEN SET PROMPT="''LMR$promptstr'"
+$      ELSE SET PROMPT="''LNode'$ "
+$      ENDIF
 $      CALL SearchAt dcl$init
 $      CALL SearchAt mgr$login
-$      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) -
-       THEN cjobs  !check periodic jobs
 $      CALL SearchAt com:tpu.com
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
+$      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) THEN cjobs  !check periodic jobs
 $      IF atHome .AND. ( dbginit .NES. "" )
 $      THEN DEFINE /JOB /NOLOG dbg$init 'dbginit'
 $           wso "%LOGIN-I-DBG$INIT, VMS debugger initialization: "
 $           wso "                   DBG$INIT = """,F$TRNLNM("dbg$init"),""""
 $      ENDIF
-$! $      IF atHome .AND. ( Keyboard .EQS. "PCDECW" )
-$! $      THEN xset = "$decw$utils:xset"  !enable auto-repeat for eXcursion
-$! $           xset r on
-$! $         ! Under eXcursion, debug to TCP/IP PC display:
-$! $           IF F$TYPE(IP_Address) .EQS. "STRING" -
-$!             THEN DEFINE /JOB /NOLOG dbg$decw$display "''IP_Address':0.0"
-$! $      ENDIF
-$      ! Setup interactive context:
-$      CALL SearchAt sys$disk:[]context.com IN where
-$      ! Used for routine/common CD commands, etc.:
-$ ! $      LoginAux = "lmr$login:login$aux.com"
-$ ! $      LoginAux = F$SEARCH(LoginAux)
-$ ! $      IF LoginAux .NES. "" THEN @'LoginAux'
 $ ENDIF
 $LogSpecific:
 $ !Invoke an optional, site-specific, personal <Locale>_SPECIFIC$LOGIN.COM:

@@ -255,6 +255,12 @@ $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
 $ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
 $ !
+$ ! PARSEC --
+$ tapesfree == "pipe mdms show volume | search sys$input free " -
+             + "| sort /key=(pos:26,siz=14,desc) sys$input sys$scratch:free.tapes ; type /page sys$scratch:free.tapes"
+$ tapesfind == "pipe mdms show volume | search sys$input transit,alloc " -
+             + "| sort /key=(pos:26,siz=14,ascending) sys$input sys$scratch:find.tapes ; type /page sys$scratch:find.tapes"
+$ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""
 $ THEN IF LMR$Unavailable .NES. ""

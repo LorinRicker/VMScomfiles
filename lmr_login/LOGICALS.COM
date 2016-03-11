@@ -113,7 +113,7 @@ $ DEFINE lists           'Lbase'.lists]
 $ DEFINE mail$keypad     lmr$login:DK$mail_keypad.gold
 $ DEFINE mail$init       lmr$login:DK$mail.com
 $ DEFINE mail$edit       CALLABLE_TPU
-$ DEFINE spell_personal  lists:spell_personal.dat
+$ DEFINE spell_personal  'Lbase'.spell]spell_personal.dat
 $ DEFINE tell$from       "Lorin"
 $ DEFINE work            'Lbase'.work]
 $ DEFINE X               sys$scratch:X.tmp
