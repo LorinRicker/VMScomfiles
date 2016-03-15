@@ -37,7 +37,7 @@ $ !
 $ dev      = P1
 $ filemaxv = F$INTEGER( P2 )
 $ tmpfspec = F$EDIT( P3, "UPCASE" )
-$ outfspec = "''DD'''Fac'_''dev'.VERSION_REPORT"
+$ outfspec = "''DD'''Fac'_''dev'.REPORT"
 $ !
 $ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
               Fac, dev, tmpfspec )

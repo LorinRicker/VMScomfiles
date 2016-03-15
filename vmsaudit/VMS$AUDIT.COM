@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.20-01 (03-Mar-2016)"
+$ VA$ProcVersion = "V1.20-02 (15-Mar-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,8 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  15-MAR-2016 : Add PARSEC_AUTOGEN.COM to saveset and zip file lists,
+$ !                just so that this tool's available.
 $ !  03-MAR-2016 : Enable (stich-in) invocation of FILE$FINDVERSIONS.COM --
 $ !                always run on a stand-alone VMS system; check configuration
 $ !                parameter VA$FFV_Permitted for VMScluster nodes (the node
@@ -594,11 +596,11 @@ $ V$Star     = "*"
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
              + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
-             + ",vms$audit_*.config*;,file$findversions.com;"
+             + ",vms$audit_*.config*;,file$findversions.com;,parsec_autogen.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com ''Fac'_*.tpu ''Fac'_boot_options.answers que$stalled.com" -
              + " uaf$detailed_analysis.com uaf$quick_analysis.com quick_audit.com"   -
-             + " vms$audit_*.config* file$findversions.com"
+             + " vms$audit_*.config* file$findversions.com parsec_autogen.com"
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
