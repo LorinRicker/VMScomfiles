@@ -65,9 +65,31 @@ $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! CDefine
 $ !
+$PureDCL: SUBROUTINE
+$ SET NOON
+$ ! Sanity check for site-specific global string, make it go away!...
+$ IF ( F$TYPE('P1') .EQS. "STRING" )
+$ THEN DELETE = "DELETE"
+$      DEFINE /NOLOG /USER_MODE sys$output NLA0:
+$      DEFINE /NOLOG /USER_MODE sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'P1'
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! PureDCL
+$ !
 $ !
 $ ! ==========
 $MAIN:
+$ ON ERROR THEN GOTO Done
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ SET CONTROL=(T,Y)
+$ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
+$ !
+$ CALL PureDCL "DELETE"
+$ CALL PureDCL "COPY"
+$ CALL PureDCL "RENAME"
+$ CALL PureDCL "PURGE"
+$ CALL PureDCL "DIRECTORY"
 $ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
@@ -106,13 +128,17 @@ $ GOTO 'F$MODE()'
 $ !
 $INTERACTIVE:
 $ !
-$ SET NOON
+$ ON ERROR THEN GOTO Done
+$ ON CONTROL THEN GOSUB Ctrl_Y
 $ !
 $ SET TERMINAL /INQUIRE
 $ SET TERMINAL /INSERT /PAGE=48 /WIDTH=132 /DEVICE=VT300 -
     /BROADCAST /TYPE_AHEAD /ALTYPEAHD /APPLICATION_KEYPAD
 $ !
-$ SET PROMPT="''F$EDIT(F$GETSYI("SCSNODE"),"TRIM")'$ "
+$ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ LMR$promptstr == "''LNode'$ "       ! Normal prompt
+$ LMR$promptprv == "[1m''LNode'[0m$ "  !Prilegediv prompt
+$ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-strings
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
@@ -153,8 +179,8 @@ $ sysgen   == "MCR SYSGEN"
 $ ssys     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT"
 $ !
 $ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
-$ IF F$SEARCH("com:show_cluster$init.ini") .NES. ""
-$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init com:show_cluster$init.ini
+$ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
+$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init lmr$login:show_cluster$init.ini
 $ ENDIF
 $ !
 $ ! Search & conditionally build zip/unzip symbols:
@@ -175,11 +201,11 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.$com]privilege.com;,where.com;,show_cluster$init.ini;" -
-          + ",''LBase'.$com]reset_backup_saveset_attributes.com;"            -
-          + ",''LBase'.$login]zips.com;"                                     -
-          + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;"      -
-          + ",mgr$root:[commands]DCLwho.com;"                                -
+$ comlist = "''LBase'.$com]privilege.com;,where.com;" -
+          + ",''LBase'.$com]reset_backup_saveset_attributes.com;,zips.com;" -
+          + ",''LBase'.$login]show_cluster$init.ini;"                       -
+          + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;"     -
+          + ",mgr$root:[commands]DCLwho.com;"                               -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
 $ !!DEFINE /USER_MODE /PROCESS sys$output NLA0:
 $ !!DEFINE /USER_MODE /PROCESS sys$error  NLA0:
@@ -196,8 +222,15 @@ $ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /EXCLUDE=('lgi',*.eve) com:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini) lmr$login:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF
 $ EXIT 1
 $ !
+$Done:
+$ SET NOON
+$ EXIT 1
+$ !
+$Ctrl_Y:
+$ RETURN %X2C

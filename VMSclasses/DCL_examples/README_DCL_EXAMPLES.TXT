@@ -37,8 +37,14 @@ Zip File
 
     To unzip the zip file on OpenVMS --
 
-      1. Move (or copy) the zip file to a suitable directory to unzip
-         into, and SET DEFAULT to that (sub)directory:
+      1. You may need or want to create a new subdirectory for this zip file
+         and the files you'll unzip; for example:
+
+         $ SET DEFAULT sys$login
+         $ CREATE /DIRECTORY [.dcl_examples]
+
+         Move (or copy) the zip file to that subdirectory to unzip into,
+         and SET DEFAULT to that subdirectory:
 
          $ RENAME /LOG dcl_examples.zip [.dcl_examples]*.*
          $ SET DEFAULT [.dcl_examples]
@@ -49,14 +55,14 @@ Zip File
 
          $ unzip dcl_examples.zip
          Archive:  DSA2:[LRICKER.DCL_EXAMPLES]DCL_EXAMPLES.ZIP;1
-            creating: [.EXAMPLES.ADVANCED]
-           inflating: [.EXAMPLES]ASKFILES.COM
-           inflating: [.EXAMPLES]BOOTTIME.COM
+            creating: [.DCL_EXAMPLES.ADVANCED]
+           inflating: [.DCL_EXAMPLES.ADVANCED]CD.COM
+           inflating: [.DCL_EXAMPLES.ADVANCED]COUNT.COM
+           inflating: [.DCL_EXAMPLES.ADVANCED]DCLWHO.COM
            ...
-           inflating: [.EXAMPLES.TOYS]FINITE.COM
-           inflating: [.EXAMPLES.TOYS]INFINITE.COM
-           inflating: [.EXAMPLES.TOYS]MON_DISK.COM
-           inflating: [.EXAMPLES.TOYS]PROCPERM_LOGICALS.COM
+           inflating: [.DCL_EXAMPLES.TOYS]FINITE.COM
+           inflating: [.DCL_EXAMPLES.TOYS]INFINITE.COM
+           inflating: [.DCL_EXAMPLES.TOYS]MON_DISK.COM
          $
 
       3. To list the contents of the zip file:
@@ -106,18 +112,18 @@ GitHub Repository
 
     All script files in this [.DCL_EXAMPLES] directory tree (plus many
     more) are available in my GitHub 'VMScomfiles' repository, here:
-    
+
       https://github.com/LorinRicker/VMScomfiles
-    
+
     As this is a public and open-source repository, you are welcome and
     encouraged to browse and take what you want to share from it; indeed,
     you can clone the whole repo to your desktop or laptop...
-    
+
     The only thing is -- if you make derivatives and/or improvements to
     any of the DCL command files, please share them back by issuing a
     pull-request to me for consideration and possible inclusion in this
     repository.
-    
+
     Since this is VMS and DCL, the community tradition of open-source
     sharing is not (yet) strongly established -- but hey!  Somebody's
     gotta be first, might as well be us!  Thank you!
