@@ -17,6 +17,9 @@ $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
 $ wso = "WRITE sys$output"
 $ !
+$ RubyVolumeOkay == 0  ! initial assumptions
+$ RubyVolumeODS5 == 0
+$ !
 $ RubyStartup  == "sys$startup:ruby$startup.com"
 $ RubyShutdown == "sys$startup:ruby$shutdown.com"
 $ !
@@ -31,6 +34,10 @@ $      CALL VolCheck "''vol'" "''rdir'"
 $      IF .NOT. RubyVolumeOkay
 $      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
 $           CALL VolCheck "''vol'" "''rdir'"
+$      ENDIF
+$      IF RubyVolumeODS5
+$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
+$           wso "%''Fac'-I-DCLPARSE, parse style set to extended..."
 $      ENDIF
 $ !
 $ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not installed..."

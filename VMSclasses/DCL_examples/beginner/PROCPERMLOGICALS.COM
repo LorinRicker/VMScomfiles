@@ -12,9 +12,16 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ show logical sys$command
-$ show logical sys$input
-$ show logical sys$output
-$ show logical sys$error
+$ ! Display the equivalence strings for the four process-permanent logical names;
+$ ! this can be executed interactively or from a batch job:
 $ !
-$ EXIT
+$ WRITE sys$output "Process-permanent logical names for this ''F$MODE()' process:"
+$ WRITE sys$output ""
+$ !
+$ SHOW LOGICAL sys$command
+$ SHOW LOGICAL sys$input
+$ SHOW LOGICAL sys$output
+$ SHOW LOGICAL sys$error
+$ !
+$ EXIT      ! 'F$VERIFY(0)'
+$ !
