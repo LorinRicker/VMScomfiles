@@ -12,6 +12,12 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ RubyStartup  == "sys$startup:ruby$startup.com"
+$ RubyShutdown == "sys$startup:ruby$shutdown.com"
+$ !
+$ ! No Ruby-startup comfile?  Don't even bother continuing:
+$ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
+$ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
@@ -19,9 +25,6 @@ $ wso = "WRITE sys$output"
 $ !
 $ RubyVolumeOkay == 0  ! initial assumptions
 $ RubyVolumeODS5 == 0
-$ !
-$ RubyStartup  == "sys$startup:ruby$startup.com"
-$ RubyShutdown == "sys$startup:ruby$shutdown.com"
 $ !
 $ReCheck:
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
