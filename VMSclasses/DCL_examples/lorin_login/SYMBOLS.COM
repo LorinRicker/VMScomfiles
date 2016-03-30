@@ -114,7 +114,7 @@ $ CALL CDefine "spy"          "@com:showproc.com"
 $ CALL CDefine "loop*iso"     "@com:loop$iso"
 $ !!CALL CDefine "mcd"          "@com:cdrom"
 $ !
-$ IF F$SEARCH("lmr$login:zips.com") .NES. "" THEN @lmr$login:zips  ! zip,gzip,unzip, etc.
+$ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !
 $ ! DCL:
 $ CALL CDefine "cd"        "@com:cd"
@@ -155,23 +155,24 @@ $ !
 $ ! Useful with PIPEs
 $ CALL CDefine "tee" "@com:tee"
 $ !
-$ ai        == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
-$ cftp      == "COPY /FTP /LOG"
-$ dsk*s     == "SHOW DEVICE /MOUNTED D"
-$ glo*bal   == "SHOW SYMBOL /GLOBAL"
-$ ssys*tem  == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "  !requires string-arg
-$ SUBM*IT   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ chksum    == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
-$ upt*ime   == "PIPE SHOW SYSTEM /NOPROCESS | SEARCH /HIGHLIGHT=UNDERLINE sys$input uptime"
+$ ai           == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
+$ cftp         == "COPY /FTP /LOG"
+$ dsk*s        == "SHOW DEVICE /MOUNTED D"
+$ glo*bal      == "SHOW SYMBOL /GLOBAL"
+$ ssys*tem     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "  !requires string-arg
+$ stalledq*ues == "PIPE SHOW QUEUE | SEARCH SYS$INPUT stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
 $ !
 $ ! Define commands for REBOOT/SHUTDOWN, LOGINS/NOLOGINS, etc.
 $ F = "lmr$login:smart$shutdown.com"
 $ IF ( F$SEARCH( F ) .NES. "" ) THEN -
     @'F' COMMANDS
 $ !
-$ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
-$ IF F$SEARCH("com:show_cluster$init.ini") .NES. ""
-$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init com:show_cluster$init.ini
+$ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
+$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init lmr$login:show_cluster$init.ini
+$      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !
 $ IF F$SEARCH("com:where.com") .NES. ""
@@ -254,18 +255,11 @@ $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
 $ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
 $ !
-$ !! ! Testing:
-$ !! $ CALL CDefine "Test*Symbol" "@com:test_unavailable.com"
-$ !! $ CALL CDefine "Test*Symbol1" "@com:test_unavailable.com"
-$ !
-$ ! TCP/IP address(es):
-$! IP$Outlaw  == "209.95.47.35"
-$! IP$Bandit  == "10.0.1.2"
-$ ! Suffolk Co./Boston:
-$! IP$Suffolk == "141.154.88.226"  !"gateway" system to REDSOX/BRUINS/CELTIC
-$! IP$Bruins  == "140.241.134.3"
-$! IP$Celtic  == "140.241.134.4"
-$! IP$RedSox  == "140.241.134.5"
+$ ! PARSEC --
+$ tapesfree == "pipe mdms show volume | search sys$input free " -
+             + "| sort /key=(pos:26,siz=14,desc) sys$input sys$scratch:free.tapes ; type /page sys$scratch:free.tapes"
+$ tapesfind == "pipe mdms show volume | search sys$input transit,alloc " -
+             + "| sort /key=(pos:26,siz=14,ascending) sys$input sys$scratch:find.tapes ; type /page sys$scratch:find.tapes"
 $ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""
@@ -278,21 +272,3 @@ $      ENDIF
 $ ENDIF
 $ EXIT
 $ !
-$ !
-$ ! Resurrect on Alpha-AXP (?):
-$ !! case*convert == "$site$utils:case$convert"
-$ !! replace      == "$site$utils:repl$text"
-$ !
-$ ! --- Retired stuff ---
-$ !! cvt       == "@com:convert_tools"             !RMS/FDL tools
-$ !! findr*tl  == "@com:find_rtl.com"
-$ !! _smoscr   == esc + "[?4h" !smooth scroll
-$ !! _jmpscr   == esc + "[?4l" !jump scroll
-$ !! setf*orm  == "@com:setform.com"
-$ !! showf*orm == "@com:setform.com SHOW"
-$ !! acl       == "EDIT /ACL /NOJOURNAL "
-$ !! ptail     == "@com:pattail"
-$ !! settime   == "@com:settime.com"
-$ !! sw*itch   == "@site$utils:switch.com"
-$ !! tll       == "LIBR /TEXT /LIST"
-$ !! watch*tt  == "@mgr$command:watch_tt"
