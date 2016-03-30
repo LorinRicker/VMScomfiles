@@ -60,15 +60,24 @@ $ SET NOON
 $ Verbose = F$TRNLNM("TOOLS$Debug")
 $ Redefine = ( F$EXTRACT(0,2,P1) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
 $ !
+$ VMSArchitecture = F$EDIT( F$GETSYI("ARCH_NAME"), "TRIM" )
+$ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
+$ !
+$ ! Nice-to-have abbreviations for the command line:
+$ WSO == "WRITE sys$output"
+$ SIN == "SEARCH sys$input"
+$ !
 $ !Setup a reasonable/traceable process name for multi-logins (not "_TNAxxx:")
 $ PName = F$PROCESS()
 $ UName = F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
 $ IF PName .NES. UName  !not the first/only login for this user?
 $ THEN TName = F$TRNLNM("TT") - "_" - ":"
-$      LName = F$ELEMENT(1,"_",UName)  !last-name: "RICKER" from "L_RICKER"
-$      IF LName .EQS. "" THEN LName = UName
-$      !Process name becomes "LName TName" (15-char max):
-$      IF TName .NES. PName THEN SET PROCESS /NAME="''F$EXTRACT(0,7,LName)' ''TName'"
+$      LName = UName
+$      !Process name becomes "LName_TName" (15-char max):
+$      ProcName = LName + "_" + TName
+$      IF ( F$LENGTH( ProcName ) .GT. 15 ) THEN ProcName = ProcName - "L_"
+$      IF ( F$LENGTH( ProcName ) .GT. 15 ) THEN ProcName = F$EXTRACT(0,4,ProcName) + "_" + TName
+$      IF ProcName .NES. PName THEN SET PROCESS /NAME="''ProcName'"
 $ ENDIF
 $ !
 $ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
@@ -122,7 +131,7 @@ $ CALL CDefine "dco*nt"    "@com:do_continuous"
 $ ! Time how long to do something (once):
 $ IF F$TYPE(time) .EQS. "" THEN time == "@com:do_continuous -n:1 -t:1"
 $ !
-$ IF F$GETSYI("ARCH_NAME") .NES. "VAX"
+$ IF ( VMSArchitecture .NES. "VAX" )
 $ THEN dir == "DIRECTORY /ACL /SIZE /DATE /PROT /WIDTH=(FILENAME=24,SIZE=10)"  !Alpha, Itanium
 $ ELSE dir == "DIRECTORY /ACL /SIZE /DATE /PROT /WIDTH=SIZE=7"
 $ ENDIF
@@ -157,13 +166,23 @@ $ CALL CDefine "tee" "@com:tee"
 $ !
 $ ai           == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
 $ cftp         == "COPY /FTP /LOG"
+$ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ dsk*s        == "SHOW DEVICE /MOUNTED D"
 $ glo*bal      == "SHOW SYMBOL /GLOBAL"
-$ ssys*tem     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "  !requires string-arg
-$ stalledq*ues == "PIPE SHOW QUEUE | SEARCH SYS$INPUT stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
+$ idleq*ues    == "PIPE SHOW QUEUE | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
+$ reLog*in     == "@sys$login:login"
+$ stalledq*ues == "PIPE SHOW QUEUE | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ !
+$ IF ( VMSArchitecture .NES. "VAX" )
+$ THEN IF ( VMSVersion .GES. "V7.3" )
+$      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
+$      ELSE err*orlog == "ANALYZE /ERROR "
+$      ENDIF
+$ ELSE err*orlog == "ANALYZE /ERROR "
+$ ENDIF
 $ !
 $ ! Define commands for REBOOT/SHUTDOWN, LOGINS/NOLOGINS, etc.
 $ F = "lmr$login:smart$shutdown.com"
@@ -256,10 +275,10 @@ $ !
 $ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
 $ !
 $ ! PARSEC --
-$ tapesfree == "pipe mdms show volume | search sys$input free " -
-             + "| sort /key=(pos:26,siz=14,desc) sys$input sys$scratch:free.tapes ; type /page sys$scratch:free.tapes"
-$ tapesfind == "pipe mdms show volume | search sys$input transit,alloc " -
-             + "| sort /key=(pos:26,siz=14,ascending) sys$input sys$scratch:find.tapes ; type /page sys$scratch:find.tapes"
+$ tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
+             + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$input sys$scratch:free.tapes ; TYPE /PAGE sys$scratch:free.tapes"
+$ tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
+             + "| SORT /KEY=(POS:26,SIZ=14,ASCENDING) sys$input sys$scratch:find.tapes ; TYPE /PAGE sys$scratch:find.tapes"
 $ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""
