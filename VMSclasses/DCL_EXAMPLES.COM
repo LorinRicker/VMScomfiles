@@ -43,6 +43,7 @@ $ !
 $ZIP:
 $ IF ( F$SEARCH(archive) .NES. "" ) THEN DELETE /LOG 'archive';*
 $ zip 'archive' 'flist'
+$ SET FILE /PROTECTION=(W:RE) 'archive'
 $ GOTO Done
 $ !
 $LIST:
