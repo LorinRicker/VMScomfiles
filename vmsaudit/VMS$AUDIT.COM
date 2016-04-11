@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.20-02 (15-Mar-2016)"
+$ VA$ProcVersion = "V1.20-03 (11-Apr-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,8 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  11-APR-2016 : Bug: Missed one ".VERSION_REPORT" into ".REPORT",
+$ !                now fixed.
 $ !  15-MAR-2016 : Add PARSEC_AUTOGEN.COM to saveset and zip file lists,
 $ !                just so that this tool's available.
 $ !  03-MAR-2016 : Enable (stich-in) invocation of FILE$FINDVERSIONS.COM --
@@ -1087,7 +1089,7 @@ $           int = int - 2
 $           GOTO SpinL0
 $      ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
 $           wso ""
-$           TYPE /SINCE /PAGE=SAVE=4 'DD'FILE$FINDVERSIONS_*.VERSION_REPORT
+$           TYPE /SINCE /PAGE=SAVE=4 'DD'FILE$FINDVERSIONS_*.REPORT
 $           GOTO Reviews$
 $      ENDIF
 $SpinL0:
