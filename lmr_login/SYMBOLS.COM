@@ -278,13 +278,17 @@ $ !
 $ ! PARSEC --
 $ IF ( LNode .EQS. "VMSPR1" )
 $ THEN wso ""
-$      wso "%SYMBOLS-I-''LNode', tapes and license command aliases --"
+$      wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
 $      tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
                   + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$input sys$scratch:free.tapes ; TYPE /PAGE sys$scratch:free.tapes"
 $      tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
                   + "| SORT /KEY=(POS:26,SIZ=14,ASCENDING) sys$input sys$scratch:find.tapes ; TYPE /PAGE sys$scratch:find.tapes"
-$      mklic*ensepg == "@user_disk:[williams]pg_license"
 $      SHOW SYMBOL /GLOBAL tapes*
+$ ENDIF
+$ IF ( LNode .EQS. "VMSPR3" )
+$ THEN wso ""
+$      wso "%SYMBOLS-I-''LNode', license/PAK command alias --"
+$      mklic*ensepg == "@user_disk:[williams]pg_license"
 $      SHOW SYMBOL /GLOBAL mklic*
 $ ENDIF
 $ !
