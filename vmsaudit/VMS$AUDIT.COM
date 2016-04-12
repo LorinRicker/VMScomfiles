@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.20-03 (11-Apr-2016)"
+$ VA$ProcVersion = "V1.22-01 (12-Apr-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,13 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  12-APR-2016 : Fixed a nasty little integer overflow bug in
+$ !                DiskSpace routine, and now have moved that
+$ !                subroutine into separate file DISKSPACE$REPORT.COM
+$ !                so that it can be used independently of VMS$AUDIT.
+$ !  12-APR-2016 : Re-order "SHOW MEMORY /FILES" to proximity of
+$ !                "DIRECTORY SYS$SYSTEM:*FILES.SYS" for easier
+$ !                summary reporting.
 $ !  11-APR-2016 : Bug: Missed one ".VERSION_REPORT" into ".REPORT",
 $ !                now fixed.
 $ !  15-MAR-2016 : Add PARSEC_AUTOGEN.COM to saveset and zip file lists,
@@ -227,7 +234,7 @@ $ THEN free  = ( free  / 2 ) .AND. %X7FFFFFFF
 $      used  = ( used  / 2 ) .AND. %X7FFFFFFF
 $      total = ( total / 2 ) .AND. %X7FFFFFFF
 $ ENDIF
-$ IF ( used .GT. ( %X7FFFFFFF / 100 ) )
+$ IF ( used .GT. %X7FFFFFFF / 100 ) )
 $ THEN free  = free  / 10
 $      used  = used  / 10
 $      total = total / 10
@@ -598,11 +605,13 @@ $ V$Star     = "*"
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
              + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
-             + ",vms$audit_*.config*;,file$findversions.com;,parsec_autogen.com;"
+             + ",vms$audit_*.config*;,file$findversions.com;"                            -
+             + ",parsec_autogen.com;,diskspace$report.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com ''Fac'_*.tpu ''Fac'_boot_options.answers que$stalled.com" -
              + " uaf$detailed_analysis.com uaf$quick_analysis.com quick_audit.com"   -
-             + " vms$audit_*.config* file$findversions.com parsec_autogen.com"
+             + " vms$audit_*.config* file$findversions.com"                          -
+             + " parsec_autogen.com diskspace$report.com"
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
@@ -750,7 +759,7 @@ $ !
 $ ! Special: Review all batch/device/printer/symbiont queues for job-counts exceeding threshold:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ CALL DiskSpace
+$ CALL AuditStep "@''DD'DISKSPACE$REPORT" "" "@''DD'DISKSPACE$REPORT"
 $ !
 $ CALL AuditStep "SHOW ERROR"
 $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -
@@ -758,9 +767,9 @@ $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -
 $ CALL AuditStep "ANALYZE /ERROR /ELV TRANSLATE /SUMMARY /SINCE=''FirstofLastMonth' SYS$ERRORLOG:ERRLOG.SYS" -
     "NOPAGE" "ANALYZE /ERROR /SUMMARY /SINCE=''FirstofLastMonth'"
 $ !
-$ CALL AuditStep "SHOW MEMORY /FILES"
-$ !
 $ CALL AuditStep "SHOW CLUSTER"
+$ !
+$ CALL AuditStep "SHOW MEMORY /FILES"
 $ !
 $ CALL AuditStep "V$DIR SYS$SYSTEM:*FILE.SYS;*,*DUMP*.DMP;*" "NOPAGE" "DIRECTORY SYS$SYSTEM:*FILE.SYS,*DUMP*.DMP"
 $ !
