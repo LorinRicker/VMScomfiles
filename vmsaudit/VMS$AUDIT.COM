@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.22-01 (12-Apr-2016)"
+$ VA$ProcVersion = "V1.24-01 (12-Apr-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,8 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  12-APR-2016 : Added V$QStalled command (pipe to search for
+$ !                stalled, stopped or paused queues).
 $ !  12-APR-2016 : Fixed a nasty little integer overflow bug in
 $ !                DiskSpace routine, and now have moved that
 $ !                subroutine into separate file DISKSPACE$REPORT.COM
@@ -558,6 +560,8 @@ $ V$NCP      = "MCR NCP"
 $ V$NCL      = "MCR NCL"
 $ V$DIR      = "DIRECTORY /SIZE /OWNER /DATE /PROTECTION /WIDTH=(FILENAME=20,SIZE=9,OWNER=16)"
 $ V$Star     = "*"
+$ V$QStalled = "PIPE SHOW QUEUE /ALL | SEARCH sys$input stopped,stalled,paused"
+$ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
              + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
@@ -715,7 +719,9 @@ $ !
 $ ! Special: Review all batch/device/printer/symbiont queues for job-counts exceeding threshold:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ CALL AuditStep "@''DD'DISKSPACE$REPORT" "" "@''DD'DISKSPACE$REPORT"
+$ CALL AuditStep "V$QStalled" "NOPAGE" "PIPE SHOW QUEUE /ALL | SEARCH sys$input stopped,stalled,paused"
+$ !
+$ CALL AuditStep "@''DD'DISKSPACE$REPORT"
 $ !
 $ CALL AuditStep "SHOW ERROR"
 $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -

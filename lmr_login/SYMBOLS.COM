@@ -172,7 +172,7 @@ $ glo*bal      == "SHOW SYMBOL /GLOBAL"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ idleq*ues    == "PIPE SHOW QUEUE | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ reLog*in     == "@sys$login:login"
-$ stalledq*ues == "PIPE SHOW QUEUE | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
 $ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
 $ !
