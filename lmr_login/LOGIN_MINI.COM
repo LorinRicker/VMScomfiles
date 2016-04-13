@@ -135,7 +135,10 @@ $ SET TERMINAL /INQUIRE
 $ SET TERMINAL /INSERT /PAGE=48 /WIDTH=132 /DEVICE=VT300 -
     /BROADCAST /TYPE_AHEAD /ALTYPEAHD /APPLICATION_KEYPAD
 $ !
-$ SET PROMPT="''F$EDIT(F$GETSYI("SCSNODE"),"TRIM")'$ "
+$ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ LMR$promptstr == "''LNode'$ "       ! Normal prompt
+$ LMR$promptprv == "[1m''LNode'[0m$ "  !Prilegediv prompt
+$ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-strings
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
