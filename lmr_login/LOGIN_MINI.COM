@@ -142,6 +142,10 @@ $ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-str
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
+$ ! Nice-to-have abbreviations for the command line:
+$ WSO == "WRITE sys$output"
+$ SIN == "SEARCH sys$input"
+$ !
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
 $ DEFINE mfd sys$disk:[000000]
 $ DEFINE X   sys$scratch:X.tmp
@@ -164,19 +168,36 @@ $ CALL CDefine "priv*ilege" "@com:privilege" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" ) THEN pow*er == "''privilege' ONE$SHOT"
 $ !
 $ ai       == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
+$ cftp     == "COPY /FTP /LOG"
+$ chksum   == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ dsk*s    == "SHOW DEVICE /MOUNTED D"
 $ dir      == "DIRECTORY /ACL /SIZE /DATE /PROTECTION /WIDTH=(FILENAME=24,SIZE=10)"
 $ where    == "SHOW DEFAULT"
 $ glo*bal  == "SHOW SYMBOL /GLOBAL"
 $ lnm      == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
 $ ftpcl8   == "ftp class8.parsec.com"
-$ chksum   == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ reLog*in == "@sys$login:login"
+$ ssys*tem == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ submit   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ !
+$ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
+$ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ !
 $ auth     == "MCR AUTHORIZE"
 $ ping     == "$SYS$SYSTEM:TCPIP$PING"
 $ sysman   == "MCR SYSMAN"
 $ sysgen   == "MCR SYSGEN"
-$ ssys     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT"
+$ !
+$ clu = ""
+$ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
+$ upt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ !
+$ err*orlog == "ANALYZE /ERROR "
+$ IF ( VMSArchitecture .NES. "VAX" )
+$ THEN IF ( VMSVersion .GES. "V7.3" )
+$      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
+$      ENDIF
+$ ENDIF
 $ !
 $ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""

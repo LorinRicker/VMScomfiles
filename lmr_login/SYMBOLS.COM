@@ -169,19 +169,29 @@ $ cftp         == "COPY /FTP /LOG"
 $ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ dsk*s        == "SHOW DEVICE /MOUNTED D"
 $ glo*bal      == "SHOW SYMBOL /GLOBAL"
+$ lnm          == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
+$ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
-$ idleq*ues    == "PIPE SHOW QUEUE | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ reLog*in     == "@sys$login:login"
-$ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
 $ !
+$ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
+$ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ !
+$ auth     == "MCR AUTHORIZE"
+$ ping     == "$SYS$SYSTEM:TCPIP$PING"
+$ sysman   == "MCR SYSMAN"
+$ sysgen   == "MCR SYSGEN"
+$ !
+$ clu = ""
+$ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
+$ upt*ime      == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ !
+$ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
 $ THEN IF ( VMSVersion .GES. "V7.3" )
 $      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
-$      ELSE err*orlog == "ANALYZE /ERROR "
 $      ENDIF
-$ ELSE err*orlog == "ANALYZE /ERROR "
 $ ENDIF
 $ !
 $ ! Define commands for REBOOT/SHUTDOWN, LOGINS/NOLOGINS, etc.
