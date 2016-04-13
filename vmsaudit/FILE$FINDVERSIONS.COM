@@ -116,11 +116,38 @@ $SD_CtrlY:
 $ EXIT %X2C
 $ ENDSUBROUTINE  ! ScanDevice
 $ !
+$MakeDiskList: SUBROUTINE
+$ ON ERROR THEN GOTO MDLEnd
+$ FFV$DiskList == ""
+$MDL0:
+$ dsk = F$DEVICE( , "DISK" )
+$ IF ( dsk .EQS. "" ) THEN GOTO MDLEnd
+$ IF ( .NOT. F$GETDVI( dsk, "MNT" ) )     -  ! not mounted?
+  .OR. ( F$GETDVI( dsk, "FOR" ) )         -  ! mounted foreign?
+  .OR. ( F$GETDVI( dsk, "SWL" ) )         -  ! software-locked?
+  .OR. ( F$GETDVI( dsk, "SHDW_MEMBER" ) ) -  ! a shadow-set member (not the shadow-set itself)?
+  THEN GOTO MDL0                             ! ... skip it
+$ dsk = dsk - UNDERSCORE
+$ IF ( FFV$DiskList .NES. "" )
+$ THEN FFV$DiskList == FFV$DiskList + COMMA + dsk
+$ ELSE FFV$DiskList == dsk
+$ ENDIF
+$ GOTO MDL0
+$MDLEnd:
+$ IF Verbose
+$ THEN wso F$FAO( "%!AS-I-ECHO, FFV$DiskList ==", Fac )
+$      wso F$FAO( "  ""!AS""", FFV$DiskList )
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! MakeDiskList
+$ !
 $ !
 $ !
 $Main:
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL_Y THEN GOTO Done
+$ !
+$ Verbose = F$TRNLNM("TOOLS$Debug")
 $ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE( Proc, , , "NAME", "SYNTAX_ONLY" )
@@ -129,10 +156,11 @@ $ DD   = F$PARSE( Proc, , , "DEVICE", "SYNTAX_ONLY" ) -
 $ !
 $ tmpfspec = "sys$scratch:" + Fac + ".tmp"
 $ !
-$ COMMA     = ","
-$ COLON     = ":"
-$ SEMICOLON = ";"
-$ wso       = "WRITE sys$output"
+$ COMMA      = ","
+$ COLON      = ":"
+$ SEMICOLON  = ";"
+$ UNDERSCORE = "_"
+$ wso        = "WRITE sys$output"
 $ !
 $ DIRECTORY = "DIRECTORY"  ! override any global symbol...
 $ !
@@ -140,8 +168,9 @@ $ ! Principle of Least Privilege:
 $ Prv = F$SETPRV("READALL")
 $ !
 $ IF ( P1 .NES. "" )
-$ THEN Devices = P1
-$ ELSE Devices = "SYS$SYSDEVICE"
+$ THEN FFV$DiskList == P1
+$ ELSE CALL MakeDiskList
+$      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FFV$DiskList )
 $ ENDIF
 $ !
 $ IF ( P2 .NES. "" )
@@ -155,16 +184,21 @@ $ !
 $ devcount = 0
 $ !
 $Loop0:
-$ dev = F$ELEMENT( devcount, COMMA, Devices )
+$ dev = F$ELEMENT( devcount, COMMA, FFV$DiskList )
 $ IF ( dev .EQS. COMMA ) THEN GOTO Done
 $ dev = F$EDIT( dev, "TRIM,UPCASE" ) - COLON
-$ CALL ScanDevice "''dev'" "''filevmax'" "''tmpfspec'"
+$ IF .NOT. Verbose
+$ THEN CALL ScanDevice "''dev'" "''filevmax'" "''tmpfspec'"
+$ ELSE wso F$FAO( "%!AS-I-ECHO, CALL ScanDevice ""!AS"" ""!AS"" ""!AS""", -
+                  Fac, dev, filevmax, tmpfspec )
+$ ENDIF
 $ devcount = devcount + 1
 $ GOTO Loop0
 $ !
 $Done:
 $ SET NOON
 $ ! cleanup
+$ IF ( F$TYPE(FFV$DiskList) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL FFV$DiskList
 $ IF ( F$SEARCH(tmpfspec) .NES. "" ) THEN DELETE /NOLOG 'tmpfspec';*
 $ !
 $ ! Principle of Least Privilege:

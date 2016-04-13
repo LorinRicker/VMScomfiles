@@ -23,8 +23,10 @@ $ wso F$FAO( "Disk Space !#*=", 44 )
 $DSpc0:
 $ dsk = F$DEVICE( , "DISK" )
 $ IF ( dsk .EQS. "" ) THEN GOTO DSpcEnd
-$ IF ( .NOT. F$GETDVI( dsk, "MNT" ) ) .OR. ( F$GETDVI( dsk, "FOR" ) ) -
-  .OR. ( F$GETDVI( dsk, "SWL" ) ) .OR. ( F$GETDVI( dsk, "SHDW_MEMBER" ) ) -
+$ IF ( .NOT. F$GETDVI( dsk, "MNT" ) )     -  ! not mounted?
+  .OR. ( F$GETDVI( dsk, "FOR" ) )         -  ! mounted foreign?
+  .OR. ( F$GETDVI( dsk, "SWL" ) )         -  ! software-locked?
+  .OR. ( F$GETDVI( dsk, "SHDW_MEMBER" ) ) -  ! a shadow-set member (not the shadow-set itself)?
   THEN GOTO DSpc0
 $ voln  = F$GETDVI( dsk, "VOLNAM" )
 $ total = F$GETDVI( dsk, "MAXBLOCK" )
