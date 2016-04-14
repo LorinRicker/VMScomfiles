@@ -95,9 +95,7 @@ $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
 $ ssnam = "LMR$LOGIN:LOGIN_MINI"  ! hardwired name: LOGIN_MINI.COM gets renamed LOGIN.COM
 $ !
-$ IF F$TYPE(Lbase) .EQS. "" -
-  THEN LBase = F$PARSE("sys$login",,,"DEVICE","SYNTAX_ONLY") -
-             + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ IF F$TYPE(LBase) .EQS. "" THEN LBase = F$TRNLNM("sys$login") - "]"
 $ Rooted = ".] /TRANSLATION_ATTRIBUTES=(CONCEALED)"
 $ !
 $ SET NOON
@@ -141,6 +139,9 @@ $ LMR$promptprv == "[1m''LNode'[0m$ "  !Prilegediv prompt
 $ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-strings
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
+$ !
+$ VMSArchitecture = F$EDIT( F$GETSYI("ARCH_NAME"), "TRIM" )
+$ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
 $ !
 $ ! Nice-to-have abbreviations for the command line:
 $ WSO == "WRITE sys$output"
