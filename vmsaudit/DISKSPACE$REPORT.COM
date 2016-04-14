@@ -64,6 +64,7 @@ $ ENDSUBROUTINE  ! DiskSpace
 $ !
 $ !
 $Main:
+$ wso = "WRITE sys$output"
 $ CALL DiskSpace
 $ EXIT 1
 $ !
