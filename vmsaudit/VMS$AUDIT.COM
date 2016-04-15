@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.24-01 (12-Apr-2016)"
+$ VA$ProcVersion = "V1.25-01 (15-Apr-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,12 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  15-APR-2016 : Add new FILE$FIND.COM (based on FILE$FINDVERSIONS.COM,
+$ !                but now also handles scanning for large size files) to
+$ !                the backup saveset and zip archive. The earlier
+$ !                FILE$FINDVERSIONS.COM is now retired/deprecated, as
+$ !                FILE$FIND.COM does all...
+$ !                Also minor mods to subroutine Spawn_FFV for this change.
 $ !  12-APR-2016 : Added V$QStalled command (pipe to search for
 $ !                stalled, stopped or paused queues).
 $ !  12-APR-2016 : Fixed a nasty little integer overflow bug in
@@ -522,8 +528,8 @@ $ IF VA$FFV_run
 $ THEN IF ( F$SEARCH( VA$FFV ) .NES. "" )
 $      THEN wso "%''Fac'-I-SPAWN, launching subprocess for ''P1' --"
 $           wso F$FAO( "!20* !AS", "wait for this subprocess to complete before you LOGOUT..." )
-$           !!! wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" ""''VA$FFV_Version'"" ""NOTYPE"" ; LOGOUT"
-$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' /OUTPUT=NLA0: "''VA$FFV_Disks'" "''VA$FFV_Version'" "NOTYPE" ; LOGOUT
+$           !!! wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" VERSIONS ""''VA$FFV_Version'"" ""NOTYPE"" ; LOGOUT"
+$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' /OUTPUT=NLA0: "''VA$FFV_Disks'" VERSIONS "''VA$FFV_Version'" "NOTYPE" ; LOGOUT
 $           wso ""
 $      ENDIF
 $ ENDIF
@@ -565,12 +571,12 @@ $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
              + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
-             + ",vms$audit_*.config*;,file$findversions.com;"                            -
+             + ",vms$audit_*.config*;,file$find.com;"                                    -
              + ",parsec_autogen.com;,diskspace$report.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com ''Fac'_*.tpu ''Fac'_boot_options.answers que$stalled.com" -
              + " uaf$detailed_analysis.com uaf$quick_analysis.com quick_audit.com"   -
-             + " vms$audit_*.config* file$findversions.com"                          -
+             + " vms$audit_*.config* file$find.com"                                  -
              + " parsec_autogen.com diskspace$report.com"
 $ !
 $ ! Calculate the first of last month (approx):
@@ -648,7 +654,7 @@ $ !! $      show symbol /local VA$FTPurl
 $ !! $      show symbol /local VA$FTPuser
 $ !! $      show symbol /local VA$Disposition
 $ !! $      READ sys$command dummy /PROMPT="<Enter> or <Ctrl/Z>: " /END_OF_FILE=Done
-$      CALL Spawn_FFV "FILE$FINDVERSIONS"
+$      CALL Spawn_FFV "FILE$FIND"
 $      ! In either case, output is redirected here:
 $      wso F$FAO( "%!AS-I-OUTPUT, output redirected to !AS", Fac, VA$AuditReport )
 $      DEFINE /NOLOG /PROCESS sys$output 'VA$AuditReport'
