@@ -91,6 +91,34 @@ $ ENDSUBROUTINE  ! MakeDiskList
 $ !
 $ !
 $ !
+$ScanBEFORE: SUBROUTINE
+$ ! P1 = Disk device to scan
+$ ! P2 = Datetime before
+$ ! P3 = (unused)
+$ !
+$ ON ERROR THEN GOTO SS_CtrlY
+$ ON CONTROL_Y THEN GOTO SS_CtrlY
+$ !
+$ dev         = P1
+$ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ !
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
+              Fac, dev, outfspec )
+$ DIRECTORY 'dev':[000000...]*.* -
+    /BEFORE="''P2'" -
+    /SIZE=ALL /OUTPUT='outfspec' -
+    /WIDTH=(SIZE=18,FILENAME=60) -
+    /COLUMN=1 /DATE /HEADER /NOTRAILER 
+$ !
+$ CALL Report "''outfspec'" "''typereport'"
+$ EXIT 1
+$ !
+$SS_CtrlY:
+$ EXIT %X2C
+$ ENDSUBROUTINE  ! ScanBEFORE
+$ !
+$ !
+$ !
 $ScanSIZE: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = File minimum size
@@ -105,10 +133,10 @@ $ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
 $ !
 $ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
               Fac, dev, outfspec )
-$ DIRECTORY 'dev':[000000...]*.*       -
+$ DIRECTORY 'dev':[000000...]*.* -
     /SELECT=SIZE=MINIMUM='fileminsize' -
-    /SIZE=ALL /OUTPUT='outfspec'       -
-    /WIDTH=(SIZE=18,FILENAME=60)       -
+    /SIZE=ALL /OUTPUT='outfspec' -
+    /WIDTH=(SIZE=18,FILENAME=60) -
     /COLUMN=1 /DATE /HEADER /NOTRAILER 
 $ !
 $ CALL Report "''outfspec'" "''typereport'"
@@ -135,9 +163,9 @@ $ outfspec       = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
 $ !
 $ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
               Fac, dev, tmpfspec )
-$ DIRECTORY 'dev':[000000...]*.*             -
+$ DIRECTORY 'dev':[000000...]*.* -
     /SELECT=VERSION=MINIMUM='fileminversion' -
-    /OUTPUT='tmpfspec'                       -
+    /OUTPUT='tmpfspec' -
     /COLUMN=1 /DATE /NOHEADER /NOTRAILER 
 $ !
 $ OPEN /READ  /ERROR=ReadErr  in  'tmpfspec'
@@ -248,7 +276,8 @@ $ ELSE CALL MakeDiskList
 $      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FF$DiskList )
 $ ENDIF
 $ !
-$ CALL Cmd$Parse "''P2'" "FF$Cmd" "VERSIONS" "VERSIONS|SIZE    "
+$ CALL Cmd$Parse "''P2'" "FF$Cmd" "VERSIONS" "VERSIONS|SIZE    |AGED    |BEFORE  "
+$ IF ( FF$Cmd .EQS. "AGED" ) THEN FF$Cmd == "BEFORE"
 $ !
 $ tmpfspec   = "sys$scratch:" + Fac + FF$Cmd + ".tmp"
 $ IF ( P3 .NES. "" )
