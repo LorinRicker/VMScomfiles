@@ -18,7 +18,9 @@ $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
 $ ! usage:  @FILE$FIND [ disk_device[,...] ] -
-$ !                    [ VERSION | SIZE ]    -
+$ !                    [ VERSION | SIZE      -
+$ !                      | AGED | BEFORE     -
+$ !                      | SINCE | AFTER ]   -
 $ !                    [ minimum_size ]      -
 $ !                    [ NOTYPE ]
 $ !
@@ -91,13 +93,41 @@ $ ENDSUBROUTINE  ! MakeDiskList
 $ !
 $ !
 $ !
+$ScanSINCE: SUBROUTINE
+$ ! P1 = Disk device to scan
+$ ! P2 = Datetime since/after
+$ ! P3 = (unused)
+$ !
+$ ON ERROR THEN GOTO SA_CtrlY
+$ ON CONTROL_Y THEN GOTO SA_CtrlY
+$ !
+$ dev         = P1
+$ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ !
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
+              Fac, dev, outfspec )
+$ DIRECTORY 'dev':[000000...]*.* -
+    /SINCE="''P2'" -
+    /SIZE=ALL /OUTPUT='outfspec' -
+    /WIDTH=(SIZE=18,FILENAME=60) -
+    /COLUMN=1 /DATE /HEADER /NOTRAILER 
+$ !
+$ CALL Report "''outfspec'" "''typereport'"
+$ EXIT 1
+$ !
+$SA_CtrlY:
+$ EXIT %X2C
+$ ENDSUBROUTINE  ! ScanSINCE
+$ !
+$ !
+$ !
 $ScanBEFORE: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = Datetime before
 $ ! P3 = (unused)
 $ !
-$ ON ERROR THEN GOTO SS_CtrlY
-$ ON CONTROL_Y THEN GOTO SS_CtrlY
+$ ON ERROR THEN GOTO SB_CtrlY
+$ ON CONTROL_Y THEN GOTO SB_CtrlY
 $ !
 $ dev         = P1
 $ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
@@ -113,7 +143,7 @@ $ !
 $ CALL Report "''outfspec'" "''typereport'"
 $ EXIT 1
 $ !
-$SS_CtrlY:
+$SB_CtrlY:
 $ EXIT %X2C
 $ ENDSUBROUTINE  ! ScanBEFORE
 $ !
@@ -276,8 +306,10 @@ $ ELSE CALL MakeDiskList
 $      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FF$DiskList )
 $ ENDIF
 $ !
-$ CALL Cmd$Parse "''P2'" "FF$Cmd" "VERSIONS" "VERSIONS|SIZE    |AGED    |BEFORE  "
-$ IF ( FF$Cmd .EQS. "AGED" ) THEN FF$Cmd == "BEFORE"
+$ CALL Cmd$Parse "''P2'" "FF$Cmd" "VERSIONS" -
+       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   "
+$ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
+$ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
 $ !
 $ tmpfspec   = "sys$scratch:" + Fac + FF$Cmd + ".tmp"
 $ IF ( P3 .NES. "" )
