@@ -85,11 +85,12 @@ $ ON CONTROL THEN GOSUB Ctrl_Y
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
-$ CALL PureDCL "DELETE"
 $ CALL PureDCL "COPY"
-$ CALL PureDCL "RENAME"
-$ CALL PureDCL "PURGE"
+$ CALL PureDCL "DELETE"
 $ CALL PureDCL "DIRECTORY"
+$ CALL PureDCL "EDIT"
+$ CALL PureDCL "PURGE"
+$ CALL PureDCL "RENAME"
 $ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
@@ -166,7 +167,10 @@ $ CALL CDefine "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
 $ CALL CDefine "where"      "@com:where"     "SHOW DEFAULT"
 $ CALL CDefine "who"        "@com:DCLwho"    "SHOW USERS"
 $ CALL CDefine "priv*ilege" "@com:privilege" "SET PROCESS /PRIVILEGE="
-$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" ) THEN pow*er == "''privilege' ONE$SHOT"
+$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
+$ THEN pow*er == "''privilege' ONE$SHOT"
+$      sudo   == "''privilege' ONE$SHOT"
+$ ENDIF
 $ !
 $ ai       == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
 $ cftp     == "COPY /FTP /LOG"
