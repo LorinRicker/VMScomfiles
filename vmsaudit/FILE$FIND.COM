@@ -97,15 +97,17 @@ $ScanSINCE: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = Datetime since/after
 $ ! P3 = (unused)
+$ ! P4 = Nodename
 $ !
 $ ON ERROR THEN GOTO SA_CtrlY
 $ ON CONTROL_Y THEN GOTO SA_CtrlY
 $ !
 $ dev         = P1
-$ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ node        = P4
+$ outfspec    = "''DD'''Fac'''FF$Cmd'_''node'_''dev'.REPORT"
 $ !
-$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
-              Fac, dev, outfspec )
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
+              Fac, node, dev, outfspec )
 $ DIRECTORY 'dev':[000000...]*.* -
     /SINCE="''P2'" -
     /SIZE=ALL /OUTPUT='outfspec' -
@@ -125,15 +127,17 @@ $ScanBEFORE: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = Datetime before
 $ ! P3 = (unused)
+$ ! P4 = Nodename
 $ !
 $ ON ERROR THEN GOTO SB_CtrlY
 $ ON CONTROL_Y THEN GOTO SB_CtrlY
 $ !
 $ dev         = P1
-$ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ node        = P4
+$ outfspec    = "''DD'''Fac'''FF$Cmd'_''node'_''dev'.REPORT"
 $ !
-$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
-              Fac, dev, outfspec )
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
+              Fac, node, dev, outfspec )
 $ DIRECTORY 'dev':[000000...]*.* -
     /BEFORE="''P2'" -
     /SIZE=ALL /OUTPUT='outfspec' -
@@ -153,16 +157,18 @@ $ScanSIZE: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = File minimum size
 $ ! P3 = (unused)
+$ ! P4 = Nodename
 $ !
 $ ON ERROR THEN GOTO SS_CtrlY
 $ ON CONTROL_Y THEN GOTO SS_CtrlY
 $ !
 $ dev         = P1
+$ node        = P4
 $ fileminsize = F$INTEGER( P2 )
-$ outfspec    = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ outfspec    = "''DD'''Fac'''FF$Cmd'_''node'_''dev'.REPORT"
 $ !
-$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
-              Fac, dev, outfspec )
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
+              Fac, node, dev, outfspec )
 $ DIRECTORY 'dev':[000000...]*.* -
     /SELECT=SIZE=MINIMUM='fileminsize' -
     /SIZE=ALL /OUTPUT='outfspec' -
@@ -182,20 +188,27 @@ $ScanVERSIONS: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = File minimum version limit
 $ ! P3 = Temporary/working filespec
+$ ! P4 = Nodename
 $ !
 $ ON ERROR THEN GOTO SV_CtrlY
 $ ON CONTROL_Y THEN GOTO SV_CtrlY
 $ !
 $ dev            = P1
+$ node           = P4
 $ fileminversion = F$INTEGER( P2 )
 $ tmpfspec       = F$EDIT( P3, "UPCASE" )
-$ outfspec       = "''DD'''Fac'''FF$Cmd'_''dev'.REPORT"
+$ outfspec       = "''DD'''Fac'''FF$Cmd'_''node'_''dev'.REPORT"
 $ !
-$ wso F$FAO( "%!AS-I-WAIT, directory of !AS to !AS ...", -
-              Fac, dev, tmpfspec )
+$ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
+              Fac, node, dev, outfspec )
+$ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
+$ IF ( VMSver .GES. "V8.3" )
+$ THEN filter = "/SELECT=VERSION=MINIMUM=''fileminversion'""
+$ ELSE filter = ""  ! report all versions into tmp-report file,
+$ !                 !   let the following tmp-report-scan sort it out
+$ ENDIF
 $ DIRECTORY 'dev':[000000...]*.* -
-    /SELECT=VERSION=MINIMUM='fileminversion' -
-    /OUTPUT='tmpfspec' -
+    'filter' /OUTPUT='tmpfspec' -
     /COLUMN=1 /DATE /NOHEADER /NOTRAILER 
 $ !
 $ OPEN /READ  /ERROR=ReadErr  in  'tmpfspec'
@@ -205,7 +218,7 @@ $ MaxFS  = ""
 $ MaxV   = 0
 $ fcount = 0
 $ !
-$ hdr  = F$FAO( "Disk Device !AS", dev )
+$ hdr  = F$FAO( "Disk Device !AS on node !AS", dev, node )
 $ hdrl = F$LENGTH( hdr )
 $ now  = F$TIME()
 $ nowl = F$LENGTH( now )
@@ -288,6 +301,7 @@ $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE( Proc, , , "NAME", "SYNTAX_ONLY" )
 $ DD   = F$PARSE( Proc, , , "DEVICE", "SYNTAX_ONLY" ) -
        + F$PARSE( Proc, , , "DIRECTORY", "SYNTAX_ONLY" )
+$ Node = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ !
 $ COMMA      = ","
 $ COLON      = ":"
@@ -330,9 +344,9 @@ $ dev = F$ELEMENT( devcount, COMMA, FF$DiskList )
 $ IF ( dev .EQS. COMMA ) THEN GOTO Done
 $ dev = F$EDIT( dev, "TRIM,UPCASE" ) - COLON
 $ IF .NOT. Verbose
-$ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'"
-$ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS""", -
-                  Fac, dev, fileminimum, tmpfspec )
+$ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'" "''Node'"
+$ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS"" ""!AS""", -
+                  Fac, dev, fileminimum, tmpfspec, Node )
 $ ENDIF
 $ devcount = devcount + 1
 $ GOTO Loop0

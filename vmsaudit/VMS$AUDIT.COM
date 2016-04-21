@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.25-01 (15-Apr-2016)"
+$ VA$ProcVersion = "V1.26-01 (21-Apr-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -36,6 +36,8 @@ $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  21-APR-2016 : Trim blanks from F$GETSYI("VERSION").  Also, reorder
+$ !                archives file-lists.
 $ !  15-APR-2016 : Add new FILE$FIND.COM (based on FILE$FINDVERSIONS.COM,
 $ !                but now also handles scanning for large size files) to
 $ !                the backup saveset and zip archive. The earlier
@@ -549,7 +551,7 @@ $ Dir    = F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
 $ Dev    = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY")
 $ DD     = Dev + Dir
 $ Node   = F$GETSYI("NODENAME")
-$ VMSver = F$GETSYI("VERSION")
+$ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ !
 $ Debugging = F$TRNLNM("TOOLS$DEBUG")
 $ !
@@ -569,15 +571,29 @@ $ V$Star     = "*"
 $ V$QStalled = "PIPE SHOW QUEUE /ALL | SEARCH sys$input stopped,stalled,paused"
 $ !
 $ V$BckSSN   = Fac
-$ V$BckList  = "''Fac'.com;,''Fac'_*.tpu;,''Fac'_boot_options.answers;,que$stalled.com;" -
-             + ",uaf$detailed_analysis.com;,uaf$quick_analysis.com;,quick_audit.com;"    -
-             + ",vms$audit_*.config*;,file$find.com;"                                    -
-             + ",parsec_autogen.com;,diskspace$report.com;"
+$ V$BckList  = "''Fac'.com;" -
+             + ",''Fac'_*.config;" -
+             + ",''Fac'_boot_options.answers;" -
+             + ",''Fac'_*.tpu;" -
+             + ",file$find.com;" -
+             + ",diskspace$report.com;" -
+             + ",que$stalled.com;" -
+             + ",uaf$detailed_analysis.com;" -
+             + ",uaf$quick_analysis.com;" -
+             + ",quick_audit.com;" -
+             + ",parsec_autogen.com;"
 $ V$ZipArc   = "''Fac'.zip"
-$ V$ZipList  = "''Fac'.com ''Fac'_*.tpu ''Fac'_boot_options.answers que$stalled.com" -
-             + " uaf$detailed_analysis.com uaf$quick_analysis.com quick_audit.com"   -
-             + " vms$audit_*.config* file$find.com"                                  -
-             + " parsec_autogen.com diskspace$report.com"
+$ V$ZipList  = "''Fac'.com" -
+             + " ''Fac'_*.config" -
+             + " ''Fac'_boot_options.answers" -
+             + " ''Fac'_*.tpu" -
+             + " file$find.com" -
+             + " diskspace$report.com" -
+             + " que$stalled.com" -
+             + " uaf$detailed_analysis.com" -
+             + " uaf$quick_analysis.com" -
+             + " quick_audit.com"   -
+             + " parsec_autogen.com"
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
