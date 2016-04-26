@@ -227,9 +227,9 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.$com]privilege.com;,where.com;" -
+$ comlist = "''LBase'.$com]privilege.com;,where.com;"                       -
           + ",''LBase'.$com]reset_backup_saveset_attributes.com;,zips.com;" -
-          + ",''LBase'.$login]show_cluster$init.ini;"                       -
+          + ",''LBase'.$login]show_cluster$init.ini;,fixprivs.com;"         -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;"     -
           + ",mgr$root:[commands]DCLwho.com;"                               -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
@@ -248,7 +248,7 @@ $ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini) lmr$login:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini,fixprivs.com) lmr$login:*.* /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF
