@@ -18,7 +18,7 @@ $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
 $ ! usage:  @FILE$FIND [ disk_device[,...] ] -
-$ !                    [ VERSION | SIZE      -
+$ !                    [ VERSIONS (D) | SIZE -
 $ !                      | AGED | BEFORE     -
 $ !                      | SINCE | AFTER ]   -
 $ !                    [ minimum_size ]      -
@@ -203,7 +203,7 @@ $ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
               Fac, node, dev, outfspec )
 $ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ IF ( VMSver .GES. "V8.3" )
-$ THEN filter = "/SELECT=VERSION=MINIMUM=''fileminversion'""
+$ THEN filter = "/SELECT=VERSION=MINIMUM=''fileminversion'"
 $ ELSE filter = ""  ! report all versions into tmp-report file,
 $ !                 !   let the following tmp-report-scan sort it out
 $ ENDIF
