@@ -15,6 +15,8 @@ $ THEN CREATE /DIRECTORY [.SCRATCH]
 $ ENDIF
 $ home = F$TRNLNM("SYS$LOGIN") - "]"
 $ DEFINE /JOB /NOLOG SYS$SCRATCH 'home'.SCRATCH]
+$ DEFINE /JOB /NOLOG com         'home'.$COM]
+$ DEFINE /JOB /NOLOG logs        'home'.LOGS]
 $ !
 $ EveInitF = "sys$login:eve$init.eve"
 $ IF ( F$SEARCH(EveInitF) .EQS. "" )
@@ -38,7 +40,7 @@ $ !
 $ ! Linux/Unix-style command aliases (symbols) --
 $ cd       == "SET DEFAULT"
 $ pwd      == "SHOW DEFAULT"
-$ cls      == "TYPE /PAGE=NLA0:"
+$ cls      == "TYPE /PAGE=CLEARSCREEN NLA0:"
 $ cp       == "COPY"
 $ rm       == "DELETE"
 $ mv       == "RENAME"

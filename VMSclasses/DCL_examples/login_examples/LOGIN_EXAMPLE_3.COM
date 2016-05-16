@@ -16,6 +16,8 @@ $ THEN CREATE /DIRECTORY [.SCRATCH]
 $ ENDIF
 $ home = F$TRNLNM("SYS$LOGIN") - "]"
 $ DEFINE /JOB /NOLOG SYS$SCRATCH 'home'.SCRATCH]
+$ DEFINE /JOB /NOLOG com         'home'.$COM]
+$ DEFINE /JOB /NOLOG logs        'home'.LOGS]
 $ !
 $ EveInitF = "sys$login:eve$init.eve"
 $ IF ( F$SEARCH(EveInitF) .EQS. "" )
@@ -42,7 +44,7 @@ $ !
 $ ! Linux/Unix-style command aliases (symbols) --
 $ cd       == "SET DEFAULT"
 $ pwd      == "SHOW DEFAULT"
-$ cls      == "TYPE /PAGE=NLA0:"
+$ cls      == "TYPE /PAGE=CLEARSCREEN NLA0:"
 $ cp       == "COPY"
 $ rm       == "DELETE"
 $ mv       == "RENAME"
@@ -68,13 +70,19 @@ $ IF F$SEARCH("sys$login:show_cluster$init.ini") .NES. ""
 $ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init sys$login:show_cluster$init.ini
 $ ENDIF
 $ !
+$ priv   == "@com:privilege.com"
+$ pow*er == "@com:privilege.com"
+$ IF F$TYPE(power) .EQS. "STRING"
+$ THEN pow*er == power - ".COM" - " ONE$SHOT" + " ONE$SHOT"
+$      sudo   == "''power'"   ! make a Linux-synonym too...
+$ ENDIF
+$ !
 $ IF F$TYPE(authorize) .EQS. "" THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
 $ IF F$TYPE(sysgen)    .EQS. "" THEN sysgen     == "$SYS$SYSTEM:SYSGEN"
 $ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
 $ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
 $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
-$ IF F$TYPE(ping)      .EQS. "" THEN ping       == "UCX PING"
 $ !
 $ nodename = F$EDIT( F$GETSYI("NODENAME"), "TRIM,UPCASE" )
 $ SET PROMPT="''nodename'$ "
