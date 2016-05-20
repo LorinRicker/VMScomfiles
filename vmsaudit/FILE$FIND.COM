@@ -202,6 +202,8 @@ $ !
 $ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
               Fac, node, dev, outfspec )
 $ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
+$ now  = F$TIME()
+$ nowl = F$LENGTH( now )
 $ IF ( VMSver .GES. "V8.3" )
 $ THEN filter = "/SELECT=VERSION=MINIMUM=''fileminversion'"
 $ ELSE filter = ""  ! report all versions into tmp-report file,
@@ -220,8 +222,6 @@ $ fcount = 0
 $ !
 $ hdr  = F$FAO( "Disk Device !AS on node !AS", dev, node )
 $ hdrl = F$LENGTH( hdr )
-$ now  = F$TIME()
-$ nowl = F$LENGTH( now )
 $ !
 $ wso F$FAO( "%!AS-I-WAIT, scanning for file versions > ;!ZL ...", -
               Fac, fileminversion )
@@ -253,6 +253,9 @@ $ GOTO SDLoop
 $ !
 $Cleanup:
 $ elapsed = F$DELTA_TIME( now, F$TIME(), "ASCTIM" )
+$ show symbol now
+$ write sys$output f$time()
+$ show symbol elapsed
 $ ! write output file's trailer information and close it...
 $ IF ( fcount .GT. 0 )
 $ THEN WRITE out ""
@@ -261,9 +264,11 @@ $ ELSE WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $      WRITE out ""
 $      WRITE out F$FAO( "No files found having version >= ;!ZL", fileminversion )
 $ ENDIF
-$ WRITE out ""
-$ WRITE out F$FAO( "!6* Maximum version found: ;!ZL", MaxV )
-$ WRITE out F$FAO( "!19* for file: !AS", MaxFS )
+$ IF ( filter .EQS. "" )
+$ THEN WRITE out ""
+$      WRITE out F$FAO( "!6* Maximum version found: ;!ZL", MaxV )
+$      WRITE out F$FAO( "!19* for file: !AS", MaxFS )
+$ ENDIF
 $ WRITE out ""
 $ WRITE out F$FAO( "%!AS-I-ELAPSED_TIME, !AS", Fac, elapsed )
 $ WRITE out ""
