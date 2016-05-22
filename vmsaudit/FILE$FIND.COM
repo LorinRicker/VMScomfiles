@@ -253,9 +253,6 @@ $ GOTO SDLoop
 $ !
 $Cleanup:
 $ elapsed = F$DELTA_TIME( now, F$TIME(), "ASCTIM" )
-$ show symbol now
-$ write sys$output f$time()
-$ show symbol elapsed
 $ ! write output file's trailer information and close it...
 $ IF ( fcount .GT. 0 )
 $ THEN WRITE out ""
