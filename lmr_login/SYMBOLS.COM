@@ -65,7 +65,7 @@ $ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
 $ !
 $ ! Nice-to-have abbreviations for the command line:
 $ WSO == "WRITE sys$output"
-$ SIN == "SEARCH sys$input"
+$ SIN == "SEARCH sys$pipe"
 $ !
 $ !Setup a reasonable/traceable process name for multi-logins (not "_TNAxxx:")
 $ PName = F$PROCESS()
@@ -109,7 +109,6 @@ $ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/C
 $ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
 $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
-$ IF F$TYPE(ping)      .EQS. "" THEN ping       == "UCX PING"
 $ !
 $ CALL CDefine "lo*gout"      "@lmr$login:logout.com"
 $ CALL CDefine "priv"         "@com:privilege.com"
@@ -185,7 +184,7 @@ $ sysgen   == "MCR SYSGEN"
 $ !
 $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
-$ upt*ime      == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ upt*ime      == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ !
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
@@ -290,13 +289,13 @@ $ IF ( LNode .EQS. "VMSPR3" )
 $ THEN wso ""
 $      wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
 $      tapesall  == "PIPE MDMS SHOW VOLUME | SORT /KEY=(POS:12,SIZ:10,ASC) /KEY=(POS:1,SIZ:6,ASC)" -
-                  + " sys$input sys$scratch:all.tapes" -
+                  + " sys$pipe sys$scratch:all.tapes" -
                   + " ; TYPE /PAGE sys$scratch:all.tapes"
 $      tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
-                  + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$input sys$scratch:free.tapes" -
+                  + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$pipe sys$scratch:free.tapes" -
                   + " ; TYPE /PAGE sys$scratch:free.tapes"
 $      tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
-                  + "| SORT /KEY=(POS:26,SIZ=14,ASC) sys$input sys$scratch:find.tapes" -
+                  + "| SORT /KEY=(POS:26,SIZ=14,ASC) sys$pipe sys$scratch:find.tapes" -
                   + " ; TYPE /PAGE sys$scratch:find.tapes"
 $      SHOW SYMBOL /GLOBAL tapes*
 $ ENDIF

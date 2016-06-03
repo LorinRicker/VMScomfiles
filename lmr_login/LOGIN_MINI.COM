@@ -146,7 +146,7 @@ $ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
 $ !
 $ ! Nice-to-have abbreviations for the command line:
 $ WSO == "WRITE sys$output"
-$ SIN == "SEARCH sys$input"
+$ SIN == "SEARCH sys$pipe"
 $ !
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
 $ DEFINE mfd sys$disk:[000000]
@@ -195,7 +195,7 @@ $ sysgen   == "MCR SYSGEN"
 $ !
 $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
-$ upt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ upt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ !
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
