@@ -37,9 +37,9 @@ $ ENDIF
 $ ed*it    == "EDIT /TPU /INIT=eve$init"
 $ move     == "RENAME"
 $ prlj     == "PRINT /QUEUE=LASERJET /LOG"
-$ ssys*tem == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "
+$ ssys*tem == "PIPE SHOW SYSTEM | SEARCH SYS$PIPE "
 $ SUBM*IT  == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ count    == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT /STATISTICS "
+$ count    == "PIPE SHOW SYSTEM | SEARCH SYS$PIPE /STATISTICS "
 $ !
 $ ! Linux/Unix-style command aliases (symbols) --
 $ cd       == "SET DEFAULT"
@@ -50,7 +50,7 @@ $ rm       == "DELETE"
 $ mv       == "RENAME"
 $ ls       == "DIRECTORY /SIZE /DATE /PROTECTION"
 $ home     == "PIPE SET DEFAULT sys$login ; SHOW DEFAULT"
-$ upt*ime  == "PIPE SHOW SYSTEM /NOPROCESS | SEARCH /HIGHLIGHT=UNDERLINE sys$input uptime"
+$ upt*ime  == "PIPE SHOW SYSTEM /NOPROCESS | SEARCH /HIGHLIGHT=UNDERLINE sys$pipe uptime"
 $ !
 $ PgSize  = F$INTEGER(F$GETDVI("TT","TT_PAGE")) - 2    ! allow some margin
 $ PgWidth = F$INTEGER(F$GETDVI("TT","DEVBUFSIZ")) - 2

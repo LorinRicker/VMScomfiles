@@ -65,7 +65,7 @@ $ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
 $ !
 $ ! Nice-to-have abbreviations for the command line:
 $ WSO == "WRITE sys$output"
-$ SIN == "SEARCH sys$input"
+$ SIN == "SEARCH sys$pipe"
 $ !
 $ !Setup a reasonable/traceable process name for multi-logins (not "_TNAxxx:")
 $ PName = F$PROCESS()
@@ -174,7 +174,7 @@ $ idleq*ues    == "PIPE SHOW QUEUE | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ reLog*in     == "@sys$login:login"
 $ stalledq*ues == "PIPE SHOW QUEUE | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$input uptime"
+$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ !
 $ IF ( VMSArchitecture .NES. "VAX" )
 $ THEN IF ( VMSVersion .GES. "V7.3" )
@@ -276,9 +276,9 @@ $ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
 $ !
 $ ! PARSEC --
 $ tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
-             + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$input sys$scratch:free.tapes ; TYPE /PAGE sys$scratch:free.tapes"
+             + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$pipe sys$scratch:free.tapes ; TYPE /PAGE sys$scratch:free.tapes"
 $ tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
-             + "| SORT /KEY=(POS:26,SIZ=14,ASCENDING) sys$input sys$scratch:find.tapes ; TYPE /PAGE sys$scratch:find.tapes"
+             + "| SORT /KEY=(POS:26,SIZ=14,ASCENDING) sys$pipe sys$scratch:find.tapes ; TYPE /PAGE sys$scratch:find.tapes"
 $ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""

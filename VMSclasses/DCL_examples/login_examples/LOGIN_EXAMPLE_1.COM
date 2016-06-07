@@ -13,9 +13,9 @@ $ ! VMS-style command aliases (symbols) --
 $ dir      == "DIRECTORY /SIZE /DATE /PROTECTION"
 $ move     == "RENAME"
 $ prlj     == "PRINT /QUEUE=LASERJET /LOG"
-$ ssys*tem == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT "
+$ ssys*tem == "PIPE SHOW SYSTEM | SEARCH SYS$PIPE "
 $ SUBM*IT  == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ count    == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT /STATISTICS "
+$ count    == "PIPE SHOW SYSTEM | SEARCH SYS$PIPE /STATISTICS "
 $ ! ...
 $ !
 $ SET PROMPT="CLASS8$ "
