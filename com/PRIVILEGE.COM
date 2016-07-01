@@ -30,7 +30,7 @@ $ IF P1 .EQS. "?" THEN GOTO Help
 $ !
 $ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ IF F$TYPE(RED) .EQS. "STRING"
-$ THEN LMR$promptstr == "''BOLD'''PURPLE_BG'''WHITE'''LNode'''NORM'$ "
+$ THEN LMR$promptstr == "''BOLD'''BLUE_BG'''WHITE'''LNode'''NORM'$ "
 $      LMR$promptprv == "''BOLD'''RED_BG'''YELLOW'''LNode'''NORM'$ "
 $ ELSE LMR$promptstr == "''LNode'$ "
 $      LMR$promptprv == "[1m''LNode'[0m$ " !Priv prompt
