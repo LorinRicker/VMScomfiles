@@ -111,11 +111,10 @@ $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
 $ !
 $ CALL CDefine "lo*gout"      "@lmr$login:logout.com"
-$ CALL CDefine "priv"         "@com:privilege.com"
-$ CALL CDefine "pow*er"       "@com:privilege.com"
-$ IF F$TYPE(power) .EQS. "STRING"
-$ THEN pow*er == power - ".COM" - " ONE$SHOT" + " ONE$SHOT"
-$      sudo   == "''power'"   ! make a Linux-synonym too...
+$ CALL CDefine "priv*ilege"   "@com:privilege.com"
+$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
+$ THEN pow*er == "''privilege' ONE$SHOT"
+$      sudo   == "''privilege' SUDO"  ! make a Linux-synonym too...
 $ ENDIF
 $ CALL CDefine "rid*manager"  "@mgr$command:rid$manager.com"
 $ CALL CDefine "spy"          "@com:showproc.com"

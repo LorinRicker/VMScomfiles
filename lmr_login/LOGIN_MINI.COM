@@ -169,7 +169,7 @@ $ CALL CDefine "who"        "@com:DCLwho"    "SHOW USERS"
 $ CALL CDefine "priv*ilege" "@com:privilege" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
-$      sudo   == "''privilege' ONE$SHOT"
+$      sudo   == "''privilege' SUDO"
 $ ENDIF
 $ !
 $ ai       == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
@@ -214,8 +214,8 @@ $ IF ( F$SEARCH("com:zips.com") .NES. "" ) THEN @com:zips
 $ !
 $ ! Logicals:
 $ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
-$ CALL CDefine "mkdir" "@com:makedir"
-$ ml*ogical == mkdir + " *"
+$!! $ CALL CDefine "mkdir" "@com:makedir"
+$!! $ ml*ogical == mkdir + " *"
 $ !
 $ EXIT 1
 $ !

@@ -85,19 +85,18 @@ $ ON CONTROL THEN GOSUB Ctrl_Y
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
-$ CALL PureDCL "DELETE"
 $ CALL PureDCL "COPY"
-$ CALL PureDCL "RENAME"
-$ CALL PureDCL "PURGE"
+$ CALL PureDCL "DELETE"
 $ CALL PureDCL "DIRECTORY"
+$ CALL PureDCL "EDIT"
+$ CALL PureDCL "PURGE"
+$ CALL PureDCL "RENAME"
 $ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
 $ ssnam = "LMR$LOGIN:LOGIN_MINI"  ! hardwired name: LOGIN_MINI.COM gets renamed LOGIN.COM
 $ !
-$ IF F$TYPE(Lbase) .EQS. "" -
-  THEN LBase = F$PARSE("sys$login",,,"DEVICE","SYNTAX_ONLY") -
-             + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ IF F$TYPE(LBase) .EQS. "" THEN LBase = F$TRNLNM("sys$login") - "]"
 $ Rooted = ".] /TRANSLATION_ATTRIBUTES=(CONCEALED)"
 $ !
 $ SET NOON
@@ -142,6 +141,13 @@ $ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-str
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
+$ VMSArchitecture = F$EDIT( F$GETSYI("ARCH_NAME"), "TRIM" )
+$ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
+$ !
+$ ! Nice-to-have abbreviations for the command line:
+$ WSO == "WRITE sys$output"
+$ SIN == "SEARCH sys$pipe"
+$ !
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
 $ DEFINE mfd sys$disk:[000000]
 $ DEFINE X   sys$scratch:X.tmp
@@ -161,22 +167,42 @@ $ CALL CDefine "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
 $ CALL CDefine "where"      "@com:where"     "SHOW DEFAULT"
 $ CALL CDefine "who"        "@com:DCLwho"    "SHOW USERS"
 $ CALL CDefine "priv*ilege" "@com:privilege" "SET PROCESS /PRIVILEGE="
-$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" ) THEN pow*er == "''privilege' ONE$SHOT"
+$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
+$ THEN pow*er == "''privilege' ONE$SHOT"
+$      sudo   == "''privilege' SUDO"
+$ ENDIF
 $ !
 $ ai       == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
+$ cftp     == "COPY /FTP /LOG"
+$ chksum   == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ dsk*s    == "SHOW DEVICE /MOUNTED D"
 $ dir      == "DIRECTORY /ACL /SIZE /DATE /PROTECTION /WIDTH=(FILENAME=24,SIZE=10)"
 $ where    == "SHOW DEFAULT"
 $ glo*bal  == "SHOW SYMBOL /GLOBAL"
 $ lnm      == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
 $ ftpcl8   == "ftp class8.parsec.com"
-$ chksum   == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$ reLog*in == "@sys$login:login"
+$ ssys*tem == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ submit   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ !
+$ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
+$ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ !
 $ auth     == "MCR AUTHORIZE"
 $ ping     == "$SYS$SYSTEM:TCPIP$PING"
 $ sysman   == "MCR SYSMAN"
 $ sysgen   == "MCR SYSGEN"
-$ ssys     == "PIPE SHOW SYSTEM | SEARCH SYS$INPUT"
+$ !
+$ clu = ""
+$ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
+$ upt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
+$ !
+$ err*orlog == "ANALYZE /ERROR "
+$ IF ( VMSArchitecture .NES. "VAX" )
+$ THEN IF ( VMSVersion .GES. "V7.3" )
+$      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
+$      ENDIF
+$ ENDIF
 $ !
 $ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
@@ -188,8 +214,8 @@ $ IF ( F$SEARCH("com:zips.com") .NES. "" ) THEN @com:zips
 $ !
 $ ! Logicals:
 $ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
-$ CALL CDefine "mkdir" "@com:makedir"
-$ ml*ogical == mkdir + " *"
+$!! $ CALL CDefine "mkdir" "@com:makedir"
+$!! $ ml*ogical == mkdir + " *"
 $ !
 $ EXIT 1
 $ !
@@ -201,9 +227,9 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.$com]privilege.com;,where.com;" -
+$ comlist = "''LBase'.$com]privilege.com;,where.com;"                       -
           + ",''LBase'.$com]reset_backup_saveset_attributes.com;,zips.com;" -
-          + ",''LBase'.$login]show_cluster$init.ini;"                       -
+          + ",''LBase'.$login]show_cluster$init.ini;,fixprivs.com;"         -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;"     -
           + ",mgr$root:[commands]DCLwho.com;"                               -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
@@ -222,7 +248,7 @@ $ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini) lmr$login:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini,fixprivs.com) lmr$login:*.* /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF

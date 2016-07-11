@@ -82,7 +82,7 @@ $ ENDIF
 $ !
 $ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ IF F$TYPE(RED) .EQS. "STRING"
-$ THEN LMR$promptstr == "''BOLD'''PURPLE_BG'''WHITE'''LNode'''NORM'$ "
+$ THEN LMR$promptstr == "''BOLD'''BLUE_BG'''WHITE'''LNode'''NORM'$ "
 $      LMR$promptprv == "''BOLD'''RED_BG'''YELLOW'''LNode'''NORM'$ "
 $ ELSE LMR$promptstr == "''LNode'$ "
 $      LMR$promptprv == "[1m''LNode'[0m$ " !Priv prompt
@@ -109,14 +109,12 @@ $ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/C
 $ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
 $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
-$ IF F$TYPE(ping)      .EQS. "" THEN ping       == "UCX PING"
 $ !
 $ CALL CDefine "lo*gout"      "@lmr$login:logout.com"
-$ CALL CDefine "priv"         "@com:privilege.com"
-$ CALL CDefine "pow*er"       "@com:privilege.com"
-$ IF F$TYPE(power) .EQS. "STRING"
-$ THEN pow*er == power - ".COM" - " ONE$SHOT" + " ONE$SHOT"
-$      sudo   == "''power'"   ! make a Linux-synonym too...
+$ CALL CDefine "priv*ilege"   "@com:privilege.com"
+$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
+$ THEN pow*er == "''privilege' ONE$SHOT"
+$      sudo   == "''privilege' SUDO"  ! make a Linux-synonym too...
 $ ENDIF
 $ CALL CDefine "rid*manager"  "@mgr$command:rid$manager.com"
 $ CALL CDefine "spy"          "@com:showproc.com"
@@ -169,19 +167,29 @@ $ cftp         == "COPY /FTP /LOG"
 $ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ dsk*s        == "SHOW DEVICE /MOUNTED D"
 $ glo*bal      == "SHOW SYMBOL /GLOBAL"
+$ lnm          == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
+$ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
-$ idleq*ues    == "PIPE SHOW QUEUE | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ reLog*in     == "@sys$login:login"
-$ stalledq*ues == "PIPE SHOW QUEUE | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ upt*ime      == "PIPE SHOW SYSTEM /NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ !
+$ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
+$ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ !
+$ auth     == "MCR AUTHORIZE"
+$ ping     == "$SYS$SYSTEM:TCPIP$PING"
+$ sysman   == "MCR SYSMAN"
+$ sysgen   == "MCR SYSGEN"
+$ !
+$ clu = ""
+$ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
+$ upt*ime      == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
+$ !
+$ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
 $ THEN IF ( VMSVersion .GES. "V7.3" )
 $      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
-$      ELSE err*orlog == "ANALYZE /ERROR "
 $      ENDIF
-$ ELSE err*orlog == "ANALYZE /ERROR "
 $ ENDIF
 $ !
 $ ! Define commands for REBOOT/SHUTDOWN, LOGINS/NOLOGINS, etc.
@@ -272,13 +280,30 @@ $ CALL CDefine "tcom"        "@com:typecom.com"
 $ CALL CDefine scr*width     "@com:scrwidth.com"
 $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
-$ IF F$TYPE(sql) .EQS. "" THEN @site$utils:rapt_tools
+$ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES. "" ) -
+  THEN @site$utils:rapt_tools
 $ !
 $ ! PARSEC --
-$ tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
-             + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$pipe sys$scratch:free.tapes ; TYPE /PAGE sys$scratch:free.tapes"
-$ tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
-             + "| SORT /KEY=(POS:26,SIZ=14,ASCENDING) sys$pipe sys$scratch:find.tapes ; TYPE /PAGE sys$scratch:find.tapes"
+$ IF ( LNode .EQS. "VMSPR3" )
+$ THEN wso ""
+$      wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
+$      tapesall  == "PIPE MDMS SHOW VOLUME | SORT /KEY=(POS:12,SIZ:10,ASC) /KEY=(POS:1,SIZ:6,ASC)" -
+                  + " sys$pipe sys$scratch:all.tapes" -
+                  + " ; TYPE /PAGE sys$scratch:all.tapes"
+$      tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
+                  + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$pipe sys$scratch:free.tapes" -
+                  + " ; TYPE /PAGE sys$scratch:free.tapes"
+$      tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
+                  + "| SORT /KEY=(POS:26,SIZ=14,ASC) sys$pipe sys$scratch:find.tapes" -
+                  + " ; TYPE /PAGE sys$scratch:find.tapes"
+$      SHOW SYMBOL /GLOBAL tapes*
+$ ENDIF
+$ IF ( LNode .EQS. "VMSPR3" )
+$ THEN wso ""
+$      wso "%SYMBOLS-I-''LNode', license/PAK command alias --"
+$      mklic*ensepg == "@user_disk:[williams]pg_license"
+$      SHOW SYMBOL /GLOBAL mklic*
+$ ENDIF
 $ !
 $Done:
 $ IF F$TYPE(LMR$Unavailable) .NES. ""
