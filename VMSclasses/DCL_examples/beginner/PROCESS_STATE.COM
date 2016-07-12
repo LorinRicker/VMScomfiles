@@ -16,10 +16,17 @@ $ ON ERROR THEN GOTO NoProc
 $ !
 $ IF ( P1 .EQS. "?" ) THEN GOTO Help
 $ !
+$ IF ( P1 .EQS. "SHOW" )
+$ THEN P1 = ""
+$      SHOW SYSTEM /PAGE=SAVE=4
+$ ENDIF
+$ !
 $ IF ( P1 .EQS. "" )
 $ THEN READ sys$command P1 /PROMPT="PID? " /END_OF_FILE=Done
 $      IF ( P1 .EQS. "" ) THEN GOTO Done
 $ ENDIF
+$ !
+$ prv = F$SETPRV( "WORLD" )
 $ !
 $ state = F$GETJPI( P1, "STATE" )
 $ efwm  = F$GETJPI( P1, "EFWM" )
@@ -36,6 +43,7 @@ $ !
 $ WRITE sys$output "Process name: ''pname', PID: ''P1', state: ''state'"
 $ !
 $Done:
+$ IF F$TYPE(prv) .EQS. "STRING" THEN prv = F$SETPRV( prv )
 $ EXIT  ! 'F$VERIFY(0)'
 $ !
 $NoProc:
@@ -47,34 +55,34 @@ $Help:
 $ TYPE /PAGE sys$input
     [4mVMS Process States[0m
 
-      CUR (Current)
-      COM (Computable)                COMO (Computable, outswapped)
-      LEF (Local event flag wait)     LEFO (Local event flag wait, outswapped)
-      HIB (Hibernating)               HIBO (Hibernating, outswapped)
-      SUSP (Suspended)                SUSPO (Suspended, outswapped)
+        CUR -- Current
+        COM -- Computable                COMO -- Computable, outswapped
+        LEF -- Local event flag wait     LEFO -- Local event flag wait, outswapped
+        HIB -- Hibernating               HIBO -- Hibernating, outswapped
+       SUSP -- Suspended                SUSPO -- Suspended, outswapped
 
-      CEF (Common event flag wait)
-      PFW (Page fault wait)
-      FPG (Free page wait)
-      COLPG (Collided page wait)
-      PSXFR (POSIX fork wait)
+        CEF -- Common event flag wait
+        PFW -- Page fault wait
+        FPG -- Free page wait
+      COLPG -- Collided page wait
+      PSXFR -- POSIX fork wait
 
-      MWAIT (Miscellaneous wait)
-      RWAST (AST wait)
-      RWBRK (Waiting for BROADCAST to finish)
-      RWCAP (CPU capability required)
-      RWCLU (Cluster transition wait)
-      RWCSV (Cluster server)
-      RWIMG (Image activation lock)
-      RWLCK (Lock ID database)
-      RWMBX (Mailbox full)
-      RWMPE (Modified page list empty)
-      RWMPB (Modified page writer busy)
-      RWNPG (Nonpaged pool)
-      RWPAG (Paged pool)
-      RWPFF (Page file full)
-      RWQUO (Pooled quota)
-      RWSCS (SCS wait)
-      RWSWP (Swapfile spacelist empty)
+      MWAIT -- Miscellaneous wait
+      RWAST -- AST wait
+      RWBRK -- Waiting for BROADCAST to finish
+      RWCAP -- CPU capability required
+      RWCLU -- Cluster transition wait
+      RWCSV -- Cluster server
+      RWIMG -- Image activation lock
+      RWLCK -- Lock ID database
+      RWMBX -- Mailbox full
+      RWMPE -- Modified page list empty
+      RWMPB -- Modified page writer busy
+      RWNPG -- Nonpaged pool
+      RWPAG -- Paged pool
+      RWPFF -- Page file full
+      RWQUO -- Pooled quota
+      RWSCS -- SCS wait
+      RWSWP -- Swapfile spacelist empty
 
 $ EXIT  ! 'F$VERIFY(0)'
