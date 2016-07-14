@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.26-01 (21-Apr-2016)"
+$ VA$ProcVersion = "V1.29-01 (14-Jul-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -34,8 +34,19 @@ $ !              reporting not needed for monthly audits
 $ !        P3 -- File-spec for the VMS$AUDIT configuration file,
 $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
+$ !
 $ ! ========================
 $ ! Release History:
+$ !  14-JUL-2016 : Separated V$QStalled into V$BatQStalled and V$DevQStalled.
+$ !                Also PIPE through sys$pipe rather than sys$input (idiom change).
+$ !   1-JUN-2016 : Improve Ctrl/Y trap at SpinLock loop, so we can just
+$ !                jump to the Reviews$ label if user wants to abort
+$ !                the Spawn_FFV at that point.
+$ !                Also, PreClean FILE$FINDVERSIONS*.REPORT files, and
+$ !                list directory outputs for all new report files created
+$ !                this pass (at label Reviews$).
+$ !  21-APR-2016 : Check VMS version for ANALYZE /ERROR /EVL TRANSLATE;
+$ !                fallback to ANALYZE /ERROR for < V7.3.
 $ !  21-APR-2016 : Trim blanks from F$GETSYI("VERSION").  Also, reorder
 $ !                archives file-lists.
 $ !  15-APR-2016 : Add new FILE$FIND.COM (based on FILE$FINDVERSIONS.COM,
@@ -240,11 +251,10 @@ $ ! P1 : network to detect
 $ !      Note: PIPE was added in VMS v7.1 --
 $ Sym = P1 - "/"  ! cleanout any punctuation, e.g., "TCP/IP" -> "TCPIP"
 $ !
-$ PIPE SHOW NET | SEARCH SYS$INPUT "''P1'" /NOOUTPUT /NOWARNINGS ; netstatus = ( $STATUS .EQS. "%X10000001" )
+$ PIPE SHOW NET | SEARCH sys$pipe "''P1'" /NOOUTPUT /NOWARNINGS ; netstatus = ( $STATUS .EQS. "%X10000001" )
 $ VA$'Sym'Inst == netstatus
 $ !! show symbol VA$'Sym'Inst
 $ EXIT 1
-$ !
 $ ENDSUBROUTINE  ! NetInstalled
 $ !
 $CenterLine:  SUBROUTINE
@@ -419,13 +429,15 @@ $!! $           ! Not very modular, but let's do some account analysis here, too
 $!! $           IF ( VMSver .GTS. "V8.3" ) ! PIPE command in >= VMS v7.1 ...
 $!! $                                      ! and SEARCH /STATISTICS=SYMBOL in >= v8.3-1H1
 $!! $           THEN @'DD'UAF$QUICK_ANALYSIS 'VA$UAFbrief'
-$!! $           ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE &/or SEARCH/STAT=SYMBOL unavailable (pre-v!AS)", Fac, "7.1/8.0" )
+$!! $           ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE &/or SEARCH/STAT=SYMBOL unavailable (pre-v!AS)", Fac, "7.1/8.3-1H1" )
 $!! $                wserr "-W-NOTRUN, cannot execute @UAF$QUICK_ANALYSIS"
 $!! $           ENDIF
 $      ENDIF
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! UAFteardown
+$ !
+$ !
 $ !
 $AuditStep:  SUBROUTINE
 $ ! P1: Command to execute (and put in Header)
@@ -568,7 +580,8 @@ $ V$NCP      = "MCR NCP"
 $ V$NCL      = "MCR NCL"
 $ V$DIR      = "DIRECTORY /SIZE /OWNER /DATE /PROTECTION /WIDTH=(FILENAME=20,SIZE=9,OWNER=16)"
 $ V$Star     = "*"
-$ V$QStalled = "PIPE SHOW QUEUE /ALL | SEARCH sys$input stopped,stalled,paused"
+$ V$BatQStalled = "PIPE SHOW QUEUE /BATCH /ALL  | SEARCH sys$pipe stopped,stalled,paused"
+$ V$DevQStalled = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stalled,paused"
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
@@ -610,6 +623,7 @@ $ VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONL
 $ VA$UAFfull      = "''DD'''Fac'_''Node'_SYSUAF_FULL.LIS"
 $ VA$UAFbrief     = "''DD'''Fac'_''Node'_SYSUAF_BRIEF.LIS"
 $ VA$UTCreport    = "''DD'''Fac'_''Node'_utctime.lis"
+$ VA$FFVreports   = "''DD'FILE$FINDVERSIONS_*.REPORT"
 $ !
 $ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
 $ ! or given as P3, but have reasonable fallback default behavior, too:
@@ -650,6 +664,7 @@ $ Call PreCleaner 'VA$AuditReport'
 $ Call PreCleaner 'VA$UAFfull'
 $ Call PreCleaner 'VA$UAFbrief'
 $ Call PreCleaner 'VA$UTCreport'
+$ Call PreCleaner 'VA$FFVreports'
 $ !
 $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ !
@@ -732,24 +747,30 @@ $ ENDIF
 $ !
 $ ! ========================
 $ ! I. System Summaries:
+$ CALL AuditStep "SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL" "NOPAGE"
 $ wso ""
 $ wso F$FAO("!/%!AS-I-REBOOTED, last reboot on !AS", Fac, F$GETSYI("BOOTTIME") )
-$ wso ""
-$ CALL AuditStep "SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL" "NOPAGE"
+$ !
 $ CALL AuditStep "SHOW NETWORK" "NOPAGE"
 $ !
 $ ! Special: Review all batch/device/printer/symbiont queues for job-counts exceeding threshold:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ CALL AuditStep "V$QStalled" "NOPAGE" "PIPE SHOW QUEUE /ALL | SEARCH sys$input stopped,stalled,paused"
+$ CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
+$ CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
 $ !
 $ CALL AuditStep "@''DD'DISKSPACE$REPORT"
 $ !
 $ CALL AuditStep "SHOW ERROR"
 $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -
     "NOPAGE" "DIRECTORY SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*"
-$ CALL AuditStep "ANALYZE /ERROR /ELV TRANSLATE /SUMMARY /SINCE=''FirstofLastMonth' SYS$ERRORLOG:ERRLOG.SYS" -
-    "NOPAGE" "ANALYZE /ERROR /SUMMARY /SINCE=''FirstofLastMonth'"
+$ !
+$ IF ( VMSver .GES. "V7.3" )
+$ THEN elv = "/ELV TRANSLATE "
+$ ELSE elv = ""
+$ ENDIF
+$ CALL AuditStep "ANALYZE /ERROR ''elv'/SUMMARY /SINCE=''FirstofLastMonth' SYS$ERRORLOG:ERRLOG.SYS" -
+    "NOPAGE" "ANALYZE /ERROR ''elv'/SUMMARY /SINCE=''FirstofLastMonth'"
 $ !
 $ CALL AuditStep "SHOW CLUSTER"
 $ !
@@ -768,8 +789,7 @@ $ CALL AnalyzeAudit "''VA$SAJournal'" "LOGFAIL" "PLOT"  "''FirstofLastMonth'" "'
 $ !! CALL AnalyzeAudit "''VA$SAJournal'" "SYSUAF"  "PLOT"  "''FirstofLastMonth'" "''Node'"
 $ CALL AnalyzeAudit "''VA$SAJournal'" "ALL"     "COUNT" "''FirstofLastMonth'" "''Node'"
 $ !
-$ ! System Accounting --
-$ CALL AuditStep "SHOW ACCOUNTING" ""
+$ ! System License Database --
 $ CALL AuditStep "V$DIR SYS$SYSTEM:LMF$*.LDB" "NOPAGE" "DIRECTORY SYS$SYSTEM:LMF$*.LDB"
 $ !
 $ ! User Authorization File/Database --
@@ -1074,6 +1094,7 @@ $ THEN SHOW PROCESS /SUBPROCESS
 $      wso ""
 $      wso F$FAO( "%!AS-W-SUBPROC, subprocess still running, don't LOGOUT yet...", Fac )
 $SpinLock:
+$      ON CONTROL THEN GOTO Reviews$
 $      IF ( F$GETJPI("","JOBPRCCNT") .GE. 1 )
 $      THEN IF ( int .LE. 1 ) THEN int = 10
 $           wso F$FAO( "!#* wait...", 32-int )
@@ -1082,7 +1103,7 @@ $           int = int - 2
 $           GOTO SpinL0
 $      ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
 $           wso ""
-$           TYPE /SINCE /PAGE=SAVE=4 'DD'FILE$FINDVERSIONS_*.REPORT
+$           TYPE /SINCE /PAGE=SAVE=4 'VA$FFVreports'
 $           GOTO Reviews$
 $      ENDIF
 $SpinL0:
@@ -1093,7 +1114,11 @@ $Reviews$:
 $ msg = "=== " + Fac + " reports "
 $ len = VA$PgWi - F$LENGTH( msg )
 $ wso F$FAO( "!/!AS !#*=", msg, len )
-$ V$DIR /SINCE /SIZE=ALL 'Fac'_'Node'*.*;0
+$ V$DIR /SINCE /SIZE=ALL 'VA$AuditReport';0
+$ IF ( F$SEARCH(VA$FFVreports) .NES. "" ) THEN V$DIR /SINCE /SIZE=ALL 'VA$FFVreports';0
+$ IF ( F$SEARCH(VA$UAFfull)    .NES. "" ) THEN V$DIR /SINCE /SIZE=ALL 'VA$UAFfull';0
+$ IF ( F$SEARCH(VA$UAFbrief)   .NES. "" ) THEN V$DIR /SINCE /SIZE=ALL 'VA$UAFbrief';0
+$ IF ( F$SEARCH(VA$UTCreport)  .NES. "" ) THEN V$DIR /SINCE /SIZE=ALL 'VA$UTCreport';0
 $ IF ( VA$ConfigFile .EQS. "" )
 $ THEN wso ""
 $      Rfile = F$PARSE(VA$AuditReport,,,"NAME","SYNTAX_ONLY") + F$PARSE(VA$AuditReport,,,"TYPE","SYNTAX_ONLY")
