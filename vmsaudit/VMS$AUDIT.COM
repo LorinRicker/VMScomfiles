@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.29-01 (14-Jul-2016)"
+$ VA$ProcVersion = "V1.29-02 (14-Jul-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -22,7 +22,7 @@ $ !   directly to screen (for development checkout).
 $ !
 $ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D)
 $ !                      | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
-$ !                    [ SHORT (D) | EXTENDED ]
+$ !                    [ SHORT (D) | EXTENDED | CLUSTER ]
 $ !                    [ VMS$AUDITCONFIG_filespec ]
 $ !
 $ ! where: P1 -- Audit operation, default AUDIT (or GENERATE),
@@ -30,7 +30,9 @@ $ !              but also can simply REVIEW, TYPE or EDIT the
 $ !              current report, can CLEANUP, or display HELP
 $ !        P2 -- Audit report to generate: SHORT is the default,
 $ !              EXTENDED on demand, which runs deeper/extended
-$ !              reporting not needed for monthly audits
+$ !              reporting not needed for monthly audits;
+$ !              CLUSTER runs a quick-report for spot-checking
+$ !              across nodes of a VMScluster.
 $ !        P3 -- File-spec for the VMS$AUDIT configuration file,
 $ !              defaults to the logical name "VMS$AUDITCONFIG"
 $ !
@@ -39,6 +41,7 @@ $ ! ========================
 $ ! Release History:
 $ !  14-JUL-2016 : Separated V$QStalled into V$BatQStalled and V$DevQStalled.
 $ !                Also PIPE through sys$pipe rather than sys$input (idiom change).
+$ !                Invent new "cluster quick check" report option.
 $ !   1-JUN-2016 : Improve Ctrl/Y trap at SpinLock loop, so we can just
 $ !                jump to the Reviews$ label if user wants to abort
 $ !                the Spawn_FFV at that point.
@@ -277,6 +280,7 @@ $ ! P3 : Procedure version
 $ ! P4 : Nodename
 $ ! P5 : Report date (started)
 $ ! P6 : Username (report generator)
+$ ! P7 : CLUSTER report-notation
 $ !
 $ ON CONTROL_Y THEN GOSUB RHCtrl_Y
 $ ON ERROR THEN EXIT %X2C
@@ -290,6 +294,7 @@ $ msg = F$FAO( "!AS", P3 )
 $ CALL CenterLine "''msg'"
 $ msg = F$FAO( "Report run on system/node !AS", P4 )
 $ CALL CenterLine "''msg'"
+$ IF ( P7 .EQS. "CLUSTER" ) THEN CALL CenterLine "and for this VMScluster"
 $ msg = F$FAO( "!AS", P5 )
 $ CALL CenterLine "''msg'"
 $ msg = F$FAO( "by !AS (login: !AS)", P6, F$EDIT(F$GETJPI("","USERNAME"),"TRIM") )
@@ -309,6 +314,7 @@ $ReportFooter:  SUBROUTINE
 $ ! P1 : Facility name
 $ ! P2 : Nodename
 $ ! P3 : Report date (ended)
+$ ! P4 : CLUSTER report-notation
 $ !
 $ ON CONTROL_Y THEN GOSUB RFCtrl_Y
 $ ON ERROR THEN EXIT %X2C
@@ -319,6 +325,7 @@ $ msg = F$FAO( "!AS -- End of VMS/OpenVMS Audit Report -- The PARSEC Group", P1 
 $ CALL CenterLine "''msg'"
 $ msg = F$FAO( "for system/node !AS", P2 )
 $ CALL CenterLine "''msg'"
+$ IF ( P4 .EQS. "CLUSTER" ) THEN CALL CenterLine "and for this VMScluster"
 $ msg = F$FAO( "!AS", P3 )
 $ CALL CenterLine "''msg'"
 $ wso ""
@@ -523,6 +530,53 @@ $ClCtrl_Y:
 $ EXIT %X2C
 $ ENDSUBROUTINE  ! Cleaner
 $ !
+$ !
+$ !
+$Cluster_Report: SUBROUTINE
+$ ! P1 : Cluster or nodes
+$ !
+$ ON CONTROL_Y THEN GOSUB CRCtrl_Y
+$ ON ERROR THEN EXIT %X2C
+$ !
+$ IF ( P1 .EQS. "CLUSTER" )
+$ THEN env = "/CLUSTER"
+$ ELSE env = "/NODE=(''P1')"
+$ ENDIF
+$ !
+$ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'" "''P1'"
+$ !
+$ ! Generate a quick-check report for the cluster --
+$ !   First are per-node items thru SYSMAN /CLUSTER:
+$ IF ( VMSver .GTS. "V7.1" )
+$ THEN DEFINE /USER_MODE vms$audit_clu 'DD'VMS$AUDIT_CLUSTER.SYSMAN
+$ ELSE DEFINE /USER_MODE vms$audit_clu 'DD'VMS$AUDIT_CLUSTER.SYSMAN_NOPIPE
+$ ENDIF
+$ 'V$SYSMAN' SET ENVIRONMENT 'env'
+@vms$audit_clu
+EXIT
+$ !
+$ !   Then several items which are done once for whole cluster:
+$ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
+$ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
+$ CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
+$ CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
+$ !
+$ CALL AuditStep "@''DD'DISKSPACE$REPORT"
+$ CALL AuditStep "SHOW DEVICE D /MOUNTED"
+$ !
+$ CALL AuditStep "SHOW INTRUSION"
+$ !
+$ CALL TimeStamp ""   ! global VA$TimeStamp
+$ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'" "''P1'"
+$ !
+$ EXIT
+$ !
+$CRCtrl_Y:
+$ EXIT %X2C
+$ ENDSUBROUTINE  !Cluster_Report
+$ !
+$ !
+$ !
 $Spawn_FFV: SUBROUTINE
 $ ! P1 : Filename of com-file to run in sub-proc
 $ !
@@ -580,11 +634,14 @@ $ V$NCP      = "MCR NCP"
 $ V$NCL      = "MCR NCL"
 $ V$DIR      = "DIRECTORY /SIZE /OWNER /DATE /PROTECTION /WIDTH=(FILENAME=20,SIZE=9,OWNER=16)"
 $ V$Star     = "*"
+$ !
 $ V$BatQStalled = "PIPE SHOW QUEUE /BATCH /ALL  | SEARCH sys$pipe stopped,stalled,paused"
 $ V$DevQStalled = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stalled,paused"
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
+             + ",''Fac'_cluster.sysman;" -
+             + ",''Fac'_cluster.sysman_nopipe;" -
              + ",''Fac'_*.config;" -
              + ",''Fac'_boot_options.answers;" -
              + ",''Fac'_*.tpu;" -
@@ -597,6 +654,8 @@ $ V$BckList  = "''Fac'.com;" -
              + ",parsec_autogen.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
+             + " ''Fac'_cluster.sysman" -
+             + " ''Fac'_cluster.sysman_nopipe" -
              + " ''Fac'_*.config" -
              + " ''Fac'_boot_options.answers" -
              + " ''Fac'_*.tpu" -
@@ -619,11 +678,15 @@ $ THEN V$DEASSIGN = "DEASSIGN /NOLOG"
 $ ELSE V$DEASSIGN = "DEASSIGN"  ! /[NO]LOG wasn't implemented prior to 7.4
 $ ENDIF
 $ !
-$ VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
+$ IF ( F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) ) .NES. "CLU" )
+$ THEN VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
+$ ELSE VA$AuditReport == F$PARSE("''Fac'_CLUSTER","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
+$ ENDIF
 $ VA$UAFfull      = "''DD'''Fac'_''Node'_SYSUAF_FULL.LIS"
 $ VA$UAFbrief     = "''DD'''Fac'_''Node'_SYSUAF_BRIEF.LIS"
 $ VA$UTCreport    = "''DD'''Fac'_''Node'_utctime.lis"
 $ VA$FFVreports   = "''DD'FILE$FINDVERSIONS_*.REPORT"
+$ VA$ClusterMbr   = F$GETSYI("CLUSTER_MEMBER")
 $ !
 $ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
 $ ! or given as P3, but have reasonable fallback default behavior, too:
@@ -632,6 +695,9 @@ $ IF ( F$SEARCH(config) .NES. "" )
 $ THEN VA$ConfigFile == config - F$PARSE(config,,,"VERSION","SYNTAX_ONLY")
 $ ELSE VA$ConfigFile == ""
 $ ENDIF
+$ !
+$ ! Default individual node(s) for SYSMAN:
+$ VA$SysmanNodes = ""
 $ !
 $ ! Default targets for FTP file transfer of reports:
 $ VA$FTPurl   = "class8.parsec.com"
@@ -681,9 +747,10 @@ $      ! VMS$AUDIT_*.CONFIG file may either redefine VA$AuditReport, or
 $      !   it may just leave the above-calculated value alone...
 $ !! $      show symbol /local VA$FFV*
 $ !! $      show symbol /local VA$User
+$ !! $      show symbol /local VA$SysmanNodes
+$ !! $      show symbol /local VA$Disposition
 $ !! $      show symbol /local VA$FTPurl
 $ !! $      show symbol /local VA$FTPuser
-$ !! $      show symbol /local VA$Disposition
 $ !! $      READ sys$command dummy /PROMPT="<Enter> or <Ctrl/Z>: " /END_OF_FILE=Done
 $      CALL Spawn_FFV "FILE$FIND"
 $      ! In either case, output is redirected here:
@@ -716,9 +783,6 @@ $ ENDIF
 $vaccontinue:
 $ CLOSE /NOLOG vac
 $ !
-$ IF ( P2 .NES. "" ) -  ! No P2?  Then leave VA$Extended as set by default or config-file...
-  THEN VA$Extended = ( F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) ) .EQS. "EXT" ) ! EXT[ENDED]?
-$ !
 $ ! ========================
 $ !
 $ ! Define a global command symbol, just for convenience:
@@ -727,14 +791,32 @@ $ !
 $ NeedPrv = "SYSNAM,SYSPRV,SECURITY,CMKRNL,VOLPRO,BYPASS,OPER"
 $ prv = F$SETPRV(NeedPrv)
 $ IF .NOT. F$PRIVILEGE(NeedPrv)
-$ THEN wso F$FAO( "%!AS-E-INSUFFPRV, need !AS", Fac, NeedPrv )
+$ THEN wso F$FAO( "%!AS-E-INSUFFPRV, this process needs !AS", Fac, NeedPrv )
 $      GOTO Done
 $ ENDIF
 $ !
 $ !
+$ !
 $ ! ========================
 $ !
-$ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'"
+$ IF ( P2 .EQS. "" ) THEN P2 = "SHORT"
+$ GOTO "''F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) )'$"
+$ !
+$ ! ========================
+$ !
+$CLU$:  ! CLUSTER (quick) report
+$ IF ( VA$SysmanNodes .NES. "" )
+$ THEN CALL Cluster_Report "''VA$SysmanNodes'"
+$ ELSE CALL Cluster_Report "CLUSTER"
+$ ENDIF
+$ GOTO CLE$
+$ !
+$EXT$:  ! EXTENDED report
+$ VA$Extended = "TRUE"
+$ GOTO SHO$  ! continue with reporting...
+$ !
+$SHO$:  ! SHORT report
+$ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'" ""
 $ !
 $ IF ( VMSver .GES. "V7.1" )         ! PIPE command in VMS v7.1 and higher...
 $ THEN CALL NetInstalled "DECnet"
@@ -994,17 +1076,15 @@ $ !
 $ ! VIII.a. Other: Monitoring Utilities -- manual audit, conversations with on-site network team
 $ !
 $ ! ========================
-$ !
 $ ! Done...
 $ CALL TimeStamp ""   ! global VA$TimeStamp
-$ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'"
+$ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'" ""
 $ !
 $ ! ...and fall-through to Clean-up Report:
 $ !
 $ !
 $ ! ========================
-$ !
-$CLE$:
+$CLE$:  ! Clean-up Report...
 $ ! Convert embedded <CR><LF> to new-lines, then trim-trailing...
 $ IF OutToFile
 $ THEN V$DEASSIGN /PROCESS sys$output
@@ -1230,7 +1310,7 @@ $ TYPE /PAGE sys$input
 
   use: $ [1m@VMS$AUDIT [ AUDIT (D) | GENERATE (D)
                       | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
-                    [ SHORT (D) | EXTENDED ]
+                    [ SHORT (D) | EXTENDED | CLUSTER ]
                     [ VMS$AUDITCONFIG_filespec ][0m
 
   where: P1 -- Audit operation, default AUDIT (or GENERATE),
@@ -1238,7 +1318,9 @@ $ TYPE /PAGE sys$input
                current report, can CLEANUP, or display HELP
          P2 -- Audit report to generate: SHORT is the default,
                EXTENDED on demand, which runs deeper/extended
-               reporting not needed for monthly audits
+               reporting not needed for monthly audits;
+               CLUSTER runs a quick-report for spot-checking
+               across nodes of a VMScluster.
          P3 -- File-spec for the VMS$AUDIT configuration file,
                defaults to the logical name "VMS$AUDITCONFIG"
 
