@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V1.29-02 (14-Jul-2016)"
+$ VA$ProcVersion = "V1.30-01 (15-Jul-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -15,39 +15,39 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !   Performs a comprehensive audit of a VMS (OpenVMS) System using
-$ !   administrative (system management) level commands and utilties.
-$ !   Outputs report to a file (for review, analysis and archival) or
-$ !   directly to screen (for development checkout).
+$ !  use:  $ @VMS$AUDIT [ BRIEF (D) | EXTENDED
+$ !                       | QUICK   | CLUSTER | REMOTE
+$ !                       | TYPE    | EDIT
+$ !                       | BACKUP  | RESTORE
+$ !                       | ZIP     | UNZIP
+$ !                       | FTP     | CLEANUP | HELP ]
+$ !                     [ VMS$AUDITCONFIG_filespec ]
 $ !
-$ ! usage:  @VMS$AUDIT [ AUDIT (D) | GENERATE (D)
-$ !                      | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
-$ !                    [ SHORT (D) | EXTENDED | CLUSTER ]
-$ !                    [ VMS$AUDITCONFIG_filespec ]
-$ !
-$ ! where: P1 -- Audit operation, default AUDIT (or GENERATE),
-$ !              but also can simply REVIEW, TYPE or EDIT the
-$ !              current report, can CLEANUP, or display HELP
-$ !        P2 -- Audit report to generate: SHORT is the default,
-$ !              EXTENDED on demand, which runs deeper/extended
-$ !              reporting not needed for monthly audits;
-$ !              CLUSTER runs a quick-report for spot-checking
-$ !              across nodes of a VMScluster.
-$ !        P3 -- File-spec for the VMS$AUDIT configuration file,
-$ !              defaults to the logical name "VMS$AUDITCONFIG"
+$ ! See HELP$: label and help-text for full details.
 $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  15-JUL-2016 : This really needs a proper command/parameter parser,
+$ !                so install Rick-&-Lorin's old standard Parse routine.
+$ !                Also, thoroughly revise this procedure's command-line
+$ !                structure: simplify it from 3 parameters to 2, one action
+$ !                and the optional config-filespec.
+$ !                Also, make the Quick Report (QUICK, CLUSTER, REMOTE) work right.
+$ !                Also, rip out that kludge code for spawning and spinlocking on
+$ !                FILE$FIND.COM -- better to submit this kind of thing as a batch
+$ !                job, and look for its report-output later.
+$ !                *** to-do:  Determine a better way/place to invoke 
+$ !                ***         FILE$FIND.COM (versions) as a batch job...
 $ !  14-JUL-2016 : Separated V$QStalled into V$BatQStalled and V$DevQStalled.
 $ !                Also PIPE through sys$pipe rather than sys$input (idiom change).
 $ !                Invent new "cluster quick check" report option.
 $ !   1-JUN-2016 : Improve Ctrl/Y trap at SpinLock loop, so we can just
-$ !                jump to the Reviews$ label if user wants to abort
+$ !                jump to the Rev$ label if user wants to abort
 $ !                the Spawn_FFV at that point.
 $ !                Also, PreClean FILE$FINDVERSIONS*.REPORT files, and
 $ !                list directory outputs for all new report files created
-$ !                this pass (at label Reviews$).
+$ !                this pass (at label Rev$).
 $ !  21-APR-2016 : Check VMS version for ANALYZE /ERROR /EVL TRANSLATE;
 $ !                fallback to ANALYZE /ERROR for < V7.3.
 $ !  21-APR-2016 : Trim blanks from F$GETSYI("VERSION").  Also, reorder
@@ -81,7 +81,7 @@ $ !                (comma-separated list of disk/device names), and
 $ !                VA$FFV_Version as the max-version to search/report.
 $ !  16-FEB-2016 : Swap P2 and P3, make the EXTENDED report option the second
 $ !                parameter (more frequent, convenient to use).
-$ !                Make VA$Extended logic actually work (bug).
+$ !                Make VA$FullRpt logic actually work (bug).
 $ !  15-FEB-2016 : Add P3 parameter to make certain EXTENDED report components
 $ !                optional; other minor tweaks.
 $ !  15-JAN-2016 : Add parameters for FTP/Edit/Type to VMS$AUDIT.CONFIG file;
@@ -144,10 +144,9 @@ $ !                priv'd users.
 $ !  17-Jul-2014 : Added displays for system's STARTUP command files.
 $ !                Improved display of SYSGEN parameters.
 $ !                Added dir-listing of LMF$*.LDB files.
-$ !  16-Jul-2014 : Correct syntax for NCL's version of "SHOW KNOWN
-$ !                NODES" --> "SHOW NODE 0 ROUTING CIRCUIT CSMA-CD
-$ !                ADJACENCY * ALL STATUS" (whew!).  Also reordered
-$ !                the NCP and NCL commands for DECnet IV and V.
+$ !  16-Jul-2014 : Correct syntax for NCL's version of "SHOW KNOWN NODES" -->
+$ !                "SHOW NODE 0 ROUTING CIRCUIT CSMA-CD ADJACENSY * ALL STATUS".
+$ !                Also reordered the NCP and NCL commands for DECnet IV and V.
 $ !  24-Jun-2014 : Add AuditStep "TYPE SYS$UPDATE:VMSINSTAL.HISTORY".
 $ !                Some file-purge cleanup for BACKUP and ZIP.
 $ !  23-Jun-2014 : Add AuditStep "SHOW ERRORS" (lost-in-shuffle!).
@@ -336,6 +335,7 @@ $ EXIT %X2C
 $ ENDSUBROUTINE  ! ReportFooter
 $ !
 $ !
+$ !
 $Paginate:  SUBROUTINE
 $ ! P1 : "NOPAGE" to suppress pagination <FF>
 $ !
@@ -532,17 +532,28 @@ $ ENDSUBROUTINE  ! Cleaner
 $ !
 $ !
 $ !
-$Cluster_Report: SUBROUTINE
-$ ! P1 : Cluster or nodes
+$Quick_Report: SUBROUTINE
+$ ! P1 : CLUSTER | REMOTE | QUICK
+$ ! P2 : SYSMAN nodes to engage (VA$SysmanNodes)
 $ !
 $ ON CONTROL_Y THEN GOSUB CRCtrl_Y
 $ ON ERROR THEN EXIT %X2C
 $ !
-$ IF ( P1 .EQS. "CLUSTER" )
-$ THEN env = "/CLUSTER"
-$ ELSE env = "/NODE=(''P1')"
-$ ENDIF
+$ GOTO QR'P1'
+$QRCLUSTER:
+$ wserr F$FAO( "%!AS-I-NODES, Quick Report for VMScluster...", Fac )
+$ env = "/CLUSTER"
+$ GOTO QR0
+$QRREMOTE:
+$ IF ( P2 .EQS. "" ) THEN GOTO QRQUICK  ! empty VA$SysmanNodes list?
+$ wserr F$FAO( "%!AS-I-NODES, Quick Report for remote node(s) !AS...", Fac, VA$SysmanNodes )
+$ env = "/NODE=(''P2')"
+$ GOTO QR0
+$QRQUICK:
+$ wserr F$FAO( "%!AS-I-NODES, Quick Report for local node !AS...", Fac, Node )
+$ env = "/NODE=(''Node')"
 $ !
+$QR0:
 $ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'" "''P1'"
 $ !
 $ ! Generate a quick-check report for the cluster --
@@ -573,36 +584,33 @@ $ EXIT
 $ !
 $CRCtrl_Y:
 $ EXIT %X2C
-$ ENDSUBROUTINE  !Cluster_Report
+$ ENDSUBROUTINE  !Quick_Report
 $ !
 $ !
 $ !
-$Spawn_FFV: SUBROUTINE
-$ ! P1 : Filename of com-file to run in sub-proc
-$ !
-$ VA$FFV = DD + P1 + ".COM"
-$ IF ( .NOT. F$GETSYI("CLUSTER_MEMBER") )  ! Stand-alone VMS system?
-$ THEN VA$FFV_run == "TRUE"
-$ ELSE IF F$TYPE(VA$FFV_Permitted) .EQS. "STRING"  ! Named/permitted VMScluster member?
-$      THEN ffvperm = ",''VA$FFV_Permitted'," 
-$           IF ( F$LOCATE( ",''Node',", ffvperm ) .LT. F$LENGTH( ffvperm ) )
-$           THEN VA$FFV_run == "TRUE"
-$           ELSE wso F$FAO( "%!AS-I-NO_RUN, no run of !AS on this node", Fac, P1 )
-$           ENDIF
-$      ELSE wso F$FAO( "%!AS-W-NO_CONFIG, !AS not configured for this VMScluster", Fac, P1 )
-$      ENDIF
+$Parse: SUBROUTINE
+$ ! P1: command to parse
+$ ! P2: global symbol to receive answer
+$ ! P3: default command
+$ ! P4: command set ("C1|C2[|Cn...]") -- options must be same-length fields
+$ ! P5: command separator
+$ IF P1 .EQS. "" THEN P1 = P3
+$ IF P2 .EQS. "" THEN P2 = "Parse$Cmd"
+$ IF P5 .EQS. "" THEN P5 = "|"
+$ P4 = F$EDIT(P4,"UPCASE")
+$ S  = F$LOCATE(P5,P4) + 1               !Determine field length
+$ P4 = P5 + P4                           !Add separator to front of list...
+$ T  = P5 + F$EDIT(P1,"COLLAPSE,UPCASE") !...and to target
+$ L  = F$LOCATE( F$EDIT(T,"COLLAPSE,UPCASE"), P4 )      !Test substring
+$ IF ( L .LT. F$LENGTH(P4) ) .AND. ( L-(L/S)*S .EQ. 0 ) !Found?
+$ THEN L = ( ( L + 1 ) / S ) + 1                        !Calculate offset
+$      'P2' == F$EDIT( F$ELEMENT(L,P5,P4), "COLLAPSE" )
+$      EXIT 1
+$ ELSE 'P2' == "$Err$"
+$      wso "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
+$      EXIT 229522  !%DCL-E-IVVERB, unrecognized command verb
 $ ENDIF
-$ IF VA$FFV_run
-$ THEN IF ( F$SEARCH( VA$FFV ) .NES. "" )
-$      THEN wso "%''Fac'-I-SPAWN, launching subprocess for ''P1' --"
-$           wso F$FAO( "!20* !AS", "wait for this subprocess to complete before you LOGOUT..." )
-$           !!! wso "  $ SPAWN /NOWAIT /NOTIFY PIPE @''VA$FFV' ""''VA$FFV_Disks'"" VERSIONS ""''VA$FFV_Version'"" ""NOTYPE"" ; LOGOUT"
-$           SPAWN /NOWAIT /NOTIFY PIPE @'VA$FFV' /OUTPUT=NLA0: "''VA$FFV_Disks'" VERSIONS "''VA$FFV_Version'" "NOTYPE" ; LOGOUT
-$           wso ""
-$      ENDIF
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! Spawn_FFV
+$ ENDSUBROUTINE  ! Parse
 $ !
 $ !
 $ ! ========================
@@ -621,8 +629,9 @@ $ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ !
 $ Debugging = F$TRNLNM("TOOLS$DEBUG")
 $ !
-$ VA$Extended = 0  ! initial, can be overridden by VMS$AUDITCONFIG configuration file,
-$ !                ! or by P2 ("EXTENDED") on the command line
+$ VA$FullRpt  = "FALSE"  ! initial, can be overridden by VMS$AUDITCONFIG configuration file,
+$ !                      ! or "FULL" on the command line
+$ VA$QuickRpt = ""
 $ !
 $ V$AUTH     = "MCR AUTHORIZE"
 $ V$LANCP    = "MCR LANCP"
@@ -678,19 +687,18 @@ $ THEN V$DEASSIGN = "DEASSIGN /NOLOG"
 $ ELSE V$DEASSIGN = "DEASSIGN"  ! /[NO]LOG wasn't implemented prior to 7.4
 $ ENDIF
 $ !
-$ IF ( F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) ) .NES. "CLU" )
-$ THEN VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
-$ ELSE VA$AuditReport == F$PARSE("''Fac'_CLUSTER","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
-$ ENDIF
 $ VA$UAFfull      = "''DD'''Fac'_''Node'_SYSUAF_FULL.LIS"
 $ VA$UAFbrief     = "''DD'''Fac'_''Node'_SYSUAF_BRIEF.LIS"
 $ VA$UTCreport    = "''DD'''Fac'_''Node'_utctime.lis"
-$ VA$FFVreports   = "''DD'FILE$FINDVERSIONS_*.REPORT"
 $ VA$ClusterMbr   = F$GETSYI("CLUSTER_MEMBER")
 $ !
+$ ! *** to-do:  Determine a better way/place to invoke
+$ ! ***         FILE$FIND.COM (versions) as a batch job...
+$ VA$FFVreports   = "''DD'FILE$FINDVERSIONS_*.REPORT"
+$ !
 $ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
-$ ! or given as P3, but have reasonable fallback default behavior, too:
-$ config = F$PARSE("VMS$AUDITCONFIG",P3,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
+$ ! or given as P2, but have reasonable fallback default behavior, too:
+$ config = F$PARSE("VMS$AUDITCONFIG",P2,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
 $ IF ( F$SEARCH(config) .NES. "" )
 $ THEN VA$ConfigFile == config - F$PARSE(config,,,"VERSION","SYNTAX_ONLY")
 $ ELSE VA$ConfigFile == ""
@@ -712,19 +720,69 @@ $ VA$PgNo      ==  1
 $ VA$PgWi      == 78
 $ VA$Dashes    == F$FAO( "!#*-", VA$PgWi )
 $ VA$DblDashes == F$FAO( "!#*=", VA$PgWi )
-$ VA$FFV_run   == "FALSE"
+$ !
+$ !
+$ ! ========================
+$ ! The default report/output filespec --
+$ VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
 $ !
 $ ! ========================
+$ ! Parse the command-line parameters --
+$ IF ( P1 .EQS. "?" ) THEN P1 = "HELP"
+$ CmdSet = "BRIEF  |" -
+         + "FULL   |" -
+         + "QUICK  |" -
+         + "CLUSTER|" -
+         + "REMOTE |" -
+         + "TYPE   |" -
+         + "EDIT   |" -
+         + "BACKUP |" -
+         + "RESTORE|" -
+         + "ZIP    |" -
+         + "UNZIP  |" -
+         + "FTP    |" -
+         + "CLEANUP|" -
+         + "HELP   "
+$ CALL Parse "''P1'" Cmd "BRIEF" "''CmdSet'"
+$ GOTO 'Cmd'$
 $ !
-$ IF ( P1 .NES. "" )
-$ THEN IF ( P1 .EQS. "?" ) THEN P1 = "HELP"
-$      GOTO 'F$EXTRACT(0,3,P1)'$           ! No P1? (default) Generate the audit...
+$ ! ========================
+$FULL$:  ! Full report
+$ VA$FullRpt = "TRUE"
+$ GOTO GENERATE$  ! continue with reporting...
+$ !
+$ ! ========================
+$CLUSTER$:
+$ VA$AuditReport == F$PARSE("''Fac'_CLUSTER","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
+$ GOTO QUICK$
+$REMOTE$:
+$ VA$AuditReport == F$PARSE("''Fac'_REMOTE","''Dev'''Dir'.REPORT",,,"SYNTAX_ONLY") - ";"
+$QUICK$:
+$ VA$QuickRpt = Cmd  ! "QUICK", "CLUSTER" or "REMOTE"
+$ GOTO GENERATE$
+$ !
+$ ! ========================
+$BRIEF$:
+$GENERATE$:   ! Generate the Audit Report
+$ !
+$ ! ========================
+$ ! Define a global command symbol, just for convenience:
+$ IF ( F$TYPE(vmsaudit) .EQS. "" )
+$ THEN vmsau*dit == "@''DD'''Fac'"
+$      SHOW SYMBOL /GLOBAL vmsaudit
+$ ENDIF
+$ ! and, if P2 is provided, (re)define the logical name VMS$AUDITCONFIG:
+$ IF ( P2 .NES. "" )
+$ THEN conf = F$PARSE( P2, "''DD'.CONFIG" )
+$      conf = F$SEARCH( conf )
+$      IF ( conf .NES. "" )
+$      THEN conf = conf- F$PARSE( conf, , , "VERSION", "SYNTAX_ONLY" ) - ";"
+$           DEFINE /NOLOG VMS$AUDITCONFIG 'conf'
+$           SHOW LOGICAL /FULL VMS$AUDITCONFIG
+$      ENDIF
 $ ENDIF
 $ !
-$GEN$:   ! Generate the Audit Report
-$AUD$:
-$ !
-$Pre$:
+$ ! ========================
 $ ! clean up last set of report-files, purge and rename to [.REPORTS] --
 $ Call PreCleaner 'VA$AuditReport'
 $ Call PreCleaner 'VA$UAFfull'
@@ -734,6 +792,8 @@ $ Call PreCleaner 'VA$FFVreports'
 $ !
 $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ !
+$ ! ========================
+$ ! Process the contents of the VMS$AUDIT Configuration File (VMS$AUDITCONFIG) --
 $ IF ( VA$ConfigFile .NES. "" )
 $ THEN wso F$FAO( "%!AS-I-CONFIG, reading configuration file !AS", Fac, VA$ConfigFile )
 $      OPEN /READ /ERROR=VACerror vac 'VA$ConfigFile'
@@ -743,16 +803,14 @@ $      cmd = F$EDIT(line,"UNCOMMENT,COMPRESS")
 $      IF ( cmd .NES. "" ) THEN 'cmd'  ! execute config-file lines directly...
 $      GOTO vacloop
 $vacloopdone:
-$      ! VMS$AUDIT_*.CONFIG file may either redefine VA$AuditReport, or
-$      !   it may just leave the above-calculated value alone...
-$ !! $      show symbol /local VA$FFV*
 $ !! $      show symbol /local VA$User
 $ !! $      show symbol /local VA$SysmanNodes
 $ !! $      show symbol /local VA$Disposition
 $ !! $      show symbol /local VA$FTPurl
 $ !! $      show symbol /local VA$FTPuser
 $ !! $      READ sys$command dummy /PROMPT="<Enter> or <Ctrl/Z>: " /END_OF_FILE=Done
-$      CALL Spawn_FFV "FILE$FIND"
+$      ! VMS$AUDIT_*.CONFIG file may either redefine VA$AuditReport, or
+$      !   it may just leave the above-calculated value alone...
 $      ! In either case, output is redirected here:
 $      wso F$FAO( "%!AS-I-OUTPUT, output redirected to !AS", Fac, VA$AuditReport )
 $      DEFINE /NOLOG /PROCESS sys$output 'VA$AuditReport'
@@ -784,38 +842,25 @@ $vaccontinue:
 $ CLOSE /NOLOG vac
 $ !
 $ ! ========================
-$ !
-$ ! Define a global command symbol, just for convenience:
-$ IF F$TYPE(vmsaudit) .EQS. "" THEN vmsau*dit == "@''DD'VMS$Audit.com AUDIT ''VA$ConfigFile'"
-$ !
+$NeedPrv$:
 $ NeedPrv = "SYSNAM,SYSPRV,SECURITY,CMKRNL,VOLPRO,BYPASS,OPER"
 $ prv = F$SETPRV(NeedPrv)
 $ IF .NOT. F$PRIVILEGE(NeedPrv)
-$ THEN wso F$FAO( "%!AS-E-INSUFFPRV, this process needs !AS", Fac, NeedPrv )
+$ THEN wso F$FAO( "%!AS-E-INSUFFPRV, requires !AS", Fac, NeedPrv )
 $      GOTO Done
 $ ENDIF
 $ !
 $ !
-$ !
 $ ! ========================
-$ !
-$ IF ( P2 .EQS. "" ) THEN P2 = "SHORT"
-$ GOTO "''F$EXTRACT( 0, 3, F$EDIT( P2, "TRIM,UPCASE" ) )'$"
-$ !
-$ ! ========================
-$ !
-$CLU$:  ! CLUSTER (quick) report
-$ IF ( VA$SysmanNodes .NES. "" )
-$ THEN CALL Cluster_Report "''VA$SysmanNodes'"
-$ ELSE CALL Cluster_Report "CLUSTER"
+$ ! Check for a form of sysman-quick report, do it --
+$ IF ( VA$QuickRpt .NES. "" )
+$ THEN CALL Quick_Report "''VA$QuickRpt'" "''VA$SysmanNodes'"
+$      GOTO CLEAN$
 $ ENDIF
-$ GOTO CLE$
 $ !
-$EXT$:  ! EXTENDED report
-$ VA$Extended = "TRUE"
-$ GOTO SHO$  ! continue with reporting...
+$ ! ========================
+$ ! Full Report starts here --
 $ !
-$SHO$:  ! SHORT report
 $ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'" ""
 $ !
 $ IF ( VMSver .GES. "V7.1" )         ! PIPE command in VMS v7.1 and higher...
@@ -885,7 +930,7 @@ $      CALL AuditStep "V$DIR SYSUAF,RIGHTSLIST"            "NOPAGE" "DIRECTORY S
 $ ELSE CALL AuditStep "V$DIR SYS$SYSTEM:SYSUAF.DAT;*,RIGHTSLIST.DAT;*" "" "DIRECTORY SYS$SYSTEM:SYSUAF,RIGHTSLIST"
 $ ENDIF
 $ !
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN CALL AuditStep "V$AUTH LIST * /BRIEF" "NOPAGE" "AUTH LIST * /BRIEF"
 $      CALL AuditStep "V$AUTH LIST * /FULL"  ""       "AUTH LIST * /FULL"
 $ ENDIF
@@ -897,9 +942,13 @@ $ !
 $ CALL AuditStep "SHOW CPU /FULL"
 $ CALL AuditStep "SHOW MEMORY /FULL"
 $ !
-$ IF VA$Extended THEN CALL AuditStep "SHOW DEVICE"
+$ ! VI.i. System Disk Protection
+$ IF VA$FullRpt THEN Call AuditStep "SHOW DEVICE sys$sysdevice /FULL"
 $ !
-$ IF VA$Extended
+$ ! II. System Configuration -- Hardware, Storage, Cluster and Shadowing/Controller
+$ IF VA$FullRpt THEN CALL AuditStep "SHOW DEVICE"
+$ !
+$ IF VA$FullRpt
 $ THEN ! Full disk-device reports
 $Dsk0:
 $      dsk = F$DEVICE("*","DISK","GENERIC_DK",0)
@@ -919,7 +968,7 @@ $ !
 $ ! ========================
 $ ! II.a & b. -- Review of Startup & Shutdown Command Procedures is manual, using a text editor...
 $ !
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN ! II.c -- And display the SYSMAN startup/shutdown groups
 $      CALL AuditStep "V$SYSMAN STARTUP SHOW FILE /FULL" ""       "SYSMAN STARTUP SHOW FILE /FULL"
 $      CALL AuditStep "V$SYSGEN SHOW /STARTUP"           "NOPAGE" "SYSGEN SHOW /STARTUP"
@@ -927,7 +976,7 @@ $      CALL AuditStep "V$DIR SYS$STARTUP:SY*.COM;"       "NOPAGE" "DIRECTORY SYS
 $ ENDIF
 $ !
 $ ! ========================
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN ! III. OpenVMS -- Version & Patch Levels
 $      CALL AuditStep "SHOW SYSTEM /HEADER /NOPROCESS"
 $ !
@@ -941,7 +990,7 @@ $      ENDIF
 $ ENDIF
 $ !
 $ ! ========================
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN ! IV. Product Review -- Layered Product Licensing, versions/patches
 $      CALL AuditStep "V$DIR SYS$SYSTEM:LMF$*.LDB" "" "DIRECTORY SYS$SYSTEM:LMF$*.LDB"
 $      CALL AuditStep "SHOW LICENSE" "NOPAGE"
@@ -953,7 +1002,7 @@ $ ENDIF
 $ !
 $ ! IV.d. Application Review -- manual audit, conversations with on-site dev/user/mgmt team
 $ !
-$ IF VA$Extended THEN CALL AuditStep "SHOW QUEUE /FULL *"
+$ IF VA$FullRpt THEN CALL AuditStep "SHOW QUEUE /FULL *"
 $ !
 $ ! ========================
 $ !
@@ -969,7 +1018,7 @@ $ ! VI.c. & j. Security -- Accounting
 $ CALL AuditStep "SHOW ACCOUNTING"
 $ CALL AuditStep "V$DIR SYS$MANAGER:ACCOUNTNG*.DAT;*" "NOPAGE" "DIRECTORY SYS$MANAGER:ACCOUNTNG*.DAT;*"
 $ !
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN ! VI.d. Other System (parameters)
 $      CALL AuditStep "V$SYSGEN SHOW /SYS"               ""       "SYSGEN SHOW /SYS"
 $      CALL AuditStep "V$SYSGEN SHOW /CLUSTER"           "NOPAGE" "SYSGEN SHOW /CLUSTER"
@@ -981,7 +1030,7 @@ $      CALL AuditStep "V$SYSGEN SHOW RMS*"               "NOPAGE" "SYSGEN SHOW R
 $      CALL AuditStep "V$SYSGEN SHOW UAFALTERNATE"       "NOPAGE" "SYSGEN SHOW UAFALTERNATE"
 $ ENDIF
 $ !
-$ IF VA$Extended
+$ IF VA$FullRpt
 $ THEN ! Show Daylight/Standard time-change settings:
 $      CALL AuditStep "V$SYSGEN SHOW AUTO_DLIGHT_SAV" "" "SYSGEN SHOW AUTO_DLIGHT_SAV"
 $      ! Don't actually invoke UTC$TIME_SETUP.COM in the AuditStep, as its SYS$OUTPUT redirection
@@ -994,9 +1043,6 @@ $ !
 $ ! VI.e. & f. Facility and Policy Audits -- manual audit, conversations with on-site team
 $ !
 $ ! VI.h. ACL Utilization -- manual audit, conversations with on-site team
-$ !
-$ ! VI.i. System Disk Protection
-$ IF VA$Extended THEN Call AuditStep "SHOW DEVICE sys$sysdevice /FULL"
 $ !
 $ ! ========================
 $ !
@@ -1012,7 +1058,7 @@ $!! $ READ sys$command Answer /END_OF_FILE=Done -
 $!!     /PROMPT="Perform TCP/IP Audit Steps (is TCP/IP networking installed & configured) [Y/n]? "
 $!! $ Answer = F$PARSE(Answer,"Yes",,"NAME","SYNTAX_ONLY")
 $!! $ IF Answer
-$ IF VA$Extended .AND. VA$TCPIPInst
+$ IF VA$FullRpt .AND. VA$TCPIPInst
 $ THEN ! VII.a. & c. Network -- IP & DNS (BIND) Configurations
 $      CALL AuditStep "TCPIP SHOW VERSION"
 $      CALL AuditStep "TCPIP SHOW CONFIGURATION NAME_SERVICE"           "NOPAGE" "BIND (DNS) Configuration"
@@ -1037,7 +1083,7 @@ $!! $ READ sys$command Answer /END_OF_FILE=Done -
 $!!     /PROMPT="Perform DECnet Audit Steps (is DECnet networking installed & configured) [Y/n]? "
 $!! $ Answer = F$PARSE(Answer,"Yes",,"NAME","SYNTAX_ONLY")
 $!! $ IF Answer
-$ IF VA$Extended .AND. VA$DECnetInst
+$ IF VA$FullRpt .AND. VA$DECnetInst
 $ THEN ! VII.b. Network -- DECnet Configuration
 $      DECnetVers = F$GETSYI("DECNET_VERSION")
 $      dnv        = F$INTEGER(DECnetVers)
@@ -1064,7 +1110,7 @@ $DNDone:
 $      CONTINUE
 $ ENDIF
 $ !
-$ IF VA$Extended .AND. VA$MultinetInst
+$ IF VA$FullRpt .AND. VA$MultinetInst
 $ THEN ! VII.b. Network -- Multinet Configuration
 $      ! «» CALL AuditStep "V$MNET SHOW «»" "«»" "MULTINET SHOW «»"
 $ ENDIF
@@ -1084,7 +1130,7 @@ $ ! ...and fall-through to Clean-up Report:
 $ !
 $ !
 $ ! ========================
-$CLE$:  ! Clean-up Report...
+$CLEAN$:  ! Clean-up Report...
 $ ! Convert embedded <CR><LF> to new-lines, then trim-trailing...
 $ IF OutToFile
 $ THEN V$DEASSIGN /PROCESS sys$output
@@ -1103,12 +1149,11 @@ $           CALL Cleaner "''VA$AuditReport'" "''CleanTrim'" "''fsTrim'"
 $      ENDIF
 $ ENDIF
 $ !
-$ GOTO REV$
+$ GOTO REVIEW$
 $ !
 $ !
 $ ! ========================
-$ !
-$BAC$:
+$BACKUP$:
 $ BACKUP /LIST='V$BckSSN' /NOCRC /GROUP_SIZE=0 /INTERCHANGE -
     'V$BckList' 'V$BckSSN'.BCK /SAVE_SET
 $ TYPE 'V$BckSSN'.LIS
@@ -1116,7 +1161,7 @@ $ PURGE /NOLOG 'V$BckSSN'.BCK,.LIS
 $ DIRECTORY /SIZE /DATE /PROT 'V$BckSSN'
 $ GOTO Done
 $ !
-$RES$:
+$RESTORE$:
 $ V$BckSSN = V$BckSSN + ".BCK"
 $ IF ( F$SEARCH("''V$BckSSN'") .NES. "" )
 $ THEN BACKUP /LOG 'V$BckSSN' /SAVE_SET []*.* /NEW_VERSION
@@ -1144,7 +1189,7 @@ $ zip -v 'V$ZipArc' 'V$ZipList'
 $ IF ( F$SEARCH("''V$ZipArc'_OLD;-1") .NES. "" ) THEN PURGE /NOLOG 'V$ZipArc'_OLD
 $ GOTO Done
 $ !
-$UNZ$:    ! UnZip the archive 'V$ZipArc' into the current directory
+$UNZIP$:    ! UnZip the archive 'V$ZipArc' into the current directory
 $ IF F$TYPE(unzip) .NES. "STRING"
 $ THEN DEFINE /PROCESS /NOLOG ZDIR 'DD',SYS$SYSTEM
 $      unzipexe = F$SEARCH("ZDIR:UNZIP.EXE")
@@ -1163,34 +1208,9 @@ $ GOTO Done
 $ !
 $ !
 $ ! ========================
-$ !
-$REV$:   ! Review the Audit Report File
+$REVIEW$:   ! Review the Audit Report File
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
 $ !
-$FFVREV$:
-$ int = 0
-$ IF VA$FFV_run
-$ THEN SHOW PROCESS /SUBPROCESS
-$      wso ""
-$      wso F$FAO( "%!AS-W-SUBPROC, subprocess still running, don't LOGOUT yet...", Fac )
-$SpinLock:
-$      ON CONTROL THEN GOTO Reviews$
-$      IF ( F$GETJPI("","JOBPRCCNT") .GE. 1 )
-$      THEN IF ( int .LE. 1 ) THEN int = 10
-$           wso F$FAO( "!#* wait...", 32-int )
-$           WAIT 00:00:0'int'.5
-$           int = int - 2
-$           GOTO SpinL0
-$      ELSE wso F$FAO( "%!AS-I-SUBPROC, subprocess finished, okay to LOGOUT...", Fac )
-$           wso ""
-$           TYPE /SINCE /PAGE=SAVE=4 'VA$FFVreports'
-$           GOTO Reviews$
-$      ENDIF
-$SpinL0:
-$ GOTO SpinLock
-$ ENDIF
-$ !
-$Reviews$:
 $ msg = "=== " + Fac + " reports "
 $ len = VA$PgWi - F$LENGTH( msg )
 $ wso F$FAO( "!/!AS !#*=", msg, len )
@@ -1215,14 +1235,14 @@ $ DEFINE /USER_MODE sys$input sys$command
 $ FTP 'VA$FTPurl' /USER='VA$FTPuser'
 $ GOTO Done
 $T$:    ! Type/display Audit Report File
-$TYP$:
+$TYPE$:
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
 $ DEFINE /USER_MODE sys$input sys$command
 $ TYPE /PAGE=SAVE=5 'VA$AuditReport'
 $ GOTO Done
 $ !
 $E$:    ! Edit Audit Report File
-$EDI$:
+$EDIT$:
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
 $ IF F$TYPE(ked) .EQS. "STRING" THEN edit = "@com:ked.com"  !(LMR tweak, all others use EDIT /EVE)
 $ DEFINE /USER_MODE sys$input sys$command
@@ -1231,11 +1251,11 @@ $ GOTO Done
 $ !
 $ !
 $ ! ========================
-$ !
 $Done:
 $ wso ""
 $ wso F$FAO( "%!AS-I-DONE, cleanup...", Fac )
 $ wso ""
+$DoneQuiet:
 $ SET NOON
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
 $ !
@@ -1247,7 +1267,6 @@ $ IF F$TYPE(VA$MultinetInst) .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$MultinetIns
 $ IF F$TYPE(VA$PgNo)         .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgNo
 $ IF F$TYPE(VA$PgWi)         .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgWi
 $ IF F$TYPE(VA$PgStr)        .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$PgStr
-$ IF F$TYPE(VA$FFV_run)      .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$FFV_run
 $ IF F$TYPE(VA$TimeStamp)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$TimeStamp
 $ IF F$TYPE(VA$DECnet)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$DECnet
 $ IF F$TYPE(VA$Dashes)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$Dashes
@@ -1266,93 +1285,45 @@ $ EXIT %X2C  ! 'F$VERIFY(0)'
 $ !
 $ !
 $ ! ========================
-$ !
 $H$:
-$HEL$:
+$HELP$:
 $ TYPE /PAGE sys$input
+  use:  $ [1m@VMS$AUDIT [ BRIEF (D) | EXTENDED 
+                       | QUICK   | CLUSTER | REMOTE
+                       | TYPE    | EDIT
+                       | BACKUP  | RESTORE
+                       | ZIP     | UNZIP
+                       | FTP     | CLEANUP | HELP ]
+                     [ VMS$AUDITCONFIG_filespec ][0m
 
-  [1mVMS$AUDIT.COM[0m is an Audit Report Generator for VMS (OpenVMS).  It provides
-  convenient reporting consistency when auditing multiple systems and sites,
-  generating a standardized, paginated and labeled report format for review
-  and analysis.
-  
-  This command procedure provides the following functions:
-  
-  a) Generate an Audit Report, either to file or to the user's terminal.
-  b) Review an Audit Report, using either the TYPE /PAGE facility or the
-     user's favorite text editor (EVE, KED, etc.).
+  where: P1 -- Audit action, see below.
 
-  [4mInstallation[0m: This is a very compact suite of files, with no "software
-  to install" (e.g., PRODUCT or VMSINSTAL).  The files are: VMS$AUDIT.COM
-  (this command file), QUE$STALLED.COM (checks VMS queues for job-counts in
-  excess of a threshold), VMS$AUDIT_{REPLACECRLF,TRIMTRAIL}.TPU (the two TPU
-  cleanup scripts), and VMS$AUDIT_BOOT_OPTIONS.ANSWERS (a text-answer file).
+         P2 -- File-spec for the VMS$AUDIT configuration file, which defaults to
+               the logical name "VMS$AUDITCONFIG".
 
-  For convenience, these four files are zipped into an archive, VMS$AUDIT.ZIP,
-  which can be FTP'd (scp, etc.) and unzipped into any appropriate directory
-  on a target VMS system.  Other than the actual Audit Report File(s), VMS$AUDIT
-  leaves no file-litter (temp-files) behind, and the Report File itself is
-  created by default into the directory from which VMS$AUDIT is run (invoked).
-  Self-contained and tidy.
+        [1mBRIEF[0m    -- Generates the VMS$AUDIT Brief Report.
+        [1mFULL[0m     -- Generates the VMS$AUDIT Full Report, which contains all of
+                    the Brief Report, plus: brief and full listings of the SYSUAF;
+                    SHOW DEVICE and SHOW DEVICE /FULL Disk; System Startup command
+                    file directories and SYSMAN STARTUP SHOW FILE; BOOT_OPTIONS
+                    output for Integrity; SHOW LICENSE and PRODUCT SHOW PRODUCT/HISTORY;
+                    SHOW QUEUE /FULL; selected SYSGEN SHOW *; UTC Time-Change report;
+                    networks: TCP/IP or MultiNet config information (if available);
+                    DECnet config installation (if available).
 
-  [4mUse[0m: The user must either be logged-in as SYSTEM, or have the following
-  privileges authorized for his/her account: SETPRV, or SYSNAM, SYSPRV,
-  SECURITY, CMKRNL, BYPASS, VOLPRO and OPER.
+        [1mQUICK[0m    -- Generates a VMS$AUDIT Quick Report for the current system/node.
+        [1mCLUSTER[0m  -- Generates a VMS$AUDIT Quick Report for the entire VMScluster.
+        [1mREMOTE[0m   -- Generates a VMS$AUDIT Quick Report for a remote system/node.
 
-  When generating an Audit Report, the user is prompted for the Report's
-  filename; a default of the form VMS$AUDIT_<nodename>.REPORT is offered.
-  Alternatively, the Report may be displayed directly on-screen (in this
-  case, no Report File is saved), which is useful for quick-checks or
-  debugging the command file itself.
-  
-  In both instances, the user is also prompted for his/her actual name,
-  which appears in the Report's header for accountability purposes.
+        [1mTYPE[0m     -- Reviews the current Audit Report File using the DCL TYPE /PAGE
+                    command, with scroll back/forward several pages at a time.
 
-  use: $ [1m@VMS$AUDIT [ AUDIT (D) | GENERATE (D)
-                      | CLEANUP | REVIEW | TYPE | EDIT | HELP ]
-                    [ SHORT (D) | EXTENDED | CLUSTER ]
-                    [ VMS$AUDITCONFIG_filespec ][0m
-
-  where: P1 -- Audit operation, default AUDIT (or GENERATE),
-               but also can simply REVIEW, TYPE or EDIT the
-               current report, can CLEANUP, or display HELP
-         P2 -- Audit report to generate: SHORT is the default,
-               EXTENDED on demand, which runs deeper/extended
-               reporting not needed for monthly audits;
-               CLUSTER runs a quick-report for spot-checking
-               across nodes of a VMScluster.
-         P3 -- File-spec for the VMS$AUDIT configuration file,
-               defaults to the logical name "VMS$AUDITCONFIG"
-
-        [1mAUDIT[0m    -- Both of these keywords generate a new Audit Report
-        [1mGENERATE[0m    which is also the default operation (no keyword)
-                    specified.
-
-        [1mCLEANUP[0m  -- Certain of the system administration DCL commands
-                    used to generate the Audit Report File embed literal
-                    <CR><LF> and trailing-space characters, which can be
-                    confuse the display when the Report is opened in a
-                    text editor.  This CLEANUP step uses two TPU command
-                    scripts, REPLACECRLF and TRIMTRAIL, to replace any
-                    <CR><LF> characters with a newline(s) and to trim
-                    any trailing spaces from all lines.  This step is
-                    idempotent (can be run multiple times).
-
-        [1mREVIEW[0m   -- Prompts the user for the method to use in reviewing
-                    the current Audit Report File, either TYPE /PAGE or
-                    text editor.  The default ("T") is to use TYPE.
-
-        [1mTYPE[0m     -- Reviews the current Audit Report File using the
-                    DCL TYPE /PAGE command, allowing you to scroll
-                    back and forward several pages at a time.
-
-        [1mEDIT[0m     -- Reviews the current Audit Report File using your
-                    favorite VMS text editor (e.g., EVE, KED, etc.).
-                    Note that the file is opened in RW mode, so you
-                    can indeed modify the Report if you want; change
-                    the editor's file buffer mode to RO (read only),
-                    and/or exit correctly if you don't want to change
-                    the file accidentally.
+        [1mEDIT[0m     -- Reviews the current Audit Report File using your favorite
+                    VMS text editor, such as EVE, KED, EDT, etc.  The file is
+                    opened in RW (read/write) mode, so you can modify the Report
+                    if you want; change the editor's file buffer mode to RO (read
+                    only), and/or exit correctly if you don't want to change the
+                    file accidentally.
 
         [1mBACKUP[0m   -- Backup and restore will save all VMS$AUDIT suite file
         [1mRESTORE[0m     components into/from a saveset called VMS$AUDIT.BCK.
@@ -1363,7 +1334,53 @@ $ TYPE /PAGE sys$input
                     components into a VMS$AUDIT.ZIP archive into/from the
                     current directory.
 
-        [1mHELP[0m     -- Displays this help text.
+        [1mFTP[0m      -- Autoconnects an FTP session for a remote FTP-server
+                    and username (user's login password must always be
+                    manually entered).  The FTP-server URL and username
+                    can be set in the VMS$AUDITCONFIG configuration file.
+
+        [1mCLEANUP[0m  -- Certain of the system administration DCL commands used
+                    togenerate the Audit Report File embed literal <CR><LF>
+                    and trailing-space characters, which can be confuse the
+                    displaywhen the Report is opened in a text editor.  This
+                    CLEANUP step uses two TPU command scripts, REPLACECRLF
+                    and TRIMTRAIL, to replace any <CR><LF> characters with
+                    newline and to trim any trailing spaces from all lines.
+                    This step is idempotent (can be run multiple times).
+
+        [1mHELP (?)[0m -- Displays this help text.  "HELP" and "?" are equivalent.
         
-$ GOTO Done
+  [4mDescription[0m:   [1mVMS$AUDIT.COM[0m is an Audit Report Generator for VMS (OpenVMS).
+  It provides convenient reporting consistency when auditing multiple systems
+  and sites, generating a standardized, paginated and labeled report format for
+  review and analysis.  It provides the following functions:
+  
+    a) Generate an Audit Report, either to file or to the user's terminal.
+    b) Review an Audit Report, using either the TYPE /PAGE facility or the
+       user's favorite text editor (EVE, KED, etc.).
+
+  [4mInstallation[0m: This is a very compact suite of files, with no "software
+  to install" (e.g., PRODUCT or VMSINSTAL).  The files are: VMS$AUDIT.COM
+  (this command file), QUE$STALLED.COM (checks VMS queues for job-counts in
+  excess of a threshold), VMS$AUDIT_{REPLACECRLF,TRIMTRAIL}.TPU (the two TPU
+  cleanup scripts), and VMS$AUDIT_BOOT_OPTIONS.ANSWERS (a text-answer file).
+
+  All VMS$AUDIT files can be backed-up into a VMS BACKUP save-set, VMS$AUDIT.BCK,
+  or zipped into an archive, VMS$AUDIT.ZIP, either of which can be FTP'd (scp, etc.)
+  in binary mode, and restored into any appropriate directory on a target VMS system.
+  Other than the actual Audit Report File(s), VMS$AUDIT leaves no file-litter (temp-
+  files) behind, and the Report File itself is created by default into the directory
+  from which VMS$AUDIT is run (invoked).  Self-contained and tidy.
+
+  [4mUse[0m: You must either be logged-in as SYSTEM, or have the following privileges
+  authorized for your VMS account:
+    [1mSETPRV[0m [4mor[0m [1mSYSNAM, SYSPRV, SECURITY, CMKRNL, BYPASS, VOLPRO, OPER[0m
+
+  When generating an Audit Report, you are first prompted for your full name, which
+  is used in the Report's header information for accountability.  Next, you are asked
+  for the Report's filename; the default is VMS$AUDIT_<nodename>.REPORT.  Alternatively,
+  you may display the Report directly on-screen (in this case, no Report File is saved),
+  which is useful for debugging the command file itself.
+  
+$ GOTO DoneQuiet
 $ !
