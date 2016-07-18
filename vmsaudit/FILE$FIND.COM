@@ -17,20 +17,24 @@ $ !   administrative (system management) level commands and utilties.
 $ !   Outputs report to a file (for review, analysis and archival) or
 $ !   directly to screen (for development checkout).
 $ !
-$ ! usage:  @FILE$FIND [ disk_device[,...] ] -
-$ !                    [ VERSIONS (D) | SIZE -
-$ !                      | AGED | BEFORE     -
-$ !                      | SINCE | AFTER ]   -
-$ !                    [ minimum_size ]      -
+$ ! usage:  @FILE$FIND [ VERSIONS (D) | SIZE              -
+$ !                      | AGED | BEFORE | SINCE | AFTER  -
+$ !                      | HELP ]                         -
+$ !                    [ disk_device[,...] ]              -
 $ !                    [ NOTYPE ]
 $ !
-$ ! where: P1 -- Disk device list to scan for files over the specified
+$ ! where: P1 -- Scan/search action: VERSIONS, SIZE,
+$ !                                  AGED or BEFORE,
+$ !                                  SINCE or AFTER,
+$ !                                  HELP
+$ !        P2 -- Disk device list to scan for files over the specified
 $ !              or default version limit; default is SYS$SYSDEVICE;
 $ !              specify more than one device as a comma-separated list:
 $ !              e.g.: "DISK$DATA1,DSA200:,SYS$SYSDEVICE"
-$ !        P2 -- Scan/search target: VERSIONS or SIZE (>= P3)
-$ !        P3 -- VERSIONS: Minimum file version to list
-$ !              SIZE:     Minimum file size to list, in blocks
+$ !        P3 -- for VERSIONS:       The minimum file version to list
+$ !                  SIZE:           The minimum file size to list, in blocks
+$ !                  AGED or BEFORE: Files created before this date/time
+$ !                  AFTER or SINCE: Files created after this date/time
 $ !        P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
 $ !
 $Cmd$Parse: SUBROUTINE
@@ -195,7 +199,8 @@ $ ON CONTROL_Y THEN GOTO SV_CtrlY
 $ !
 $ dev            = P1
 $ node           = P4
-$ fileminversion = F$INTEGER( P2 )
+$ FMVtmp         = P2
+$ FileMinVersion = F$INTEGER( P2 )
 $ tmpfspec       = F$EDIT( P3, "UPCASE" )
 $ outfspec       = "''DD'''Fac'''FF$Cmd'_''node'_''dev'.REPORT"
 $ !
@@ -204,14 +209,33 @@ $ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
 $ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ now  = F$TIME()
 $ nowl = F$LENGTH( now )
+ $!
 $ IF ( VMSver .GES. "V8.3" )
-$ THEN filter = "/SELECT=VERSION=MINIMUM=''fileminversion'"
-$ ELSE filter = ""  ! report all versions into tmp-report file,
-$ !                 !   let the following tmp-report-scan sort it out
+$ THEN ! Let DIRECTORY do the version selection...
+$      DIRECTORY 'dev':[000000...]*.*   -
+         /OUTPUT='tmpfspec'             -
+         /COLUMN=1 /NOHEADER /NOTRAILER -
+         /SELECT=VERSION=MINIMUM='FileMinVersion'
+$ !
+$ ELSE ! Report selected versions into tmp-report file, let
+$      !   the following tmp-report-scan sort it out...
+$SV0:
+$      fmvlen = F$LENGTH( FMVtmp ) - 1
+$      IF ( fmvlen .GT. 0 ) .AND. ( F$EXTRACT( fmvlen, 1, FMVtmp ) .EQS. "0" )
+$      THEN ! Trim trailing zeros "0" from FMVtmp (equivalent to div-10)
+$           !   until there are no more...
+$           FMVtmp = F$EXTRACT( 0, fmvlen, FMVtmp )
+$           GOTO SV0
+$      ENDIF
+$      ! This PIPE is much faster than just dumping all versions into
+$      !   one big DIR-output file; the resulting temp-file will be
+$      !   much smaller, and therefore much faster to search...
+$      FMVtmp = ";" + FMVtmp
+$      PIPE DIRECTORY 'dev':[000000...]*.* -
+            /COLUMN=1 /NOHEADER /NOTRAILER -
+            | SEARCH sys$pipe "''FMVtmp'"  -
+            | CREATE 'tmpfspec'
 $ ENDIF
-$ DIRECTORY 'dev':[000000...]*.* -
-    'filter' /OUTPUT='tmpfspec' -
-    /COLUMN=1 /DATE /NOHEADER /NOTRAILER 
 $ !
 $ OPEN /READ  /ERROR=ReadErr  in  'tmpfspec'
 $ OPEN /WRITE /ERROR=WriteErr out 'outfspec'
@@ -224,7 +248,7 @@ $ hdr  = F$FAO( "Disk Device !AS on node !AS", dev, node )
 $ hdrl = F$LENGTH( hdr )
 $ !
 $ wso F$FAO( "%!AS-I-WAIT, scanning for file versions > ;!ZL ...", -
-              Fac, fileminversion )
+              Fac, FileMinVersion )
 $ !
 $SDLoop:
 $ READ /END_OF_FILE=Cleanup in record
@@ -235,7 +259,7 @@ $ fs    = F$FAO( "!4* !AS!AS!AS!AS" -
                  , F$PARSE( record, , , "NAME", "SYNTAX_ONLY" )      -
                  , F$PARSE( record, , , "TYPE", "SYNTAX_ONLY" )      -
                  , F$PARSE( record, , , "VERSION", "SYNTAX_ONLY" ) )
-$ IF ( fvers .GE. fileminversion )
+$ IF ( fvers .GE. FileMinVersion )
 $ THEN IF ( fcount .EQ. 0 )
 $      THEN ! write this output file's header information...
 $           WRITE out ""
@@ -256,12 +280,12 @@ $ elapsed = F$DELTA_TIME( now, F$TIME(), "ASCTIM" )
 $ ! write output file's trailer information and close it...
 $ IF ( fcount .GT. 0 )
 $ THEN WRITE out ""
-$      WRITE out F$FAO( "Total files found having version >= ;!ZL: !ZL", fileminversion, fcount )
+$      WRITE out F$FAO( "Total files found having version >= ;!ZL: !ZL", FileMinVersion, fcount )
 $ ELSE WRITE out F$FAO( "!AS!#* !AS", hdr, 80 - hdrl - nowl, now )
 $      WRITE out ""
-$      WRITE out F$FAO( "No files found having version >= ;!ZL", fileminversion )
+$      WRITE out F$FAO( "No files found having version >= ;!ZL", FileMinVersion )
 $ ENDIF
-$ IF ( filter .EQS. "" )
+$ IF ( FF$Cmd .EQS. "VERSIONS" )
 $ THEN WRITE out ""
 $      WRITE out F$FAO( "!6* Maximum version found: ;!ZL", MaxV )
 $      WRITE out F$FAO( "!19* for file: !AS", MaxFS )
@@ -316,16 +340,17 @@ $ !
 $ ! Principle of Least Privilege:
 $ Prv = F$SETPRV("READALL")
 $ !
-$ IF ( P1 .NES. "" )
-$ THEN FF$DiskList == P1
+$ CALL Cmd$Parse "''P1'" "FF$Cmd" "VERSIONS" -
+       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |HELP    "
+$ IF ( FF$Cmd .EQS. "HELP"  ) THEN GOTO Help$
+$ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
+$ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
+$ !
+$ IF ( P2 .NES. "" )
+$ THEN FF$DiskList == P2
 $ ELSE CALL MakeDiskList
 $      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FF$DiskList )
 $ ENDIF
-$ !
-$ CALL Cmd$Parse "''P2'" "FF$Cmd" "VERSIONS" -
-       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   "
-$ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
-$ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
 $ !
 $ tmpfspec   = "sys$scratch:" + Fac + FF$Cmd + ".tmp"
 $ IF ( P3 .NES. "" )
@@ -358,11 +383,41 @@ $ SET NOON
 $ ! cleanup
 $ IF ( F$TYPE(FF$Cmd)      .NES. "" ) THEN DELETE /SYMBOL /GLOBAL FF$Cmd
 $ IF ( F$TYPE(FF$DiskList) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL FF$DiskList
-$ IF ( tmpfspec .NES. "" ) -
-  THEN IF ( F$SEARCH(tmpfspec)  .NES. "" ) THEN DELETE /NOLOG 'tmpfspec';*
+$ IF ( F$TYPE(tmpfspec) .NES. "" ) -
+  THEN IF ( tmpfspec .NES. "" ) -
+       THEN IF ( F$SEARCH(tmpfspec)  .NES. "" ) THEN DELETE /NOLOG 'tmpfspec';*
 $ !
 $ ! Principle of Least Privilege:
 $ IF ( F$TYPE(Prv) .EQS. "STRING" ) THEN Prv = F$SETPRV(Prv)
 $ !
 $ EXIT 1   ! 'F$VERIFY(0)'
 $ !
+$ !
+$Help$:
+$ TYPE /PAGE sys$input
+
+  use:  @FILE$FIND [ VERSIONS (D) | SIZE
+                     | AGED | BEFORE | SINCE | AFTER
+                     | HELP ]
+                   [ disk_device[,...] ]
+                   [ NOTYPE ]
+
+  where: P1 -- Scan/search action: VERSIONS, SIZE,
+                                   AGED or BEFORE,
+                                   SINCE or AFTER,
+                                   HELP
+
+         P2 -- Disk device list to scan for files over the specified
+               or default version limit; default is SYS$SYSDEVICE;
+               specify more than one device as a comma-separated list:
+               e.g.: "DISK$DATA1,DSA200:,SYS$SYSDEVICE"
+
+         P3 -- for VERSIONS:       The minimum file version to list
+                   SIZE:           The minimum file size to list, in blocks
+                   AGED or BEFORE: Files created before this date/time
+                   AFTER or SINCE: Files created after this date/time
+
+         P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
+
+
+$ GOTO Done

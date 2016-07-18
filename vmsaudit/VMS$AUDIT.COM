@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.00-01 (15-Jul-2016)"
+$ VA$ProcVersion = "V2.01-01 (18-Jul-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,10 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  18-JUL-2016 : Add FILE$FIND VERSIONS back into the mix, submitted as
+$ !                a batch job, but only if the VMS$AUDIT configuration
+$ !                file specifies non-null values for VA$FFV_Permitted
+$ !                and VA$FFV_Disks.
 $ !  15-JUL-2016 : This really needs a proper command/parameter parser,
 $ !                so install Rick-&-Lorin's old standard Parse routine.
 $ !                Also, thoroughly revise this procedure's command-line
@@ -644,8 +648,12 @@ $ V$NCL      = "MCR NCL"
 $ V$DIR      = "DIRECTORY /SIZE /OWNER /DATE /PROTECTION /WIDTH=(FILENAME=20,SIZE=9,OWNER=16)"
 $ V$Star     = "*"
 $ !
-$ V$BatQStalled = "PIPE SHOW QUEUE /BATCH /ALL  | SEARCH sys$pipe stopped,stalled,paused"
-$ V$DevQStalled = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stalled,paused"
+$ VA$FFVreports  = "''DD'FILE$FINDVERSIONS_*.REPORT"
+$ VA$FFV_BQue    = "sys$batch"  ! may be overridden by
+$ VA$FFV_Version = ";32760"     !   VMS$AUDITCONFIG file
+$ !
+$ V$BatQStalled  = "PIPE SHOW QUEUE /BATCH /ALL  | SEARCH sys$pipe stopped,stalled,paused"
+$ V$DevQStalled  = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stalled,paused"
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
@@ -691,18 +699,6 @@ $ VA$UAFfull      = "''DD'''Fac'_''Node'_SYSUAF_FULL.LIS"
 $ VA$UAFbrief     = "''DD'''Fac'_''Node'_SYSUAF_BRIEF.LIS"
 $ VA$UTCreport    = "''DD'''Fac'_''Node'_utctime.lis"
 $ VA$ClusterMbr   = F$GETSYI("CLUSTER_MEMBER")
-$ !
-$ ! *** to-do:  Determine a better way/place to invoke
-$ ! ***         FILE$FIND.COM (versions) as a batch job...
-$ VA$FFVreports   = "''DD'FILE$FINDVERSIONS_*.REPORT"
-$ !
-$ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
-$ ! or given as P2, but have reasonable fallback default behavior, too:
-$ config = F$PARSE("VMS$AUDITCONFIG",P2,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
-$ IF ( F$SEARCH(config) .NES. "" )
-$ THEN VA$ConfigFile == config - F$PARSE(config,,,"VERSION","SYNTAX_ONLY")
-$ ELSE VA$ConfigFile == ""
-$ ENDIF
 $ !
 $ ! Default individual node(s) for SYSMAN:
 $ VA$SysmanNodes = ""
@@ -794,6 +790,14 @@ $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ !
 $ ! ========================
 $ ! Process the contents of the VMS$AUDIT Configuration File (VMS$AUDITCONFIG) --
+$ ! VMS$AUDITCONFIG is expected to be a process (per-user) logical name,
+$ ! or given as P2, but have reasonable fallback default behavior, too:
+$ config = F$PARSE("VMS$AUDITCONFIG",P2,"''Dev'''Dir'VMS$AUDIT.CONFIG",,"SYNTAX_ONLY")
+$ IF ( F$SEARCH(config) .NES. "" )
+$ THEN VA$ConfigFile == config - F$PARSE(config,,,"VERSION","SYNTAX_ONLY")
+$ ELSE VA$ConfigFile == ""
+$ ENDIF
+$ !
 $ IF ( VA$ConfigFile .NES. "" )
 $ THEN wso F$FAO( "%!AS-I-CONFIG, reading configuration file !AS", Fac, VA$ConfigFile )
 $      OPEN /READ /ERROR=VACerror vac 'VA$ConfigFile'
@@ -840,6 +844,24 @@ $      ENDIF
 $ ENDIF
 $vaccontinue:
 $ CLOSE /NOLOG vac
+$ !
+$ ! FILE$FIND.COM (versions) is submitted to batch if/only-if
+$ !   the VMS$AUDITCONFIG file provides non-null values for
+$ !   VA$FFV_Permitted and VA$FFV_Disks:
+$ IF ( F$TYPE(VA$FFV_Permitted) .EQS. "STRING" ) .AND. ( F$TYPE(VA$FFV_Disks) .EQS. "STRING" )
+$ THEN IF ( VA$FFV_Permitted .NES. "" ) .AND. ( VA$FFV_Disks .NES. "" )
+$      THEN ffvnodes = ",''VA$FFV_Permitted',"
+$           IF ( F$LOCATE( ",''Node',", ffvnodes ) .LTS. F$LENGTH( ffvnodes ) )
+$           THEN SUBMIT /QUEUE='VA$FFV_BQue' /NOTIFY /NOPRINT /KEEP /LOG='DD'FILE$FIND_'Node'.LOG -
+                   /PARAMETERS=( "VERSIONS", "''VA$FFV_Disks'", "''VA$FFV_Version'", "NOTYPE" )   -
+                   'DD'FILE$FIND
+$                VA$FFV_BatchEntry == $ENTRY
+$                VA$FFV_BatchQueue == F$EDIT( VA$FFV_BQue, "UPCASE" )
+$                wserr F$FAO( "%!AS-S-SUBMITTED, ""FILE$FIND VERSIONS"" submitted on !AS, entry !AS", -
+                               Fac, VA$FFV_BatchQueue, VA$FFV_BatchEntry )
+$           ENDIF
+$      ENDIF
+$ ENDIF
 $ !
 $ ! ========================
 $NeedPrv$:
