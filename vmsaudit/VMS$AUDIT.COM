@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.01-01 (18-Jul-2016)"
+$ VA$ProcVersion = "V2.02-01 (20-Jul-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,10 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  20-JUL-2016 : Fixed a conditional-PIPE use that had been missed (for
+$ !                V${Bat,Dev}QStalled commands).
+$ !                Also, submit FILE$FIND VERSIONS iff VMS >= v7.1 (because
+$ !                this com-file also uses PIPE).
 $ !  18-JUL-2016 : Add FILE$FIND VERSIONS back into the mix, submitted as
 $ !                a batch job, but only if the VMS$AUDIT configuration
 $ !                file specifies non-null values for VA$FFV_Permitted
@@ -849,7 +853,7 @@ $ ! FILE$FIND.COM (versions) is submitted to batch if/only-if
 $ !   the VMS$AUDITCONFIG file provides non-null values for
 $ !   VA$FFV_Permitted and VA$FFV_Disks:
 $ IF ( F$TYPE(VA$FFV_Permitted) .EQS. "STRING" ) .AND. ( F$TYPE(VA$FFV_Disks) .EQS. "STRING" )
-$ THEN IF ( VA$FFV_Permitted .NES. "" ) .AND. ( VA$FFV_Disks .NES. "" )
+$ THEN IF ( VMSver .GES. "V7.1" ) .AND. ( VA$FFV_Permitted .NES. "" ) .AND. ( VA$FFV_Disks .NES. "" )
 $      THEN ffvnodes = ",''VA$FFV_Permitted',"
 $           IF ( F$LOCATE( ",''Node',", ffvnodes ) .LTS. F$LENGTH( ffvnodes ) )
 $           THEN SUBMIT /QUEUE='VA$FFV_BQue' /NOTIFY /NOPRINT /KEEP /LOG='DD'FILE$FIND_'Node'.LOG -
@@ -905,8 +909,12 @@ $ !
 $ ! Special: Review all batch/device/printer/symbiont queues for job-counts exceeding threshold:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
-$ CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
+$ IF ( VMSver .GES. "V7.1" )
+$ THEN CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
+$      CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
+$ ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE unavailable (pre-v!AS)", Fac, "7.1" )
+$      wserr "-W-NOTRUN, cannot execute V${Bat,Dev}QStalled commands"
+$ ENDIF
 $ !
 $ CALL AuditStep "@''DD'DISKSPACE$REPORT"
 $ !
