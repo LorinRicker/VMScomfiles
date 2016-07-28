@@ -14,17 +14,18 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !     usage:  PRIV [ cmd | "" ] [-|NO]priv_list
 $ !
-$ !     where   cmd = [ SHOW | ONE$SHOT | SUDO
-$ !                     | NORMAL | DEFAULT | OPERATOR
-$ !                     | SYSTEM | MANAGER | ALL
-$ !                     | [ ADD | SUBTRACT | PRIVILEGE ] priv_list ]
+$ !     where   cmd = [ SHOW (D)   | ONE$SHOT  | SUDO
+$ !                     |   NORMAL | DEFAULT   | OPERATOR
+$ !                     |   SYSTEM | MANAGER   | ALL
+$ !                     | [ [ ADD  | PRIVILEGE | SUBTRACT | REMOVE ] priv_list ]
 $ !
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL_Y THEN GOSUB Ctrl_Y
 $ !
-$ Ver = F$TRNLNM("Tools$Debug")
-$ wso = "WRITE sys$output"
-$ Msg = ""
+$ Ver   = F$TRNLNM("Tools$Debug")
+$ wso   = "WRITE sys$output"
+$ Msg   = ""
+$ Comma = ","
 $ !
 $ IF P1 .EQS. "?" THEN GOTO Help
 $ !
@@ -46,9 +47,13 @@ $ CmdSet = "SHOW     |" -
          + "MANAGER  |" -  !    "
          + "ALL      |" -  ! *all* privs
          + "ADD      |" -  ! synonyms
+         + "PRIVILEGE|" -  !    "
          + "SUBTRACT |" -  !    "
-         + "PRIVILEGE"     !    "
+         + "REMOVE   |" -  !    "
+         + "HELP     "
 $ CALL Parse "''P1'" Parse$Cmd "SHOW" "''CmdSet'"
+$ !
+$ IF Parse$Cmd .EQS. "HELP" THEN GOTO Help
 $ !
 $ IF Parse$Cmd .EQS. "SHOW"
 $ THEN SHOW PROCESS /PRIVILEGE
@@ -75,17 +80,36 @@ $      ON CONTROL_Y THEN GOSUB Ctrl_Y
 $ ENDIF
 $ GOTO Done
 $ !
-$Add:
 $Subtract:
+$Remove:
+$ i = 0
+$L0:   ! prefix any non-negated privilege with "NO"
+$ elem = F$ELEMENT(i,Comma,P2)
+$ IF ( elem .EQS. Comma ) THEN GOTO L0Cont
+$ IF ( F$EXTRACT(0,2,elem) .NES. "NO" ) .AND. ( F$EXTRACT(0,1,elem) .NES. "-" )
+$ THEN loc = F$LOCATE(elem,P2)
+$      car = F$EXTRACT(0,loc,P2)
+$      cdr = F$EXTRACT(loc+F$LENGTH(elem),F$LENGTH(P2),P2)
+$      P2  = car + "NO" + elem + cdr
+$ !! Uncomment the following for debug/verification:
+$ !!   SHOW SYMBOL car
+$ !!   SHOW SYMBOL cdr
+$ !!   SHOW SYMBOL P2
+$ ENDIF
+$ i = i + 1
+$ GOTO L0
+$L0Cont:
+$ !
+$Add:
 $Privilege:
-$L0:   !replace all "-" with "NO"
+$L1:   ! replace all "-" with "NO"
 $ Dash = F$LOCATE("-",P2)
 $ P2L = F$LENGTH(P2)
 $ IF Dash .GE. P2L THEN GOTO SetPriv
 $ car = F$EXTRACT(0,Dash,P2)
 $ cdr = F$EXTRACT(Dash+1,P2L,P2)
 $ P2 = car + "NO" + cdr
-$ GOTO L0
+$ GOTO L1
 $ !
 $Default:
 $ P2  = F$GETJPI("","AUTHPRIV")  ! restore *my* default authorized privs...
@@ -195,13 +219,13 @@ $ TYPE /PAGE sys$input
 
      usage:  [1m@PRIVILEGE[0m [ [1mcmd[0m | [1m""[0m ] [ [[1m-[0m|[1mNO[0m][1mpriv_list[0m ]
 
-     where   [1mcmd[0m = [ [1mSHOW[0m (D) | [1mONE$SHOT[0m | [1mSUDO[0m
-                     | [1mNORMAL[0m | [1mDEFAULT[0m | [1mOPERATOR[0m
-                     | [1mSYSTEM[0m | [1mMANAGER[0m | [1mALL[0m
-                     | [ [1mADD[0m | [1mSUBTRACT[0m | [1mPRIVILEGE[0m ] [1mpriv_list[0m ]
+     where   [1mcmd[0m = [ [1mSHOW[0m (D)   | [1mONE$SHOT[0m  | [1mSUDO[0m
+                     |   [1mNORMAL[0  m | [1mDEFAULT[0m   | [1mOPERATOR[0m
+                     |   [1mSYSTEM[0  m | [1mMANAGER[0m   | [1mALL[0m
+                     | [ [ [1m ADD[0m | [1mPRIVILEGE[0m | [1mSUBTRACT[0m | [1mREMOVE[0m ] [1mpriv_list[0m ]
 
        and   [1mpriv_list[0m is a comma-separated list of VMS privilege names
-             (used only if P1 is "PRIVILEGE", "ADD" or "SUBTRACT")
+             (used only if P1 is "PRIVILEGE", "ADD", "SUBTRACT" or "REMOVE" )
 
          SHOW        -- Display current privileges (SHOW PROCESS /PRIVILEGE).
 
@@ -227,9 +251,15 @@ $ TYPE /PAGE sys$input
                         this process.
 
          PRIVILEGE   -- Requires that P2 specifies a comma-separated list of
-         or ADD         VMS privileges to set.  If a privilege is prefixed
-         or SUBTRACT    by "NO" or "-" (e.g., "NOBYPASS" or "-BYPASS"), then
+         or ADD         VMS privileges to enable.  If a privilege is prefixed
+                        by "NO" or "-" (e.g., "NOBYPASS" or "-BYPASS"), then
                         that privilege is removed.
 
+         SUBTRACT    -- Requires that P2 specifies a comma-separated list of
+         or REMOVE      VMS privileges to disable.  Any privilege in this list
+                        is negated (prefixed by "NO") so that the privilege
+                        is removed.
+
 $ !
-$ GOTO Done
+$ EXIT 1
+$ !
