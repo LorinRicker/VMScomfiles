@@ -125,7 +125,7 @@ $ GOTO SetPriv
 $ !
 $System:
 $Manager:
-$ P2 = "BYPASS,CMKRNL,SECURITY,SYSNAM,SYSPRV,WORLD"
+$ P2 = "CMKRNL,SYSNAM,SYSPRV,WORLD"
 $ GOTO SetPriv
 $ !
 $All:
@@ -244,8 +244,8 @@ $ TYPE /PAGE sys$input
          OPERATOR    -- Sets TMPMBX, NETMBX, [1mOPER[0m (operator privileges),
                         revoking any and all elevated privileges.
 
-         SYSTEM      -- Adds [1mBYPASS, CMKRNL, SECURITY, SYSNAM, SYSPRV, WORLD[0m
-         or MANAGER     to current process privileges.
+         SYSTEM      -- Adds [1mCMKRNL, SYSNAM, SYSPRV, WORLD[0m to the current
+         or MANAGER     process privileges.
 
          ALL         -- Sets [1m[4mall[0m VMS privileges which are authorized for
                         this process.
