@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.02-01 (20-Jul-2016)"
+$ VA$ProcVersion = "V2.03-02 (05-Aug-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,14 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  05-AUG-2016 : Given comments-in-scripts issues for old versions of SYSMAN,
+$ !                just inline the scripted commands as here-doc input. Simpler.
+$ !                Fixes in Quick_Report, also remove the VMS$AUDIT_CLUSTER.SYSMAN*
+$ !                script files from backup saveset and zip archives; also remove
+$ !                QUICK_AUDIT.COM from same, it was just a placeholder.
+$ !  04-AUG-2016 : Wow. Old VMS versions (<V7.1) of SYSMAN don't even accept
+$ !                internal comment lines in the VMS$AUDIT_CLUSTER.SYSMAN_NOPIPE
+$ !                script.  Take 'em out (including copyright) of Quick_Report.
 $ !  20-JUL-2016 : Fixed a conditional-PIPE use that had been missed (for
 $ !                V${Bat,Dev}QStalled commands).
 $ !                Also, submit FILE$FIND VERSIONS iff VMS >= v7.1 (because
@@ -566,13 +574,46 @@ $ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeS
 $ !
 $ ! Generate a quick-check report for the cluster --
 $ !   First are per-node items thru SYSMAN /CLUSTER:
-$ IF ( VMSver .GTS. "V7.1" )
-$ THEN DEFINE /USER_MODE vms$audit_clu 'DD'VMS$AUDIT_CLUSTER.SYSMAN
-$ ELSE DEFINE /USER_MODE vms$audit_clu 'DD'VMS$AUDIT_CLUSTER.SYSMAN_NOPIPE
-$ ENDIF
-$ 'V$SYSMAN' SET ENVIRONMENT 'env'
-@vms$audit_clu
+$ IF ( VMSver .LES. "V7.0" )
+$ THEN ! ---- V6.X up to V7.0 ----
+$      ! ---- keep it simple  ----
+$ ! ================================================
+$      'V$SYSMAN' SET ENVIRONMENT 'env'
+CONFIGURATION SHOW TIME
+
+DO SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL
+   
+DO SHOW NETWORK
+
+DO SHOW ERROR
+
+DO SHOW MEMORY /FILES
+DO SHOW MEMORY /PHYSICAL /CACHE
+DO SHOW MEMORY /SLOTS /POOL
 EXIT
+$ ! ================================================
+$ ELSE ! ---- V7.1 and beyond ----
+$      ! ---- get fancier     ----
+$ ! ================================================
+$      'V$SYSMAN' SET ENVIRONMENT 'env'
+CONFIGURATION SHOW TIME
+
+DO PIPE SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL -
+   ; WRITE sys$output F$FAO("%VMS$AUDIT-I-REBOOT, last reboot on !AS!/", F$GETSYI("BOOTTIME"))
+   
+DO PIPE SHOW NETWORK -
+   ; WRITE sys$output F$FAO("============!/")
+
+DO PIPE SHOW ERROR -
+   ; WRITE sys$output F$FAO("============!/")
+
+DO SHOW MEMORY /FILES
+DO SHOW MEMORY /PHYSICAL /CACHE
+DO PIPE SHOW MEMORY /SLOTS /POOL -
+   ; WRITE sys$output F$FAO("============!/")
+EXIT
+$ ! ================================================
+$ ENDIF
 $ !
 $ !   Then several items which are done once for whole cluster:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
@@ -588,7 +629,7 @@ $ !
 $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'" "''P1'"
 $ !
-$ EXIT
+$ EXIT 1
 $ !
 $CRCtrl_Y:
 $ EXIT %X2C
@@ -661,8 +702,6 @@ $ V$DevQStalled  = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stall
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
-             + ",''Fac'_cluster.sysman;" -
-             + ",''Fac'_cluster.sysman_nopipe;" -
              + ",''Fac'_*.config;" -
              + ",''Fac'_boot_options.answers;" -
              + ",''Fac'_*.tpu;" -
@@ -671,12 +710,9 @@ $ V$BckList  = "''Fac'.com;" -
              + ",que$stalled.com;" -
              + ",uaf$detailed_analysis.com;" -
              + ",uaf$quick_analysis.com;" -
-             + ",quick_audit.com;" -
              + ",parsec_autogen.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
-             + " ''Fac'_cluster.sysman" -
-             + " ''Fac'_cluster.sysman_nopipe" -
              + " ''Fac'_*.config" -
              + " ''Fac'_boot_options.answers" -
              + " ''Fac'_*.tpu" -
@@ -685,7 +721,6 @@ $ V$ZipList  = "''Fac'.com" -
              + " que$stalled.com" -
              + " uaf$detailed_analysis.com" -
              + " uaf$quick_analysis.com" -
-             + " quick_audit.com"   -
              + " parsec_autogen.com"
 $ !
 $ ! Calculate the first of last month (approx):

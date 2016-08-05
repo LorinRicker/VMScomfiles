@@ -209,7 +209,7 @@ $ wso F$FAO( "%!AS-I-WAIT, directory of !AS::!AS to !AS ...", -
 $ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ now  = F$TIME()
 $ nowl = F$LENGTH( now )
- $!
+$ !
 $ IF ( VMSver .GES. "V8.3" )
 $ THEN ! Let DIRECTORY do the version selection...
 $      DIRECTORY 'dev':[000000...]*.*   -
@@ -219,22 +219,27 @@ $      DIRECTORY 'dev':[000000...]*.*   -
 $ !
 $ ELSE ! Report selected versions into tmp-report file, let
 $      !   the following tmp-report-scan sort it out...
+$      IF ( VMSver .GES. "V7.1" )
+$      THEN CONTINUE
 $SV0:
-$      fmvlen = F$LENGTH( FMVtmp ) - 1
-$      IF ( fmvlen .GT. 0 ) .AND. ( F$EXTRACT( fmvlen, 1, FMVtmp ) .EQS. "0" )
-$      THEN ! Trim trailing zeros "0" from FMVtmp (equivalent to div-10)
-$           !   until there are no more...
-$           FMVtmp = F$EXTRACT( 0, fmvlen, FMVtmp )
-$           GOTO SV0
+$           fmvlen = F$LENGTH( FMVtmp ) - 1
+$           IF ( fmvlen .GT. 0 ) .AND. ( F$EXTRACT( fmvlen, 1, FMVtmp ) .EQS. "0" )
+$           THEN ! Trim trailing zeros "0" from FMVtmp (equivalent to div-10)
+$                !   until there are no more...
+$                FMVtmp = F$EXTRACT( 0, fmvlen, FMVtmp )
+$                GOTO SV0
+$           ENDIF
+$           ! This PIPE is much faster than just dumping all versions into
+$           !   one big DIR-output file; the resulting temp-file will be
+$           !   much smaller, and therefore much faster to search...
+$           FMVtmp = ";" + FMVtmp
+$           PIPE DIRECTORY 'dev':[000000...]*.* -
+                 /COLUMN=1 /NOHEADER /NOTRAILER -
+                 | SEARCH sys$pipe "''FMVtmp'"  -
+                 | CREATE 'tmpfspec'
+$      ELSE ! for older VMS versions <V7.1, gotta do it slow:
+$           DIRECTORY 'dev':[000000...]*.* /COLUMN=1 /NOHEADER /NOTRAILER
 $      ENDIF
-$      ! This PIPE is much faster than just dumping all versions into
-$      !   one big DIR-output file; the resulting temp-file will be
-$      !   much smaller, and therefore much faster to search...
-$      FMVtmp = ";" + FMVtmp
-$      PIPE DIRECTORY 'dev':[000000...]*.* -
-            /COLUMN=1 /NOHEADER /NOTRAILER -
-            | SEARCH sys$pipe "''FMVtmp'"  -
-            | CREATE 'tmpfspec'
 $ ENDIF
 $ !
 $ OPEN /READ  /ERROR=ReadErr  in  'tmpfspec'
