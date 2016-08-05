@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.03-04 (05-Aug-2016)"
+$ VA$ProcVersion = "V2.03-05 (05-Aug-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -33,6 +33,10 @@ $ !                Done-cleanup, for VMS version comparisons. Added \-quoted-out
 $ !                of this string to Report Header for visibility.
 $ !                Also conditionalize use of V$*QStalled (PIPE) commands correctly
 $ !                in Quick_Report.
+$ !                Also change backup and zip file lists to ship/archive only the
+$ !                VMS$AUDIT_TEMPLATE.CONFIG (and not VMS$AUDIT_LRICKER.CONFIG)
+$ !                so that in-use config-files are not accidentally overwritten
+$ !                in the field.
 $ !  05-AUG-2016 : Given comments-in-scripts issues for old versions of SYSMAN,
 $ !                just inline the scripted commands as here-doc input. Simpler.
 $ !                Fixes in Quick_Report, also remove the VMS$AUDIT_CLUSTER.SYSMAN*
@@ -712,7 +716,7 @@ $ V$DevQStalled  = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stall
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
-             + ",''Fac'_*.config;" -
+             + ",''Fac'_template.config;" -
              + ",''Fac'_boot_options.answers;" -
              + ",''Fac'_*.tpu;" -
              + ",file$find.com;" -
@@ -723,7 +727,7 @@ $ V$BckList  = "''Fac'.com;" -
              + ",parsec_autogen.com;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
-             + " ''Fac'_*.config" -
+             + " ''Fac'_template.config" -
              + " ''Fac'_boot_options.answers" -
              + " ''Fac'_*.tpu" -
              + " file$find.com" -
