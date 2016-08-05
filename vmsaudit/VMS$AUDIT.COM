@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.03-02 (05-Aug-2016)"
+$ VA$ProcVersion = "V2.03-04 (05-Aug-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,11 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  05-AUG-2016 : Hoist local symbol VMSver to global symbol VMS$ver, including
+$ !                Done-cleanup, for VMS version comparisons. Added \-quoted-output
+$ !                of this string to Report Header for visibility.
+$ !                Also conditionalize use of V$*QStalled (PIPE) commands correctly
+$ !                in Quick_Report.
 $ !  05-AUG-2016 : Given comments-in-scripts issues for old versions of SYSMAN,
 $ !                just inline the scripted commands as here-doc input. Simpler.
 $ !                Fixes in Quick_Report, also remove the VMS$AUDIT_CLUSTER.SYSMAN*
@@ -309,6 +314,8 @@ $ msg = F$FAO( "!AS", P3 )
 $ CALL CenterLine "''msg'"
 $ msg = F$FAO( "Report run on system/node !AS", P4 )
 $ CALL CenterLine "''msg'"
+$ msg = F$FAO( "VMS version string \!AS\", VMS$ver )
+$ CALL CenterLine "''msg'"
 $ IF ( P7 .EQS. "CLUSTER" ) THEN CALL CenterLine "and for this VMScluster"
 $ msg = F$FAO( "!AS", P5 )
 $ CALL CenterLine "''msg'"
@@ -449,8 +456,8 @@ $      ELSE ! post AUTH LIST /BRIEF: quick analysis
 $           RENAME /NOLOG []SYSUAF.LIS 'VA$UAFbrief'
 $!! deprecated: UAF$QUICK_ANALYSIS.COM
 $!! $           ! Not very modular, but let's do some account analysis here, too:
-$!! $           IF ( VMSver .GTS. "V8.3" ) ! PIPE command in >= VMS v7.1 ...
-$!! $                                      ! and SEARCH /STATISTICS=SYMBOL in >= v8.3-1H1
+$!! $           IF ( VMS$ver .GES. "V8.3" ) ! PIPE command in >= VMS v7.1 ...
+$!! $                                       ! and SEARCH /STATISTICS=SYMBOL in >= v8.3-1H1
 $!! $           THEN @'DD'UAF$QUICK_ANALYSIS 'VA$UAFbrief'
 $!! $           ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE &/or SEARCH/STAT=SYMBOL unavailable (pre-v!AS)", Fac, "7.1/8.3-1H1" )
 $!! $                wserr "-W-NOTRUN, cannot execute @UAF$QUICK_ANALYSIS"
@@ -574,7 +581,7 @@ $ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeS
 $ !
 $ ! Generate a quick-check report for the cluster --
 $ !   First are per-node items thru SYSMAN /CLUSTER:
-$ IF ( VMSver .LES. "V7.0" )
+$ IF ( VMS$ver .LES. "V7.0" )
 $ THEN ! ---- V6.X up to V7.0 ----
 $      ! ---- keep it simple  ----
 $ ! ================================================
@@ -618,8 +625,10 @@ $ !
 $ !   Then several items which are done once for whole cluster:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
-$ CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
+$ IF ( VMS$ver .GES. "V7.1" )
+$ THEN CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
+$      CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
+$ ENDIF
 $ !
 $ CALL AuditStep "@''DD'DISKSPACE$REPORT"
 $ CALL AuditStep "SHOW DEVICE D /MOUNTED"
@@ -668,13 +677,14 @@ $ SET CONTROL=(Y,T)
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
+$ VMS$ver == F$EDIT(F$GETSYI("VERSION"),"TRIM")
+$ !
 $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ Dir    = F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
 $ Dev    = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY")
 $ DD     = Dev + Dir
 $ Node   = F$GETSYI("NODENAME")
-$ VMSver = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ !
 $ Debugging = F$TRNLNM("TOOLS$DEBUG")
 $ !
@@ -729,7 +739,7 @@ $ FirstofLastMonth = "1-" -
                    + F$CVTIME( ago, "ABSOLUTE", "MONTH" ) -
                    + "-" + F$CVTIME( ago, "ABSOLUTE", "YEAR" )
 $ !
-$ IF ( VMSver .GES. "V7.4" )
+$ IF ( VMS$ver .GES. "V7.4" )
 $ THEN V$DEASSIGN = "DEASSIGN /NOLOG"
 $ ELSE V$DEASSIGN = "DEASSIGN"  ! /[NO]LOG wasn't implemented prior to 7.4
 $ ENDIF
@@ -888,7 +898,7 @@ $ ! FILE$FIND.COM (versions) is submitted to batch if/only-if
 $ !   the VMS$AUDITCONFIG file provides non-null values for
 $ !   VA$FFV_Permitted and VA$FFV_Disks:
 $ IF ( F$TYPE(VA$FFV_Permitted) .EQS. "STRING" ) .AND. ( F$TYPE(VA$FFV_Disks) .EQS. "STRING" )
-$ THEN IF ( VMSver .GES. "V7.1" ) .AND. ( VA$FFV_Permitted .NES. "" ) .AND. ( VA$FFV_Disks .NES. "" )
+$ THEN IF ( VMS$ver .GES. "V7.1" ) .AND. ( VA$FFV_Permitted .NES. "" ) .AND. ( VA$FFV_Disks .NES. "" )
 $      THEN ffvnodes = ",''VA$FFV_Permitted',"
 $           IF ( F$LOCATE( ",''Node',", ffvnodes ) .LTS. F$LENGTH( ffvnodes ) )
 $           THEN SUBMIT /QUEUE='VA$FFV_BQue' /NOTIFY /NOPRINT /KEEP /LOG='DD'FILE$FIND_'Node'.LOG -
@@ -924,7 +934,7 @@ $ ! Full Report starts here --
 $ !
 $ CALL ReportHeader "''Fac'" "''Proc'" "''VA$ProcVersion'" "''Node'" "''VA$TimeStamp'" "''VA$User'" ""
 $ !
-$ IF ( VMSver .GES. "V7.1" )         ! PIPE command in VMS v7.1 and higher...
+$ IF ( VMS$ver .GES. "V7.1" )       ! PIPE command in VMS v7.1 and higher...
 $ THEN CALL NetInstalled "DECnet"
 $      CALL NetInstalled "TCP/IP"
 $      CALL NetInstalled "Multinet"
@@ -944,7 +954,7 @@ $ !
 $ ! Special: Review all batch/device/printer/symbiont queues for job-counts exceeding threshold:
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
-$ IF ( VMSver .GES. "V7.1" )
+$ IF ( VMS$ver .GES. "V7.1" )
 $ THEN CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
 $      CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
 $ ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE unavailable (pre-v!AS)", Fac, "7.1" )
@@ -957,7 +967,7 @@ $ CALL AuditStep "SHOW ERROR"
 $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -
     "NOPAGE" "DIRECTORY SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*"
 $ !
-$ IF ( VMSver .GES. "V7.3" )
+$ IF ( VMS$ver .GES. "V7.3" )
 $ THEN elv = "/ELV TRANSLATE "
 $ ELSE elv = ""
 $ ENDIF
@@ -1046,7 +1056,7 @@ $ THEN ! III. OpenVMS -- Version & Patch Levels
 $      CALL AuditStep "SHOW SYSTEM /HEADER /NOPROCESS"
 $ !
 $ ! VMS version must be >= v8.4 to auto-drive BOOT_OPTIONS.COM with an Answer File! --
-$      IF ( F$GETSYI("ARCH_NAME") .EQS. "IA64" ) .AND. ( VMSver .GES. "v8.4" )
+$      IF ( F$GETSYI("ARCH_NAME") .EQS. "IA64" ) .AND. ( VMS$ver .GES. "v8.4" )
 $      THEN ! Answer-file: B 2 (display boot options), D 2 (display device options), E (exit) --
 $           AnsFile = "VMS$AUDIT_BOOT_OPTIONS.ANSWERS"
 $           CALL AuditStep "@SYS$MANAGER:BOOT_OPTIONS ''Dev'''Dir'''AnsFile'" -
@@ -1336,6 +1346,7 @@ $ IF F$TYPE(VA$TimeStamp)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$TimeStamp
 $ IF F$TYPE(VA$DECnet)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$DECnet
 $ IF F$TYPE(VA$Dashes)       .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$Dashes
 $ IF F$TYPE(VA$DblDashes)    .NES. "" THEN DELETE /SYMBOL /GLOBAL VA$DblDashes
+$ IF F$TYPE(VMS$ver)         .NES. "" THEN DELETE /SYMBOL /GLOBAL VMS$ver
 $ ! Note: Do *not* delete global symbols VMSAU*DIT, VA$AuditReport or VA$ConfigFile --
 $ !       once defined, used as user-login conveniences.
 $ EXIT 1  ! 'F$VERIFY(0)'
