@@ -103,7 +103,6 @@ $ ! P2 = Datetime since/after
 $ ! P3 = (unused)
 $ ! P4 = Nodename
 $ !
-$ ON ERROR THEN GOTO SA_CtrlY
 $ ON CONTROL_Y THEN GOTO SA_CtrlY
 $ !
 $ dev         = P1
@@ -133,7 +132,6 @@ $ ! P2 = Datetime before
 $ ! P3 = (unused)
 $ ! P4 = Nodename
 $ !
-$ ON ERROR THEN GOTO SB_CtrlY
 $ ON CONTROL_Y THEN GOTO SB_CtrlY
 $ !
 $ dev         = P1
@@ -163,7 +161,6 @@ $ ! P2 = File minimum size
 $ ! P3 = (unused)
 $ ! P4 = Nodename
 $ !
-$ ON ERROR THEN GOTO SS_CtrlY
 $ ON CONTROL_Y THEN GOTO SS_CtrlY
 $ !
 $ dev         = P1
@@ -194,7 +191,6 @@ $ ! P2 = File minimum version limit
 $ ! P3 = Temporary/working filespec
 $ ! P4 = Nodename
 $ !
-$ ON ERROR THEN GOTO SV_CtrlY
 $ ON CONTROL_Y THEN GOTO SV_CtrlY
 $ !
 $ dev            = P1
@@ -238,7 +234,9 @@ $           PIPE DIRECTORY 'dev':[000000...]*.* -
                  | SEARCH sys$pipe "''FMVtmp'"  -
                  | CREATE 'tmpfspec'
 $      ELSE ! for older VMS versions <V7.1, gotta do it slow:
-$           DIRECTORY 'dev':[000000...]*.* /COLUMN=1 /NOHEADER /NOTRAILER
+$           DIRECTORY 'dev':[000000...]*.* -
+              /OUTPUT='tmpfspec'           -
+              /COLUMN=1 /NOHEADER /NOTRAILER
 $      ENDIF
 $ ENDIF
 $ !
@@ -372,6 +370,8 @@ $ !
 $ devcount = 0
 $ !
 $Loop0:
+$ ! especially for $STATUS=%x1001C04A, -F-VOLINV, volume is not sofware enabled:
+$ ON ERROR THEN GOTO L0err
 $ dev = F$ELEMENT( devcount, COMMA, FF$DiskList )
 $ IF ( dev .EQS. COMMA ) THEN GOTO Done
 $ dev = F$EDIT( dev, "TRIM,UPCASE" ) - COLON
@@ -380,6 +380,7 @@ $ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'" "''Node'"
 $ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS"" ""!AS""", -
                   Fac, dev, fileminimum, tmpfspec, Node )
 $ ENDIF
+$L0err:
 $ devcount = devcount + 1
 $ GOTO Loop0
 $ !
