@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.03-05 (05-Aug-2016)"
+$ VA$ProcVersion = "V2.04-02 (18-Aug-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,8 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  18-AUG-2016 : Add /NOREPLACE /LOG, remove /NEW_FILES on the Restore: BACKUP
+$ !                operation.  Also, reformatted Help text to fit 80-columns.
 $ !  05-AUG-2016 : Hoist local symbol VMSver to global symbol VMS$ver, including
 $ !                Done-cleanup, for VMS version comparisons. Added \-quoted-output
 $ !                of this string to Report Header for visibility.
@@ -1243,7 +1245,7 @@ $ !
 $RESTORE$:
 $ V$BckSSN = V$BckSSN + ".BCK"
 $ IF ( F$SEARCH("''V$BckSSN'") .NES. "" )
-$ THEN BACKUP /LOG 'V$BckSSN' /SAVE_SET []*.* /NEW_VERSION
+$ THEN BACKUP /LOG 'V$BckSSN' /SAVE_SET []*.* /NOREPLACE /LOG
 $ ELSE wserr F$FAO( "%!AS-E-FNF, cannot find file !AS", V$BckSSN )
 $ ENDIF
 $ GOTO Done
@@ -1376,43 +1378,46 @@ $ TYPE /PAGE sys$input
                        | FTP     | CLEANUP | HELP ]
                      [ VMS$AUDITCONFIG_filespec ][0m
 
-  where: P1 -- Audit action, see below.
+  where: [1mP1[0m -- Audit action, see below.
 
-         P2 -- File-spec for the VMS$AUDIT configuration file, which defaults to
-               the logical name "VMS$AUDITCONFIG".
+         [1mP2[0m -- File-spec for the VMS$AUDIT configuration file, which defaults
+               to the logical name "VMS$AUDITCONFIG".
 
         [1mBRIEF[0m    -- Generates the VMS$AUDIT Brief Report.
-        [1mFULL[0m     -- Generates the VMS$AUDIT Full Report, which contains all of
-                    the Brief Report, plus: brief and full listings of the SYSUAF;
-                    SHOW DEVICE and SHOW DEVICE /FULL Disk; System Startup command
-                    file directories and SYSMAN STARTUP SHOW FILE; BOOT_OPTIONS
-                    output for Integrity; SHOW LICENSE and PRODUCT SHOW PRODUCT/HISTORY;
-                    SHOW QUEUE /FULL; selected SYSGEN SHOW *; UTC Time-Change report;
-                    networks: TCP/IP or MultiNet config information (if available);
-                    DECnet config installation (if available).
+        [1mFULL[0m     -- Generates the VMS$AUDIT Full Report, which contains all
+                    of the Brief Report, plus: brief and full listings of the
+                    SYSUAF; SHOW DEVICE and SHOW DEVICE /FULL Disk; Startup
+                    command file directories and SYSMAN STARTUP SHOW FILE;
+                    BOOT_OPTIONS output for Integrity; SHOW LICENSE and
+                    PRODUCT SHOW PRODUCT/HISTORY; SHOW QUEUE /FULL; selected
+                    SYSGEN SHOW *; UTC Time-Change report; networks: TCP/IP
+                    or MultiNet configuration information (if available);
+                    and DECnet configuration information (if available).
 
-        [1mQUICK[0m    -- Generates a VMS$AUDIT Quick Report for the current system/node.
-        [1mCLUSTER[0m  -- Generates a VMS$AUDIT Quick Report for the entire VMScluster.
-        [1mREMOTE[0m   -- Generates a VMS$AUDIT Quick Report for a remote system/node.
+        [1mQUICK[0m    -- Generates a Quick Report for the current system/node.
+        [1mCLUSTER[0m  -- Generates a Quick Report for the entire VMScluster.
+        [1mREMOTE[0m   -- Generates a Quick Report for a remote system/node.
 
-        [1mTYPE[0m     -- Reviews the current Audit Report File using the DCL TYPE /PAGE
-                    command, with scroll back/forward several pages at a time.
+        [1mTYPE[0m     -- Reviews the current Audit Report File using the
+                    TYPE /PAGE command, with the ability to scroll
+                    back/forward several pages at a time.
 
-        [1mEDIT[0m     -- Reviews the current Audit Report File using your favorite
-                    VMS text editor, such as EVE, KED, EDT, etc.  The file is
-                    opened in RW (read/write) mode, so you can modify the Report
-                    if you want; change the editor's file buffer mode to RO (read
-                    only), and/or exit correctly if you don't want to change the
-                    file accidentally.
+        [1mEDIT[0m     -- Reviews the current Audit Report File using your
+                    favorite VMS text editor, such as EVE, KED, EDT,
+                    etc.  The file is opened in RW (read/write) mode,
+                    so you can modify the Report if you want; change
+                    the editor's file buffer mode to RO (read only),
+                    and/or exit correctly if you don't want to change
+                    the file accidentally.
 
-        [1mBACKUP[0m   -- Backup and restore will save all VMS$AUDIT suite file
-        [1mRESTORE[0m     components into/from a saveset called VMS$AUDIT.BCK.
+        [1mBACKUP[0m   -- Backup and restore will save or restore all file
+        [1mRESTORE[0m     components to/from a saveset called VMS$AUDIT.BCK.
 
-        [1mZIP[0m      -- If the (unsupported) utilities ZIP.EXE and UNZIP.EXE are
-        [1mUNZIP[0m       available on the system (usually found in SYS$SYSTEM),
-                    these command options will zip/unzip all VMS$AUDIT file
-                    components into a VMS$AUDIT.ZIP archive into/from the
-                    current directory.
+        [1mZIP[0m      -- If the utilities ZIP.EXE and UNZIP.EXE are available
+        [1mUNZIP[0m       on the system (unsupported, but often found in the
+                    SYS$SYSTEM directory), these command options will
+                    zip/unzip all VMS$AUDIT file components into a
+                    VMS$AUDIT.ZIP archive into/from the current directory.
 
         [1mFTP[0m      -- Autoconnects an FTP session for a remote FTP-server
                     and username (user's login password must always be
@@ -1430,10 +1435,10 @@ $ TYPE /PAGE sys$input
 
         [1mHELP (?)[0m -- Displays this help text.  "HELP" and "?" are equivalent.
         
-  [4mDescription[0m:   [1mVMS$AUDIT.COM[0m is an Audit Report Generator for VMS (OpenVMS).
+  [4mDescription[0m:  [1mVMS$AUDIT.COM[0m is an Audit Report Generator for VMS (OpenVMS).
   It provides convenient reporting consistency when auditing multiple systems
-  and sites, generating a standardized, paginated and labeled report format for
-  review and analysis.  It provides the following functions:
+  and sites, generating a standardized, paginated and labeled report format
+  for review and analysis.  It provides the following functions:
   
     a) Generate an Audit Report, either to file or to the user's terminal.
     b) Review an Audit Report, using either the TYPE /PAGE facility or the
@@ -1445,22 +1450,25 @@ $ TYPE /PAGE sys$input
   excess of a threshold), VMS$AUDIT_{REPLACECRLF,TRIMTRAIL}.TPU (the two TPU
   cleanup scripts), and VMS$AUDIT_BOOT_OPTIONS.ANSWERS (a text-answer file).
 
-  All VMS$AUDIT files can be backed-up into a VMS BACKUP save-set, VMS$AUDIT.BCK,
-  or zipped into an archive, VMS$AUDIT.ZIP, either of which can be FTP'd (scp, etc.)
-  in binary mode, and restored into any appropriate directory on a target VMS system.
-  Other than the actual Audit Report File(s), VMS$AUDIT leaves no file-litter (temp-
-  files) behind, and the Report File itself is created by default into the directory
-  from which VMS$AUDIT is run (invoked).  Self-contained and tidy.
+  All VMS$AUDIT files can be backed-up into a BACKUP save-set, VMS$AUDIT.BCK,
+  or zipped into an archive, VMS$AUDIT.ZIP, either of which can be FTP'd (scp,
+  etc.) in binary mode, and restored into an appropriate directory on a target
+  VMS system.  Other than the actual Audit Report File(s), VMS$AUDIT leaves no
+  file-litter (temp-files) behind, and the Report File itself is created by
+  default into the directory from which VMS$AUDIT is run (invoked).  It is
+  self-contained and tidy.
 
   [4mUse[0m: You must either be logged-in as SYSTEM, or have the following privileges
   authorized for your VMS account:
     [1mSETPRV[0m [4mor[0m [1mSYSNAM, SYSPRV, SECURITY, CMKRNL, BYPASS, VOLPRO, OPER[0m
 
-  When generating an Audit Report, you are first prompted for your full name, which
-  is used in the Report's header information for accountability.  Next, you are asked
-  for the Report's filename; the default is VMS$AUDIT_<nodename>.REPORT.  Alternatively,
-  you may display the Report directly on-screen (in this case, no Report File is saved),
-  which is useful for debugging the command file itself.
+  When generating an Audit Report, you are first prompted for your full name,
+  which is used in the Report's header information for accountability.  Next,
+  you are asked for the Report's filename; the default is
+      [1mVMS$AUDIT_<nodename>.REPORT[0m
+  Alternatively, you may display the Report directly on-screen (in this case,
+  no Report File is saved), which is useful for debugging the command file
+  itself.
   
 $ GOTO DoneQuiet
 $ !
