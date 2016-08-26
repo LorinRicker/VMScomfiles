@@ -16,7 +16,7 @@ $ !     usage:  PRIV [ cmd | "" ] [-|NO]priv_list
 $ !
 $ !     where   cmd = [ SHOW (D)   | ONE$SHOT  | SUDO
 $ !                     |   NORMAL | DEFAULT   | OPERATOR
-$ !                     |   SYSTEM | MANAGER   | ALL
+$ !                     |   SYSTEM | MANAGER   | SECURITY | ALL
 $ !                     | [ [ ADD  | PRIVILEGE | SUBTRACT | REMOVE ] priv_list ]
 $ !
 $ ON ERROR THEN GOTO Done
@@ -32,9 +32,9 @@ $ !
 $ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ IF F$TYPE(RED) .EQS. "STRING"
 $ THEN LMR$promptstr == "''BOLD'''BLUE_BG'''WHITE'''LNode'''NORM'$ "
-$      LMR$promptprv == "''BOLD'''RED_BG'''YELLOW'''LNode'''NORM'$ "
+$      LMR$promptprv == "''BOLD'''RED_BG'''YELLOW'''LNode'''NORM'# " !Priv prompt
 $ ELSE LMR$promptstr == "''LNode'$ "
-$      LMR$promptprv == "[1m''LNode'[0m$ " !Priv prompt
+$      LMR$promptprv == "''BOLD'''LNode'''NORM'# " !Priv prompt
 $ ENDIF
 $ !
 $ CmdSet = "SHOW     |" -
@@ -43,8 +43,9 @@ $ CmdSet = "SHOW     |" -
          + "DEFAULT  |" -  ! user's AUTHPRIV set only
          + "NORMAL   |" -  ! TMPMBX,NETMBX
          + "OPERATOR |" -  ! TMPMBX,NETMBX,OPER
-         + "SYSTEM   |" -  ! synonyms
+         + "SYSTEM   |" -  ! CMKRNL, SYSNAM, SYSPRV, WORLD
          + "MANAGER  |" -  !    "
+         + "SECURITY |" -  ! SECURITY plus SYSTEM
          + "ALL      |" -  ! *all* privs
          + "ADD      |" -  ! synonyms
          + "PRIVILEGE|" -  !    "
@@ -126,6 +127,10 @@ $ !
 $System:
 $Manager:
 $ P2 = "CMKRNL,SYSNAM,SYSPRV,WORLD"
+$ GOTO SetPriv
+$ !
+$Security:
+$ P2 = "SECURITY,CMKRNL,SYSNAM,SYSPRV,WORLD"
 $ GOTO SetPriv
 $ !
 $All:
@@ -221,7 +226,7 @@ $ TYPE /PAGE sys$input
 
      where   [1mcmd[0m = [ [1mSHOW[0m (D)   | [1mONE$SHOT[0m  | [1mSUDO[0m
                      |   [1mNORMAL[0  m | [1mDEFAULT[0m   | [1mOPERATOR[0m
-                     |   [1mSYSTEM[0  m | [1mMANAGER[0m   | [1mALL[0m
+                     |   [1mSYSTEM[0  m | [1mMANAGER[0m   | [1mSECURITY[0m | [1mALL[0m
                      | [ [ [1m ADD[0m | [1mPRIVILEGE[0m | [1mSUBTRACT[0m | [1mREMOVE[0m ] [1mpriv_list[0m ]
 
        and   [1mpriv_list[0m is a comma-separated list of VMS privilege names
@@ -246,6 +251,9 @@ $ TYPE /PAGE sys$input
 
          SYSTEM      -- Adds [1mCMKRNL, SYSNAM, SYSPRV, WORLD[0m to the current
          or MANAGER     process privileges.
+
+         SECURITY    -- Adds [1mSECURITY, CMKRNL, SYSNAM, SYSPRV, WORLD[0m to the
+                        current process privileges.
 
          ALL         -- Sets [1m[4mall[0m VMS privileges which are authorized for
                         this process.
