@@ -1,0 +1,78 @@
+! UTIL_MESSAGES.MSG
+
+! This program is the confidential and proprietary product of LockWorks LLC.
+! Unauthorized use, reproduction or transfer of this program is prohibited.
+!
+! Copyright © 2002-2004 by LockWorks LLC.  All rights reserved.
+! Copyright © 1987-2002 by Evans & Ricker, Inc.  All rights reserved.
+
+.TITLE          UTILITIES Messages
+
+.FACILITY       UTIL,3
+
+.BASE   1
+.SEVERITY       SUCCESS
+
+DEFKEY          <Commands written to !AS>/FAO=1                         ! DK
+DELUSER         <!AS deleted from !AS>/FAO=2                            ! NU
+KEYPAD          <Keypad diagram written to !AS>/FAO=1                   ! DK
+KEYLOAD         <Key action module !AS loaded>/FAO=1                    ! PAK
+NEWUSER         <New user !AS "!AS" added at !AS>/FAO=3                 ! NU
+UICMOD          <UIC of !AS changed to !AS at !AS>/FAO=3                ! NU
+COMMIT          <!SL file!%S commited to active directories>/FAO=1      ! COMMIT
+DCLTABLES       <New !AS created>/FAO=1                                 ! DCL
+! Add new SUCCESS messages here
+
+.BASE   100
+.SEVERITY       INFORMATIONAL
+
+DEFDIR          <Returning to !AS>/FAO=1                                ! DELTREE
+CLEANUP         <Cleanup:  !AS>/FAO=1                                   ! LOGOUT
+CONNECT         <Telephone connect time:  !AS>/FAO=1                    ! DIAL
+EDITING         <Editing !AS>/FAO=1                                     ! KED
+NODEFKEY        <No command file written>                               ! DK
+OUTPUT          <Output to !AS>/FAO=1                                   ! KED
+PURGE           <Purge:    !AS>/FAO=1                                   ! LOGOUT
+ALTSYS          <Using alternate system files in !AS>/FAO=1             ! ALTSYS
+! Add new INFORMATIONAL messages here
+
+.BASE   200
+.SEVERITY       WARNING
+
+DEV2            <Can't use second device>                               ! BRU
+ENTRY           <Entry error "!AS"; please reenter your choice>/FAO=1   ! UTIL
+INTERACT        <Interactive users on !AS>/FAO=1                        ! REFRESH
+KEYNAME         <Unrecognized key name "!AS">/FAO=1                     ! DK
+NOACTIVE        <No active file for !AS>/FAO=1                          ! COMMIT
+NODEFAULT       <No default; please enter a value>                      ! UTIL
+PHASE           <Versions out of phase: !AS!/!40* !AS>/FAO=2            ! COMMIT
+RECTYPE         <Illegal record type "!AS">/FAO=1                       ! DK
+NOCOMMIT        <No files commited to active directories>               ! COMMIT
+EXISTS          <"!AS" already exists>/FAO=1                            ! DIAL
+NOTEXISTS       <"!AS" does not exist>/FAO=1                            ! DIAL
+KEYINUSE        <Action key !AS is already in use>/FAO=1                ! DK
+KEYNOTLOA       <Key action module !AS not loaded>/FAO=1                ! DK
+! Add new WARNING messages here
+
+.BASE   300
+.SEVERITY       ERROR
+
+BATCHACT        <Batch is active on !AS>/FAO=1                          ! REFRESH
+FILNOTFND       <File not found !AS>/FAO=1                              ! DK
+FILNOTCRE       <Can't open !AS for output>/FAO=1                       ! DK
+UTILQUIT        <Utility terminated by user>                            ! DELTREE
+DEVNOTCRE       <Device PDA0: not created>                              ! PD
+DELMFD          <Can't delete directory !AS>/FAO=1                      ! DELTREE
+DIRNOTFND       <Directory not found !AS>/FAO=1                         ! DELTREE
+DCLNOTCRE       <Error creating new !AS>/FAO=1                          ! DCL
+FACINUSE        <Facility name !AS is in use>/FAO=1                     ! UTILITY
+NODEVICE        <No device !AS>/FAO=1                                   ! DIAL
+! Add new ERROR messages here
+
+.BASE   400
+.SEVERITY       FATAL
+
+CANNOTRUN       <Cannot use the RUN command>                            !
+! Add new FATAL messages here
+
+.END
