@@ -140,7 +140,7 @@ $ !
 $ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LMR$promptstr == "''LNode'$ "       ! Normal prompt
 $ LMR$promptprv == "[1m''LNode'[0m$ "  !Prilegediv prompt
-$ SET PROMPT="''LMR$promptstr'$ "     !   COM:PRIVILEGE.COM uses both prompt-strings
+$ SET PROMPT="''LMR$promptstr'"       !   COM:PRIVILEGE.COM uses both prompt-strings
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
