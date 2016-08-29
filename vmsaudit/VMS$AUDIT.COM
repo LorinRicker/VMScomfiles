@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.04-02 (18-Aug-2016)"
+$ VA$ProcVersion = "V2.05-01 (22-Aug-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  22-AUG-2016 : In Quick_Report, moved the SHOW INTRUSION command into the
+$ !                SYSMAN command group, as it really should be done for all
+$ !                VMScluster nodes.
 $ !  18-AUG-2016 : Add /NOREPLACE /LOG, remove /NEW_FILES on the Restore: BACKUP
 $ !                operation.  Also, reformatted Help text to fit 80-columns.
 $ !  05-AUG-2016 : Hoist local symbol VMSver to global symbol VMS$ver, including
@@ -603,6 +606,9 @@ DO SHOW ERROR
 DO SHOW MEMORY /FILES
 DO SHOW MEMORY /PHYSICAL /CACHE
 DO SHOW MEMORY /SLOTS /POOL
+
+DO SHOW INTRUSION
+
 EXIT
 $ ! ================================================
 $ ELSE ! ---- V7.1 and beyond ----
@@ -624,6 +630,10 @@ DO SHOW MEMORY /FILES
 DO SHOW MEMORY /PHYSICAL /CACHE
 DO PIPE SHOW MEMORY /SLOTS /POOL -
    ; WRITE sys$output F$FAO("============!/")
+
+DO PIPE SHOW INTRUSION -
+   ; WRITE sys$output F$FAO("============!/")
+
 EXIT
 $ ! ================================================
 $ ENDIF
@@ -638,8 +648,6 @@ $ ENDIF
 $ !
 $ CALL AuditStep "@''DD'DISKSPACE$REPORT"
 $ CALL AuditStep "SHOW DEVICE D /MOUNTED"
-$ !
-$ CALL AuditStep "SHOW INTRUSION"
 $ !
 $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'" "''P1'"
