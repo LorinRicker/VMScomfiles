@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.05-01 (22-Aug-2016)"
+$ VA$ProcVersion = "V2.06-01 (02-Sep-2016)"
 $ VA$Copyright   = "Copyright © 2014-2016"
 $ !
 $ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  02-SEP-2016 : Add SET PROFILE /PRIVILEGES=() to V$SYSMAN invocation, as
+$ !                required privileges (e.g. SECURITY) were not being set for
+$ !                cluster-wide operations.
 $ !  22-AUG-2016 : In Quick_Report, moved the SHOW INTRUSION command into the
 $ !                SYSMAN command group, as it really should be done for all
 $ !                VMScluster nodes.
@@ -595,6 +598,7 @@ $ THEN ! ---- V6.X up to V7.0 ----
 $      ! ---- keep it simple  ----
 $ ! ================================================
 $      'V$SYSMAN' SET ENVIRONMENT 'env'
+SET PROFILE /PRIVILEGES=(SYSNAM,SYSPRV,SECURITY,VOLPRO,OPER)
 CONFIGURATION SHOW TIME
 
 DO SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL
@@ -615,6 +619,7 @@ $ ELSE ! ---- V7.1 and beyond ----
 $      ! ---- get fancier     ----
 $ ! ================================================
 $      'V$SYSMAN' SET ENVIRONMENT 'env'
+SET PROFILE /PRIVILEGES=(SYSNAM,SYSPRV,SECURITY,VOLPRO,OPER)
 CONFIGURATION SHOW TIME
 
 DO PIPE SHOW SYSTEM /HEADER /NOPROCESS /GRAND_TOTAL -
