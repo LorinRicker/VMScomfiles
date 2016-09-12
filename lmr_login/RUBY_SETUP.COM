@@ -31,6 +31,10 @@ $ IF ( F$TRNLNM("ruby$root") .NES. "" )
 $ THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
 $      ruby == "$ruby$root:[bin]ruby"
 $ !
+$      f = "com:mkrubycmd"
+$      IF ( F$SEARCH( "''f'.com" ) .NES. "" ) -
+       THEN mkrub*ycmd == "@''f'"
+$ !
 $      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
 $      rdir = "[LRICKER.RUBY]"
 $      CALL VolCheck "''vol'" "''rdir'"
@@ -63,7 +67,7 @@ $ THEN wso ""
 $      SHOW LOGICAL /SYSTEM /FULL Ruby*
 $      SHOW LOGICAL /JOB /FULL Ruby*
 $      wso ""
-$      SHOW SYMBOL /GLOBAL Ruby*
+$      SHOW SYMBOL /GLOBAL *Ruby*
 $      wso ""
 $      ruby -v   ! show version
 $ ENDIF
@@ -82,7 +86,7 @@ $ d1  = F$EDIT( F$ELEMENT(1,".",dir), "LOWERCASE" )
 $ IF ( d1 .EQS. "ruby" ) .AND. ( d0 .EQS. "lricker" )
 $ THEN testf = P1 + ":[" + d0 + "]"
 $      IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
-$      THEN DJ ruby$base "''P1':[''d0'.]" /TRANS=CONCEALED
+$      THEN DJ ruby$base "''P1':[''d0'.''d1'.]" /TRANS=CONCEALED
 $           DJ ruby$mine "''P1':[''d0'.''d1']"
 $           DJ ruby$lib  "''P1':[''d0'.''d1'.lib]"
 $      ENDIF

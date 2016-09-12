@@ -130,8 +130,8 @@ $ ! Time how long to do something (once):
 $ IF F$TYPE(time) .EQS. "" THEN time == "@com:do_continuous -n:1 -t:1"
 $ !
 $ IF ( VMSArchitecture .NES. "VAX" )
-$ THEN dir == "DIRECTORY /ACL /SIZE /DATE /PROT /WIDTH=(FILENAME=24,SIZE=10)"  !Alpha, Itanium
-$ ELSE dir == "DIRECTORY /ACL /SIZE /DATE /PROT /WIDTH=SIZE=7"
+$ THEN dir == "DIRECTORY /SIZE /DATE /PROT /WIDTH=(FILENAME=24,SIZE=10)"  !Alpha, Itanium
+$ ELSE dir == "DIRECTORY /SIZE /DATE /PROT /WIDTH=SIZE=7"
 $ ENDIF
 $ hdr == "DUMP /HEADER /BLOCK=COUNT=0"
 $ ! For /EXCLUDE=():
