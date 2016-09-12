@@ -25,14 +25,24 @@ $ wserr = "WRITE sys$error"
 $ !
 $ IF ( F$SEARCH( P2 ) .NES. "" )
 $ THEN IF ( F$TYPE(ruby) .EQS. "STRING" )
-$      THEN 'P1' == "''ruby' 'P2'"
+$      THEN Rdev = F$PARSE(P2,,,"DEVICE","SYNTAX_ONLY")
+$           Rdir = F$PARSE(P2,,,"DIRECTORY","SYNTAX_ONLY")
+$           Rscriptname = F$PARSE(P2,,,"NAME","SYNTAX_ONLY")
+$           Rscripttype = F$PARSE(P2,,,"TYPE","SYNTAX_ONLY")
+$           Rlnm = F$TRNLNM(Rdev)
+$           !!IF ( Rlnm .NES. "" )
+$           Rscript = Rdev + Rdir + Rscriptname + Rscripttype
+$           !!ELSE Rscript = P2
+$           !!ENDIF
+$           'P1' == "''ruby' ''Rscript'"
 $      ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"
 $      ENDIF
 $ ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''P2'"""
 $      GOTO Done
 $ ENDIF
 $ !
-$ IF P3 THEN IF ( F$TYPE('P2') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'P2'
+$ P1 = P1 - "*"
+$ IF "''P3'" THEN IF ( F$TYPE('P1') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'P1'
 $ !
 $Done:
 $ EXIT 1  ! 'F$VERIFY(0)'
