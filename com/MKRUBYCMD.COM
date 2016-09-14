@@ -30,22 +30,23 @@ $ RBRACKET = "]"
 $ !
 $ IF ( F$SEARCH( P2 ) .NES. "" )
 $ THEN IF ( F$TYPE(ruby) .EQS. "STRING" )
-$      THEN ! Convert LNAME:prog.rb and/or DEV:[DIR.SUB]prog.rb into *nix-PATH style
+$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
+$           ! Convert LNAME:prog.rb and/or DEV:[DIR.SUB]prog.rb into *nix-PATH style
 $           ! /DEV/DIR/SUB/prog.rb, translating LNAME logical as needed:
 $           Rdev = F$PARSE(P2,,,"DEVICE","SYNTAX_ONLY") - COLON
 $           Rdir = F$PARSE(P2,,,"DIRECTORY","SYNTAX_ONLY") - LBRACKET - RBRACKET - LBRACKET - RBRACKET
 $           i = 0
-$           Rpath = ""
+$           Rpath = SLASH
 $L0:
 $           elem = F$ELEMENT(i,DOT,Rdir)
 $           IF ( elem .EQS. DOT ) THEN GOTO L0cont
-$           IF ( elem .NES. ""  ) THEN Rpath = Rpath + SLASH + elem
+$           IF ( elem .NES. ""  ) THEN Rpath = Rpath + elem + SLASH
 $           i = i + 1
 $           GOTO L0
 $L0cont:
 $           Rscriptname = F$PARSE(P2,,,"NAME","SYNTAX_ONLY")
 $           Rscripttype = F$PARSE(P2,,,"TYPE","SYNTAX_ONLY")
-$           Rscript = SLASH + Rdev + Rpath + SLASH + Rscriptname + Rscripttype
+$           Rscript = SLASH + Rdev + Rpath + Rscriptname + Rscripttype
 $           ! Define a global command symbol for this Ruby script:
 $           'P1' == "''ruby' ''Rscript'"
 $      ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"

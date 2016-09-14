@@ -63,8 +63,7 @@ $ ENDIF
 $ !
 $Done:
 $ IF F$TYPE(ruby) .EQS. "STRING"
-$ THEN wso ""
-$      SHOW LOGICAL /SYSTEM /FULL Ruby*
+$ THEN SHOW LOGICAL /SYSTEM /FULL Ruby*
 $      SHOW LOGICAL /JOB /FULL Ruby*
 $      wso ""
 $      SHOW SYMBOL /GLOBAL *Ruby*
@@ -81,22 +80,22 @@ $ DJ = "DEFINE /JOB /NOLOG "
 $ !
 $ RubyVolumeOkay == "FALSE"
 $ dir = P2 - "[" - "]"
-$ d0  = F$EDIT( F$ELEMENT(0,".",dir), "LOWERCASE" )
-$ d1  = F$EDIT( F$ELEMENT(1,".",dir), "LOWERCASE" )
-$ IF ( d1 .EQS. "ruby" ) .AND. ( d0 .EQS. "lricker" )
+$ d0  = F$EDIT( F$ELEMENT(0,".",dir), "UPCASE" )
+$ d1  = F$EDIT( F$ELEMENT(1,".",dir), "UPCASE" )
+$ IF ( d1 .EQS. "RUBY" ) .AND. ( d0 .EQS. "LRICKER" )
 $ THEN testf = P1 + ":[" + d0 + "]"
 $      IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
 $      THEN DJ ruby$base "''P1':[''d0'.''d1'.]" /TRANS=CONCEALED
 $           DJ ruby$mine "''P1':[''d0'.''d1']"
-$           DJ ruby$lib  "''P1':[''d0'.''d1'.lib]"
+$           DJ ruby$lib  "''P1':[''d0'.''d1'.LIB]"
 $      ENDIF
 $      RubyVolumeOkay == "TRUE"
-$ ELSE IF ( d0 .EQS. "ruby" )
+$ ELSE IF ( d0 .EQS. "RUBY" )
 $      THEN testf = P1 + ":[000000]"
 $           IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
 $           THEN DJ ruby$base "''P1':[''d1'.]" /TRANS=CONCEALED
 $                DJ ruby$mine "''P1':[''d1']"
-$                DJ ruby$lib  "''P1':[''d1'.lib]"
+$                DJ ruby$lib  "''P1':[''d1'.LIB]"
 $           ENDIF
 $           RubyVolumeOkay == "TRUE"
 $      ENDIF
