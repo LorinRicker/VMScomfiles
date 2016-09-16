@@ -29,11 +29,14 @@ $ !
 $ReCheck:
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
 $ THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
-$      ruby == "$ruby$root:[bin]ruby"
+$      RubyX == "$ruby$root:[bin]ruby"
 $ !
-$      f = "com:mkrubycmd"
-$      IF ( F$SEARCH( "''f'.com" ) .NES. "" ) -
-       THEN mkrub*ycmd == "@''f'"
+$      f = "com:rubycmd"
+$      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
+$      THEN mkrub*ycmd == "@''f' CMD"
+$           ruby        == "@''f' RUN"
+$      ELSE wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
+$      ENDIF
 $ !
 $      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
 $      rdir = "[LRICKER.RUBY]"
@@ -68,7 +71,8 @@ $      SHOW LOGICAL /JOB /FULL Ruby*
 $      wso ""
 $      SHOW SYMBOL /GLOBAL *Ruby*
 $      wso ""
-$      ruby -v   ! show version
+$      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
+$      RubyX -v   ! show version
 $ ENDIF
 $ EXIT 1     ! 'F$VERIFY(0)'
 $ !

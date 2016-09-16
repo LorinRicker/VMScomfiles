@@ -12,9 +12,11 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ ! usage: $ @RUBYCMD subcommand Ruby_script_file [ symbol_name ] [ TRUE | 1 ]
+$ ! usage: $ @RUBYCMD subcommand script_file [ script_args [...] | symbol_name [ TRUE | 1 ] ]
+$ !  e.g.: $ @RUBYCMD RUN script_file
+$ !    or: $ @RUBYCMD CMD script_file symbol_name [ true ]
 $ !
-$ ! P1 : RUBYCMD sub-command: RUN, CMD/COMMAND, etc
+$ ! P1 : RUBYCMD sub-command: RUN or CMD or COMMAND
 $ ! P2 : filespec of Ruby script to invoke by global command symbol
 $ ! P3 : name of global command symbol to define
 $ ! P4 : if truthy, then show the global command symbol
@@ -22,15 +24,21 @@ $ !
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB CtrlY
 $ !
+$ Verbose == F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
+$ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
+$ RubyExt = "rb"
+$ !
+$ wso      = "WRITE sys$output"
 $ wserr    = "WRITE sys$error"
 $ SLASH    = "/"
 $ DOT      = "."
 $ COLON    = ":"
 $ LBRACKET = "["
 $ RBRACKET = "]"
+$ SPLAT    = "*"
 $ !
 $ CmdSet = "RUN      |" -
          + "CMD      |" -
@@ -40,35 +48,71 @@ $ CALL Parse "''P1'" Parse$Cmd "RUN" "''CmdSet'"
 $ !
 $ IF Parse$Cmd .EQS. "HELP" THEN GOTO Help
 $ !
-$ IF ( F$SEARCH( P3 ) .NES. "" )
-$ THEN IF ( F$TYPE(ruby) .EQS. "STRING" )
-$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
-$           ! Convert LNAME:prog.rb and/or DEV:[DIR.SUB]prog.rb into *nix-PATH style
-$           ! /DEV/DIR/SUB/prog.rb, translating LNAME logical as needed:
-$           Rdev = F$PARSE(P3,,,"DEVICE","SYNTAX_ONLY") - COLON
-$           Rdir = F$PARSE(P3,,,"DIRECTORY","SYNTAX_ONLY") - LBRACKET - RBRACKET - LBRACKET - RBRACKET
-$           i = 0
-$           Rpath = SLASH
-$L0:
-$           elem = F$ELEMENT(i,DOT,Rdir)
-$           IF ( elem .EQS. DOT ) THEN GOTO L0cont
-$           IF ( elem .NES. ""  ) THEN Rpath = Rpath + elem + SLASH
-$           i = i + 1
-$           GOTO L0
-$L0cont:
-$           Rscriptname = F$PARSE(P2,,,"NAME","SYNTAX_ONLY")
-$           Rscripttype = F$PARSE(P2,,,"TYPE","SYNTAX_ONLY")
-$           Rscript = SLASH + Rdev + Rpath + Rscriptname + Rscripttype
-$           ! Define a global command symbol for this Ruby script:
-$           'P2' == "''ruby' ''Rscript'"
-$      ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"
-$      ENDIF
-$ ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''P3'"""
-$      GOTO Done
-$ ENDIF
+$ ! ==========
+$ ! The startup command file RUBY$STARTUP.COM invokes RUBY$DEFINE_LOGICALS.COM
+$ ! (both in SYS$STARTUP) to define the system-wide logical names RUBY$ROOT
+$ ! and RUBY$SHR.
 $ !
-$ P2 = P2 - "*"
-$ IF "''P4'" THEN IF ( F$TYPE('P2') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'P2'
+$ ! The startup command file RUBY_SETUP.COM (in SYS$STARTUP or a private
+$ ! directory, depending upon installation decisions/options) defines key
+$ ! process/job-private logical names: RUBY$BASE, RUBY$MINE and RUBY$LIB,
+$ ! plus the foreign command symbol 'RubyX' used herein:
+$ !    RubyX == "$ruby$root:[bin]ruby"
+$ ! ==========
+$ !
+$ IF ( F$TYPE(RubyX) .EQS. "STRING" )
+$ THEN CONTINUE   ! 'F$VERIFY(0)'
+$      ! ==========
+$      ! Convert LNAME:prog.rb and/or DEV:[DIR.SUB]prog.rb into *nix-PATH style
+$      ! /DEV/DIR/SUB/prog.rb, translating LNAME logical as needed:
+$      Rdev = F$PARSE(P2,,,"DEVICE","SYNTAX_ONLY") - COLON
+$      Rdir = F$PARSE(P2,,,"DIRECTORY","SYNTAX_ONLY") - LBRACKET - RBRACKET - LBRACKET - RBRACKET
+$      i = 0
+$      Rpath = SLASH
+$L0:
+$      elem = F$ELEMENT(i,DOT,Rdir)
+$      IF ( elem .EQS. DOT ) THEN GOTO L0cont
+$      IF ( elem .NES. ""  ) THEN Rpath = Rpath + elem + SLASH
+$      i = i + 1
+$      GOTO L0
+$L0cont:
+$      Rscriptname = F$PARSE(P2,,,"NAME","SYNTAX_ONLY")
+$      Rscripttype = F$PARSE(P2,,,"TYPE","SYNTAX_ONLY")
+$      IF ( Rscripttype .EQS. DOT )
+$      THEN Rscripttype = Rscripttype + RubyExt
+$           P2          = P2 + DOT + RubyExt
+$      ENDIF
+$      Rscript = SLASH + Rdev + Rpath + Rscriptname + Rscripttype
+$      ! ==========
+$      IF ( F$SEARCH( P2 ) .NES. "" )
+$      THEN GOTO 'Parse$Cmd'$
+$ !
+$RUN$:      ! ==========
+$           Args = F$EDIT( "''P3' ''P4' ''P5' ''P6' ''P7' ''P8'","COMPRESS" )
+$           IF Verbose
+$           THEN wso "$ DEFINE /USER_MODE sys$input sys$command"
+$                wso "$ RubyX ''Rscript' ''Args'"
+$           ELSE DEFINE /USER_MODE sys$input sys$command
+$                RubyX 'Rscript' 'Args'
+$           ENDIF
+$           GOTO Done
+$ !
+$CMD$:
+$COMMAND$:  ! ==========
+$           ! Define a global command symbol for this Ruby script:
+$           IF Verbose
+$           THEN wso "$ ''P3' == ""''RubyX' ''Rscript'"""
+$           ELSE 'P3' == "''RubyX' ''Rscript'"
+$           ENDIF
+$           symname = P3 - SPLAT
+$           IF "''P4'" THEN IF ( F$TYPE('symname') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'symname'
+$           GOTO Done
+$ !
+$      ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''P2'"""
+$           GOTO Done
+$      ENDIF
+$ ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"
+$ ENDIF
 $ !
 $Done:
 $ EXIT 1  ! 'F$VERIFY(0)'
@@ -105,16 +149,26 @@ $ !
 $Help:
 $ TYPE /PAGE sys$input
 
-     usage:  [1m@PRIVILEGE[0m [ [1mcmd[0m | [1m""[0m ] [ [[1m-[0m|[1mNO[0m][1mpriv_list[0m ]
+     usage:  $ [1m@RUBYCMD subcommand script_file [0m[ [1margs[0m [[1m...[0m]
+                                                 | [1msymname[0m [ [1mTRUE[0m | [1m1[0m ] ]
 
-     where   [1mcmd[0m = [ [1mSHOW[0m (D)   | [1mONE$SHOT[0m  | [1mSUDO[0m
-                     |   [1mNORMAL[0  m | [1mDEFAULT[0m   | [1mOPERATOR[0m
-                     |   [1mSYSTEM[0  m | [1mMANAGER[0m   | [1mSECURITY[0m | [1mALL[0m
-                     | [ [ [1m ADD[0m | [1mPRIVILEGE[0m | [1mSUBTRACT[0m | [1mREMOVE[0m ] [1mpriv_list[0m ]
+     where [1msubcommand[0m is one of:
 
-       and   [1mpriv_list[0m is a comma-separated list of VMS privilege names
-             (used only if P1 is "PRIVILEGE", "ADD", "SUBTRACT" or "REMOVE" )
+         [1mRUN[0m     -- Run the following Ruby script immediately and directly.
 
-         SHOW        -- Display current privileges (SHOW PROCESS /PRIVILEGE).
+         [1mCMD[0m or  -- Create a DCL global command symbol (alias) to run the
+         [1mCOMMAND[0m    Ruby script.
 
+     and [1margs[0m [[1m...[0m] is a space-separated list of up to six (6) Ruby script
+                    arguments (P3..P8),
 
+      [4mor[0m [1msymname[0m is the name of a DCL global command symbol (alias) which is
+                    to be defined to run this Ruby script (an abbreviation
+                    point "glo*sym" can be used),
+
+       and [[1mTRUE[0m|[1m1[0m] is a "truthy" value to echo that global command symbol
+                    when defined.
+
+$ !
+$ EXIT 1  ! 'F$VERIFY(0)'
+$ !
