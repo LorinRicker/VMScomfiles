@@ -10,13 +10,9 @@ $INTERACTIVE:
 $ SET TERMINAL /INQUIRE /INSERT
 $ SET CONTROL=(Y,T)
 $ !
-$ IF ( F$SEARCH("SCRATCH.DIR;1") .EQS. "" )
-$ THEN CREATE /DIRECTORY [.SCRATCH]
-$ ENDIF
-$ home = F$TRNLNM("SYS$LOGIN") - "]"
-$ DEFINE /JOB /NOLOG SYS$SCRATCH 'home'.SCRATCH]
-$ DEFINE /JOB /NOLOG com         'home'.$COM]
-$ DEFINE /JOB /NOLOG logs        'home'.LOGS]
+$ CALL CreDir "SCRATCH" "SYS$SCRATCH"
+$ CALL CreDir "LOGS"
+$ CALL CreDir "COM"
 $ !
 $ EveInitF = "sys$login:eve$init.eve"
 $ IF ( F$SEARCH(EveInitF) .EQS. "" )
@@ -76,4 +72,16 @@ $OTHER:
 $ ! This section is rarely, if ever, used...
 $ !
 $ EXIT    ! 'F$VERIFY(0)'
+$ !
+$CreDir: SUBROUTINE
+$ ! P1 : Subdirectory to test and create
+$ ! P2 : Job logical name to define
+$ IF ( P2 .EQS. "" ) THEN P2 = P1
+$ homedd = F$TRNLNM("SYS$LOGIN") - "]"
+$ IF ( F$SEARCH("''P1'.DIR;1") .EQS. "" )
+$ THEN CREATE /DIRECTORY [.'P1']
+$ ENDIF
+$ DEFINE /JOB /NOLOG 'P2' 'homedd'.'P1']
+$ EXIT 1
+$ ENDSUBROUTINE  ! CreDir
 $ !
