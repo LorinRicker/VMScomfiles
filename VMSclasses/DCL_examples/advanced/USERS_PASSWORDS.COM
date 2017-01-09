@@ -18,7 +18,7 @@ $ !                       | NN-WEEKS
 $ !                       | NN-MONTHS
 $ !                       | NN-QUARTERS
 $ !                       | NN-YEARS
-$ !                       | HELP | ? ] [ pwd-minimum-chars ]
+$ !                       | HELP | ? ] [ pwd-minimum-chars ] [ CSVfile ]
 $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
@@ -29,6 +29,7 @@ $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Proc   = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
 $ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ RptDir = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
+$ Node   = F$EDIT( F$GETSYI( "NODENAME" ), "COLLAPSE" )
 $ !
 $ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
 $ IF ( isANSI )
@@ -56,6 +57,7 @@ $ LegalUnits   = ",DA,WE,MO,QU,YE,"  ! DAYS, WEEKS, MONTHS, QUARTERS, YEARS
 $ !
 $ sysuaflis = "[]SYSUAF.LIS"
 $ shortlist = "[]SYSUAF_SHORT.LIS"
+$ CSVfile   = ""
 $ !
 $ IF ( P1 .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
 $ !
@@ -74,6 +76,18 @@ $ ENDIF
 $IUCdone:
 $ CLOSE /NOLOG iuconfig
 $ ! ===========================================
+$ !
+$ IF ( P3 .NES. "" )
+$ THEN UI$CSVoutput = "TRUE"
+$      CSVfile      = P3
+$ ENDIF
+$ IF ( UI$CSVoutput )
+$ THEN CSVfile = "[]''Fac'_''Node'.csv"
+$      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
+$      Hdr = "Username,Pwd-Lifetime,Pwd-Minimum-Len"
+$      IF ( UI$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
+$      wso Hdr
+$ ENDIF
 $ !
 $ IF ( P2 .NES. "" ) THEN UI$PwdMinimum  = P2
 $ IF ( P1 .NES. "" ) THEN UI$PwdLifeTime = P1
@@ -147,7 +161,7 @@ $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detach
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
 $ Msg = "User " + uname
-$ IF UI$IncludeFlags THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
+$ IF ( UI$IncludeFlags ) THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
 $ !
 $ msglif = ""
 $ msgmin = ""
@@ -179,12 +193,19 @@ $      wso F$FAO( " pwd minimum: ""!AS""", pwdminimum )
 $      wso ""
 $ ENDIF
 $ !
-$ wso Msg
+$ IF ( UI$CSVoutput )
+$ THEN CSVmsg = """''uname'"",""''pwdlifetime'"",""''pwdminimum'"""
+$      IF ( UI$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
+$      wso CSVmsg
+$ ELSE wso Msg
+$ ENDIF
 $ GOTO Loop
 $LoopDone:
 $ !
 $Done:
 $ CLOSE /NOLOG iuc
+$ !
+$ IF ( UI$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
 $ !
 $ wso ""
 $ Msg = F$FAO( "%!AS-I-SUMMARY,", Fac )
@@ -220,7 +241,7 @@ $ TYPE /PAGE sys$input
                      | [1mNN-MONTHS[0m
                      | [1mNN-QUARTERS[0m
                      | [1mNN-YEARS[0m
-                     | [1mHELP[0m | [1m?[0m ] [ [1mpwd-minimum-chars[0m ]
+                     | [1mHELP[0m | [1m?[0m ] [ [1mpwd-minimum-chars[0m ] [ [1mCSVfile[0m ]
 
   where:
 
@@ -241,8 +262,10 @@ $ TYPE /PAGE sys$input
           NN-QUARTERS (results in NN *  91 days)
           NN-YEARS    (results in NN * 365 days)
 
-          Enter the [1mP2[0m value as a pure integer which is the minimum
-          password length in characters.
+    [1mP2[0m    The minimum password length in characters.
+
+    [1mP3[0m    If present, names and enables output to a spreadsheet comma-separated
+          value (CSV) file.
 
     [1mHELP[0m  Displays this help text.
     or [1m?[0m
