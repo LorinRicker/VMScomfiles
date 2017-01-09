@@ -1,0 +1,18 @@
+! AUDITREPORT.CONFIG --
+!   Configuration file for this site/system's AUDITREPORT.COM procedure.
+!   Edit this file to make site-specific changes.
+
+AR$FilterList    = """privileges:"",""lifetime:"",""expiration:"",""flags:"",""access requested:"""
+
+AR$Events        = "SYSUAF,ACCESS"
+
+AR$SecJouFile    = "SYS$MANAGER:SECURITY.AUDIT$JOURNAL"
+                   ! The VMS Security Audit Journal file may be
+                   ! relocated on some systems, esp. VMSclusters
+
+AR$SubmitForDef  = "LRICKER"   ! Security Officer: Lorin Ricker
+
+AR$DaysAgo       = "30"        ! Report interval: 1 = Daily, 7 = Weekly
+                               !                  30 (>=28) = Monthly
+AR$HourRun       = "05:00"     ! 24-clock time for next batch execution
+
