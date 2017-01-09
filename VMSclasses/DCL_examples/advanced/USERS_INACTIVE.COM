@@ -1,6 +1,6 @@
 $ ! USERS_INACTIVE.COM --                                          'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2016-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -80,22 +80,22 @@ $ IF ( Units .EQS. DASH ) THEN Units = "DA"
 $ IF ( F$LOCATE( ",''Units',", LegalUnits ) .LT. F$LENGTH( LegalUnits ) )
 $ THEN GOTO 'Units'mult
 $DAmult:
-$ multiplier = 1
-$ GOTO Mult
+$      multiplier = 1
+$      GOTO Mult
 $WEmult:
-$ multiplier = 7
-$ GOTO Mult
+$      multiplier = 7
+$      GOTO Mult
 $MOmult:
-$ multiplier = 30
-$ GOTO Mult
+$      multiplier = 30
+$      GOTO Mult
 $QUmult:
-$ multiplier = 91
-$ GOTO Mult
+$      multiplier = 91
+$      GOTO Mult
 $YEmult:
-$ multiplier = 365
-$ GOTO Mult
+$      multiplier = 365
+$      GOTO Mult
 $Mult:
-$ UI$DaysAgo = NNval * multiplier
+$      UI$DaysAgo = NNval * multiplier
 $ ELSE wso F$FAO ( "%!AS-E-BAD_UNITS, unknown time-ago units: !AS", Fac, Units )
 $      GOTO Done
 $ ENDIF
