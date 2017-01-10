@@ -78,21 +78,21 @@ $ CLOSE /NOLOG iuconfig
 $ ! ===========================================
 $ !
 $ IF ( P3 .NES. "" )
-$ THEN UI$CSVoutput = "TRUE"
+$ THEN UP$CSVoutput = "TRUE"
 $      CSVfile      = P3
 $ ENDIF
-$ IF ( UI$CSVoutput )
+$ IF ( UP$CSVoutput )
 $ THEN CSVfile = "[]''Fac'_''Node'.csv"
 $      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
 $      Hdr = "Username,Pwd-Lifetime,Pwd-Minimum-Len"
-$      IF ( UI$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
+$      IF ( UP$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
 $      wso Hdr
 $ ENDIF
 $ !
-$ IF ( P2 .NES. "" ) THEN UI$PwdMinimum  = P2
-$ IF ( P1 .NES. "" ) THEN UI$PwdLifeTime = P1
-$ NNval = F$INTEGER( F$ELEMENT( 0, DASH, UI$PwdLifeTime ) )
-$ Units = F$EXTRACT( 0, 2, F$EDIT( F$ELEMENT( 1, DASH, UI$PwdLifeTime ), "UPCASE" ) )
+$ IF ( P2 .NES. "" ) THEN UP$PwdMinimum  = P2
+$ IF ( P1 .NES. "" ) THEN UP$PwdLifeTime = P1
+$ NNval = F$INTEGER( F$ELEMENT( 0, DASH, UP$PwdLifeTime ) )
+$ Units = F$EXTRACT( 0, 2, F$EDIT( F$ELEMENT( 1, DASH, UP$PwdLifeTime ), "UPCASE" ) )
 $ IF ( Units .EQS. DASH ) THEN Units = "DA"
 $ IF ( F$LOCATE( ",''Units',", LegalUnits ) .LT. F$LENGTH( LegalUnits ) )
 $ THEN GOTO 'Units'mult
@@ -119,7 +119,7 @@ $ ENDIF
 $ !
 $ IF Debug
 $ THEN wso F$FAO( "%!AS-I-DEBUG, sys$output is ANSI-terminal: !AS", Fac, isANSI )
-$      wso F$FAO( "%!AS-I-DEBUG, UI$PwdLifeTime: !AS", Fac, UI$PwdLifeTime )
+$      wso F$FAO( "%!AS-I-DEBUG, UP$PwdLifeTime: !AS", Fac, UP$PwdLifeTime )
 $      wso F$FAO( "%!AS-I-DEBUG, !ZL (!AS) * !ZL = !ZL", -
                   Fac, NNval, Units, multiplier, REQ$PwdLifeTime )
 $      wso F$FAO( "%!AS-I-DEBUG, REQ$PwdLifeTime: !ZL", Fac, REQ$PwdLifeTime )
@@ -161,7 +161,7 @@ $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detach
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
 $ Msg = "User " + uname
-$ IF ( UI$IncludeFlags ) THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
+$ IF ( UP$IncludeFlags ) THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
 $ !
 $ msglif = ""
 $ msgmin = ""
@@ -172,7 +172,7 @@ $      IF ( pwdlifetime .EQS. MAXINT ) THEN pwdlifetime = NONE
 $      msglif = F$FAO( "lifetime: !AS", pwdlifetime )
 $      Count$VioLif = Count$VioLif + 1
 $ ENDIF
-$ IF ( F$INTEGER( UI$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
+$ IF ( F$INTEGER( UP$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
 $ THEN VIO$pwdminimum = 0
 $ ELSE VIO$pwdminimum = 1
 $      msgmin = F$FAO( "minimum: !AS", pwdminimum )
@@ -193,9 +193,9 @@ $      wso F$FAO( " pwd minimum: ""!AS""", pwdminimum )
 $      wso ""
 $ ENDIF
 $ !
-$ IF ( UI$CSVoutput )
+$ IF ( UP$CSVoutput )
 $ THEN CSVmsg = """''uname'"",""''pwdlifetime'"",""''pwdminimum'"""
-$      IF ( UI$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
+$      IF ( UP$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
 $      wso CSVmsg
 $ ELSE wso Msg
 $ ENDIF
@@ -205,13 +205,13 @@ $ !
 $Done:
 $ CLOSE /NOLOG iuc
 $ !
-$ IF ( UI$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
+$ IF ( UP$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
 $ !
 $ wso ""
 $ Msg = F$FAO( "%!AS-I-SUMMARY,", Fac )
 $ MsgL = F$LENGTH( Msg )
-$ wso F$FAO( "!AS !3UL user account!%S violate !AS password lifetime", Msg, Count$VioLif, UI$PwdLifeTime )
-$ wso F$FAO( "!#* !3UL user account!%S violate !AS-character password minimum", MsgL+1, Count$VioMin, UI$PwdMinimum  )
+$ wso F$FAO( "!AS !3UL user account!%S violate !AS password lifetime", Msg, Count$VioLif, UP$PwdLifeTime )
+$ wso F$FAO( "!#* !3UL user account!%S violate !AS-character password minimum", MsgL+1, Count$VioMin, UP$PwdMinimum  )
 $ wso F$FAO( "!#* !3UL total users reported", MsgL+1, Count$Total )
 $ !
 $ IF ( .NOT. Debug )
