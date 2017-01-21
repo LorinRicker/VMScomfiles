@@ -1,6 +1,6 @@
 $ ! FILE$FIND.COM --                                               'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -19,6 +19,7 @@ $ !   directly to screen (for development checkout).
 $ !
 $ ! usage:  @FILE$FIND [ VERSIONS (D) | SIZE              -
 $ !                      | AGED | BEFORE | SINCE | AFTER  -
+$ !                      | MOVE | NOBACKUP | VERLIMIT     -
 $ !                      | HELP ]                         -
 $ !                    [ disk_device[,...] ]              -
 $ !                    [ NOTYPE ]
@@ -96,6 +97,68 @@ $ EXIT 1
 $ ENDSUBROUTINE  ! MakeDiskList
 $ !
 $ !
+$ !
+$ScanFILEATTR: SUBROUTINE
+$ ! P1 = Disk device to scan
+$ ! P2 = Datetime since/after
+$ ! P3 = (unused)
+$ ! P4 = Nodename
+$ ! P5 = File attribute
+$ !
+$ ON CONTROL_Y THEN GOTO SFA_CtrlY
+$ !
+$ dev         = P1
+$ node        = P4
+$ attr        = P5
+$ streamid    = 1
+$ fcount      = 0
+$ outfspec    = "''DD'''Fac'_''attr'_''dev'.REPORT"
+$ !
+$ wso ""
+$ wso F$FAO( "%!AS-I-WAIT, !AS file attribute scan of !AS::!AS!/  to !AS ...", -
+              Fac, attr, node, dev, outfspec )
+$ DEFINE sys$output 'outfspec'
+$ ON ERROR THEN GOTO SFADone
+$ !
+$SFALoop:
+$ f = F$SEARCH( "''dev':[*...]*.*;0", streamid )
+$ IF ( f .EQS. "" ) THEN GOTO SFAEndLoop
+$ fattr = F$STRING( F$FILE_ATTRIBUTE( f, attr ) )
+$ GOTO sfa_'attr'
+$sfa_VERLIMIT:
+$ IF ( fattr .NES. "32767" )    ! "32767" means no version limit set, don't report those
+$ THEN wso F$FAO( "!AS has version-limit !AS", f, fattr )
+$      fcount = fcount + 1
+$ ENDIF
+$ GOTO SFALoop
+$sfa_MOVE:
+$ IF ( .NOT. Fattr )  ! "TRUE" means file is movable, defraggable, don't report those
+$ THEN wso F$FAO( "!AS is set NO!AS", f, attr )
+$      fcount = fcount + 1
+$ ENDIF
+$ GOTO SFALoop
+$sfa_NOBACKUP:
+$ IF ( fattr )        ! "TRUE" means file is set /NOBACKUP, report these
+$ THEN wso F$FAO( "!AS is set !AS", f, attr )
+$      fcount = fcount + 1
+$ ENDIF
+$ GOTO SFALoop
+$SFAEndLoop:
+$ !
+$ wso ""
+$ wso F$FAO( "%!AS-I-COUNT, found !ZL qualifying file!%S", Fac, fcount )
+$ wso ""
+$ !
+$SFADone:
+$ DEASSIGN sys$output
+$ CALL Report "''outfspec'" "''typereport'"
+$ EXIT 1
+$ !
+$SFA_CtrlY:
+$ EXIT %X2C
+$ ENDSUBROUTINE  ! ScanFILEATTR
+$ !
+$ !$ !
 $ !
 $ScanSINCE: SUBROUTINE
 $ ! P1 = Disk device to scan
@@ -344,10 +407,16 @@ $ ! Principle of Least Privilege:
 $ Prv = F$SETPRV("READALL")
 $ !
 $ CALL Cmd$Parse "''P1'" "FF$Cmd" "VERSIONS" -
-       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |HELP    "
+       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |MOVE    |NOBACKUP|VERLIMIT|HELP    "
 $ IF ( FF$Cmd .EQS. "HELP"  ) THEN GOTO Help$
 $ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
 $ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
+$ ! Scanning for a file attribute?
+$ IF ( FF$Cmd .EQS. "MOVE" ) .OR. ( FF$Cmd .EQS. "NOBACKUP" ) .OR. ( FF$Cmd .EQS. "VERLIMIT" )
+$ THEN attr = FF$Cmd
+$      FF$Cmd = "FILEATTR"
+$ ELSE attr = ""
+$ ENDIF
 $ !
 $ IF ( P2 .NES. "" )
 $ THEN FF$DiskList == P2
@@ -376,9 +445,9 @@ $ dev = F$ELEMENT( devcount, COMMA, FF$DiskList )
 $ IF ( dev .EQS. COMMA ) THEN GOTO Done
 $ dev = F$EDIT( dev, "TRIM,UPCASE" ) - COLON
 $ IF .NOT. Verbose
-$ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'" "''Node'"
-$ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS"" ""!AS""", -
-                  Fac, dev, fileminimum, tmpfspec, Node )
+$ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'" "''Node'" "''attr'"
+$ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS"" ""!AS"" ""!AS""", -
+                  Fac, dev, fileminimum, tmpfspec, Node, attr )
 $ ENDIF
 $L0err:
 $ devcount = devcount + 1
@@ -404,6 +473,7 @@ $ TYPE /PAGE sys$input
 
   use:  @FILE$FIND [ VERSIONS (D) | SIZE
                      | AGED | BEFORE | SINCE | AFTER
+                     | MOVE | NOBACKUP | VERLIMIT
                      | HELP ]
                    [ disk_device[,...] ]
                    [ NOTYPE ]
@@ -411,6 +481,7 @@ $ TYPE /PAGE sys$input
   where: P1 -- Scan/search action: VERSIONS, SIZE,
                                    AGED or BEFORE,
                                    SINCE or AFTER,
+                                   MOVE, NOBACKUP or VERLIMIT,
                                    HELP
 
          P2 -- Disk device list to scan for files over the specified
