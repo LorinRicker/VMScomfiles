@@ -23,6 +23,7 @@ $ !                      | MOVE | NOBACKUP | VERLIMIT     -
 $ !                      | BIGDIRS |                      -
 $ !                      | HELP ]                         -
 $ !                    [ disk_device[,...] ]              -
+$ !                    [ scan_parameter ]                 -
 $ !                    [ NOTYPE ]
 $ !
 $ ! where: P1 -- Scan/search action: VERSIONS, SIZE,
@@ -547,6 +548,7 @@ $ TYPE /PAGE sys$input
                      | BIGDIRS |
                      | HELP ]
                    [ disk_device[,...] ]
+                   [ scan_parameter ]
                    [ NOTYPE ]
 
   where: P1 -- Scan/search action: VERSIONS, SIZE,
@@ -568,8 +570,10 @@ $ TYPE /PAGE sys$input
                                    default: 1-JAN-<current_year>
                    AFTER or SINCE: Files created after this date/time --
                                    default: 1-JAN-<current_year>
-!                  BIGDIRS:        The threshold size for "big" directories --
+                   BIGDIRS:        The threshold size for "big" directories --
                                    default: 50
+                   MOVE, NOBACKUP, Scan-parameter not used, can be any value,
+                   VERLIMIT        including "" or "DUMMY", etc.
 
          P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
 
