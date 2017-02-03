@@ -20,6 +20,7 @@ $ !
 $ ! usage:  @FILE$FIND [ VERSIONS (D) | SIZE              -
 $ !                      | AGED | BEFORE | SINCE | AFTER  -
 $ !                      | MOVE | NOBACKUP | VERLIMIT     -
+$ !                      | BIGDIRS |                      -
 $ !                      | HELP ]                         -
 $ !                    [ disk_device[,...] ]              -
 $ !                    [ NOTYPE ]
@@ -27,6 +28,8 @@ $ !
 $ ! where: P1 -- Scan/search action: VERSIONS, SIZE,
 $ !                                  AGED or BEFORE,
 $ !                                  SINCE or AFTER,
+$ !                                  MOVE, NOBACKUP,
+$ !                                  VERLIMIT, BIGDIRS,
 $ !                                  HELP
 $ !        P2 -- Disk device list to scan for files over the specified
 $ !              or default version limit; default is SYS$SYSDEVICE;
@@ -34,6 +37,7 @@ $ !              specify more than one device as a comma-separated list:
 $ !              e.g.: "DISK$DATA1,DSA200:,SYS$SYSDEVICE"
 $ !        P3 -- for VERSIONS:       The minimum file version to list
 $ !                  SIZE:           The minimum file size to list, in blocks
+$ !                  BIGDIRS:        The threshold size for "big" directories
 $ !                  AGED or BEFORE: Files created before this date/time
 $ !                  AFTER or SINCE: Files created after this date/time
 $ !        P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
@@ -98,6 +102,53 @@ $ ENDSUBROUTINE  ! MakeDiskList
 $ !
 $ !
 $ !
+$ScanBIGDIRS: SUBROUTINE
+$ ! P1 = Disk device to scan
+$ ! P2 = .DIR-size threshold
+$ ! P3 = (unused)
+$ ! P4 = Nodename
+$ !
+$ ON CONTROL_Y THEN GOTO SBD_CtrlY
+$ !
+$ dev         = P1
+$ threshold   = F$INTEGER( P2 )
+$ node        = P4
+$ streamid    = 1
+$ fcount      = 0
+$ outfspec    = "''DD'''Fac'_BIGDIRS_''dev'.REPORT"
+$ !
+$ wso ""
+$ wso F$FAO( "%!AS-I-WAIT, !AS big-directories scan of !AS::!AS!/  threshold: !ZL!/  to !AS ...", -
+              Fac, attr, node, dev, threshold, outfspec )
+$ DEFINE sys$output 'outfspec'
+$ ON ERROR THEN GOTO SBDDone
+$ !
+$SBDLoop:
+$ f = F$SEARCH( "''dev':[*...]*.DIR;1", streamid )
+$ IF ( f .EQS. "" ) THEN GOTO SBDEndLoop
+$ fsize = F$FILE_ATTRIBUTE( f, "EOF" )
+$ IF ( fsize .GE. threshold )
+$ THEN wso F$FAO( "!AS directory is big/exceeds-threshold, size: !ZL", f, fsize )
+$      fcount = fcount + 1
+$ ENDIF
+$ GOTO SBDLoop
+$SBDEndLoop:
+$ !
+$ wso ""
+$ wso F$FAO( "%!AS-I-COUNT, found !ZL qualifying file!%S", Fac, fcount )
+$ wso ""
+$ !
+$SBDDone:
+$ DEASSIGN sys$output
+$ CALL Report "''outfspec'" "''typereport'"
+$ EXIT 1
+$ !
+$SBD_CtrlY:
+$ EXIT %X2C
+$ ENDSUBROUTINE  ! ScanBIGDIRS
+$ !
+$ !
+$ !
 $ScanFILEATTR: SUBROUTINE
 $ ! P1 = Disk device to scan
 $ ! P2 = Datetime since/after
@@ -158,7 +209,7 @@ $SFA_CtrlY:
 $ EXIT %X2C
 $ ENDSUBROUTINE  ! ScanFILEATTR
 $ !
-$ !$ !
+$ !
 $ !
 $ScanSINCE: SUBROUTINE
 $ ! P1 = Disk device to scan
@@ -406,8 +457,9 @@ $ !
 $ ! Principle of Least Privilege:
 $ Prv = F$SETPRV("READALL")
 $ !
-$ CALL Cmd$Parse "''P1'" "FF$Cmd" "VERSIONS" -
-       "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |MOVE    |NOBACKUP|VERLIMIT|HELP    "
+$ CmdSet = "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |MOVE    |NOBACKUP|VERLIMIT|BIGDIRS |HELP    "
+$ !
+$ CALL Cmd$Parse "''P1'" "FF$Cmd" "VERSIONS" "''CmdSet'"
 $ IF ( FF$Cmd .EQS. "HELP"  ) THEN GOTO Help$
 $ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
 $ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
@@ -425,16 +477,34 @@ $      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FF$DiskList )
 $ ENDIF
 $ !
 $ tmpfspec   = "sys$scratch:" + Fac + FF$Cmd + ".tmp"
-$ IF ( P3 .NES. "" )
-$ THEN fileminimum = P3
-$ ELSE IF ( FF$Cmd .EQS. "VERSIONS" )
-$      THEN fileminimum = ";32700"    ! default for VERSIONS
-$      ELSE fileminimum = "10000"     ! default for SIZE
-$      ENDIF
-$ ENDIF
-$ fileminimum = fileminimum - SEMICOLON
 $ !
-$ typereport = ( F$EXTRACT(0,4,P4) .NES. "NOTY" )
+$ IF ( P3 .NES. "" )
+$ THEN defvalue = P3
+$      defvalue = defvalue - SEMICOLON
+$ ELSE GOTO def_'FF$Cmd'
+$def_VERSIONS:
+$      defvalue = "32700"  ! without the semicolon
+$      GOTO defdone
+$def_SIZE:
+$      defvalue = "10000"
+$      GOTO defdone
+$def_BEFORE:
+$      defvalue = "1-JAN"
+$      GOTO defdone
+$def_SINCE:
+$      defvalue = "1-JAN"
+$      GOTO defdone
+$def_FILEATTR:
+$      defvalue = ""
+$      GOTO defdone
+$def_BIGDIRS:
+$      defvalue = "50"
+$      GOTO defdone
+$ ENDIF
+$ !
+$defdone:
+$ !
+$ typereport = ( F$EXTRACT(0,4,P4) .NES. "NOTY" )  ! NOTYPE
 $ !
 $ devcount = 0
 $ !
@@ -445,9 +515,9 @@ $ dev = F$ELEMENT( devcount, COMMA, FF$DiskList )
 $ IF ( dev .EQS. COMMA ) THEN GOTO Done
 $ dev = F$EDIT( dev, "TRIM,UPCASE" ) - COLON
 $ IF .NOT. Verbose
-$ THEN CALL Scan'FF$Cmd' "''dev'" "''fileminimum'" "''tmpfspec'" "''Node'" "''attr'"
+$ THEN CALL Scan'FF$Cmd' "''dev'" "''defvalue'" "''tmpfspec'" "''Node'" "''attr'"
 $ ELSE wso F$FAO( "%!AS-I-ECHO, CALL Scan''FF$Cmd' ""!AS"" ""!AS"" ""!AS"" ""!AS""", -
-                  Fac, dev, fileminimum, tmpfspec, Node, attr )
+                  Fac, dev, defvalue, tmpfspec, Node, attr )
 $ ENDIF
 $L0err:
 $ devcount = devcount + 1
@@ -474,6 +544,7 @@ $ TYPE /PAGE sys$input
   use:  @FILE$FIND [ VERSIONS (D) | SIZE
                      | AGED | BEFORE | SINCE | AFTER
                      | MOVE | NOBACKUP | VERLIMIT
+                     | BIGDIRS |
                      | HELP ]
                    [ disk_device[,...] ]
                    [ NOTYPE ]
@@ -489,10 +560,16 @@ $ TYPE /PAGE sys$input
                specify more than one device as a comma-separated list:
                e.g.: "DISK$DATA1,DSA200:,SYS$SYSDEVICE"
 
-         P3 -- for VERSIONS:       The minimum file version to list
-                   SIZE:           The minimum file size to list, in blocks
-                   AGED or BEFORE: Files created before this date/time
-                   AFTER or SINCE: Files created after this date/time
+         P3 -- for VERSIONS:       The minimum file version to list --
+                                   default: ;32700
+                   SIZE:           The minimum file size to list, in blocks --
+                                   default: 10000
+                   AGED or BEFORE: Files created before this date/time --
+                                   default: 1-JAN-<current_year>
+                   AFTER or SINCE: Files created after this date/time --
+                                   default: 1-JAN-<current_year>
+!                  BIGDIRS:        The threshold size for "big" directories --
+                                   default: 50
 
          P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
 
