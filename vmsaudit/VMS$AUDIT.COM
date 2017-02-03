@@ -1,9 +1,9 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.06-01 (02-Sep-2016)"
-$ VA$Copyright   = "Copyright © 2014-2016"
+$ VA$ProcVersion = "V2.07-01 (03-Feb-2017)"
+$ VA$Copyright   = "Copyright © 2014-2017"
 $ !
-$ ! Copyright © 2014-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -28,6 +28,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  03-FEB-2017 : Add command alias TYR*EPORT to type "this" report to terminal.
+$ !                Also add [.DFU]dfu*.* to saveset and zip.
+$ !                Update copyright year.
 $ !  02-SEP-2016 : Add SET PROFILE /PRIVILEGES=() to V$SYSMAN invocation, as
 $ !                required privileges (e.g. SECURITY) were not being set for
 $ !                cluster-wide operations.
@@ -739,7 +742,8 @@ $ V$BckList  = "''Fac'.com;" -
              + ",que$stalled.com;" -
              + ",uaf$detailed_analysis.com;" -
              + ",uaf$quick_analysis.com;" -
-             + ",parsec_autogen.com;"
+             + ",parsec_autogen.com;" -
+             + ",[.DFU]*.*;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
              + " ''Fac'_template.config" -
@@ -750,7 +754,8 @@ $ V$ZipList  = "''Fac'.com" -
              + " que$stalled.com" -
              + " uaf$detailed_analysis.com" -
              + " uaf$quick_analysis.com" -
-             + " parsec_autogen.com"
+             + " parsec_autogen.com" -
+             + " [.DFU]*.*"
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
@@ -1304,6 +1309,8 @@ $ !
 $ ! ========================
 $REVIEW$:   ! Review the Audit Report File
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
+$ tyr*eport == "TYPE ''VA$AuditReport'"  ! handy for reviewing "this" report again
+$ SHOW SYMBOL /GLOBAL tyreport
 $ !
 $ msg = "=== " + Fac + " reports "
 $ len = VA$PgWi - F$LENGTH( msg )
@@ -1351,6 +1358,7 @@ $ wso F$FAO( "%!AS-I-DONE, cleanup...", Fac )
 $ wso ""
 $DoneQuiet:
 $ SET NOON
+$ !
 $ IF OutToFile THEN V$DEASSIGN /PROCESS sys$output
 $ !
 $ IF F$TYPE(prv)             .NES. "" THEN prv = F$SETPRV(prv)
