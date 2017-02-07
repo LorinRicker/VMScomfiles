@@ -1,6 +1,6 @@
 $ ! USERS_INACTIVE.COM --                                          'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2016-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -43,6 +43,7 @@ $ ENDIF
 $ !
 $ wso    = "WRITE sys$output"
 $ SPC    = " "
+$ COMMA  = ","
 $ COLON  = ":"
 $ DASH   = "-"
 $ !
@@ -80,22 +81,22 @@ $ IF ( Units .EQS. DASH ) THEN Units = "DA"
 $ IF ( F$LOCATE( ",''Units',", LegalUnits ) .LT. F$LENGTH( LegalUnits ) )
 $ THEN GOTO 'Units'mult
 $DAmult:
-$ multiplier = 1
-$ GOTO Mult
+$      multiplier = 1
+$      GOTO Mult
 $WEmult:
-$ multiplier = 7
-$ GOTO Mult
+$      multiplier = 7
+$      GOTO Mult
 $MOmult:
-$ multiplier = 30
-$ GOTO Mult
+$      multiplier = 30
+$      GOTO Mult
 $QUmult:
-$ multiplier = 91
-$ GOTO Mult
+$      multiplier = 91
+$      GOTO Mult
 $YEmult:
-$ multiplier = 365
-$ GOTO Mult
+$      multiplier = 365
+$      GOTO Mult
 $Mult:
-$ UI$DaysAgo = NNval * multiplier
+$      UI$DaysAgo = NNval * multiplier
 $ ELSE wso F$FAO ( "%!AS-E-BAD_UNITS, unknown time-ago units: !AS", Fac, Units )
 $      GOTO Done
 $ ENDIF
@@ -127,36 +128,57 @@ $ uname = F$ELEMENT( 1, SPC, line )
 $ READ /END_OF_FILE=LoopDone iuc line                              ! Flags: ...
 $ flags = F$EDIT( F$ELEMENT( 1, COLON, line ), "COMPRESS" )
 $ READ /END_OF_FILE=LoopDone iuc line                              ! Last Login: ...
-$ lastlogin = F$ELEMENT( 2, SPC, line ) + SPC + F$ELEMENT( 3, SPC, line )
+$ ! strip out all the labelling on this line, so all that's left is date-data or empty strings:
+$ line = line - "Last Login:" - " (interactive)" - " (non-interactive)" - "(none)" - "(none)"
+$ line = F$EDIT( line, "TRIM,COMPRESS ")
+$ lastlogin  = F$EDIT( F$ELEMENT( 0, COMMA, line ), "TRIM" )       ! "<date> (interactive)"
+$ lastnonint = F$EDIT( F$ELEMENT( 1, COMMA, line ), "TRIM" )       ! "<date> (non-interactive)"
 $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
-$ Msg = "User " + uname
-$ IF UI$IncludeFlags THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
+$ Msg0 = "User " + uname
+$ Msg1 = ""
+$ Msg2 = ""
+$ IF UI$IncludeFlags THEN Msg0 = Msg0 + " (''F$EDIT( flags, "TRIM" )')"
 $ !
 $ IF ( F$EDIT( lastlogin, "COLLAPSE" ) .EQS. "" )
-$ THEN ! An "empty" lastlogin means that user has never logged in
-$      Msg = Msg +  F$FAO( ": !AShas never logged-in!AS", ULINE, NORM )
-$      UI$Never = UI$Never + 1
+$ THEN ! An "empty" lastlogin means that user has never logged in interactively
+$      Msg1 = F$FAO( "!7* !AShas never logged-in!AS", ULINE, NORM )
+$      ! Consider non-interactive login only when interactive login is never/"(none)":
+$      IF ( F$EDIT( lastnonint, "COLLAPSE" ) .EQS. "" )
+$      THEN ! An "empty" lastnonint means that user has never logged in non-interactively/batch
+$           Msg2 = F$FAO( "!7* !AShas never logged-in noninteractive (batch)!AS", ULINE, NORM )
+$           UI$Never = UI$Never + 1
+$      ELSE ! Determine if this user has not logged-in within UI$DaysAgo days:
+$           LLdelta = F$INTEGER( F$ELEMENT( 0, DASH, F$DELTA_TIME( lastnonint, F$TIME(), "DCL" ) ) )
+$           IF ( LLdelta .GE. UI$DaysAgo )
+$           THEN Msg2 = F$FAO( "!7* last non-interactive (batch) login was !AS, or !AS!ZL!AS days ago", -
+                                lastnonint, BOLD, LLdelta, NORM )
+$           ELSE GOTO Loop  ! nothing to report
+$           ENDIF
+$      ENDIF
 $ ELSE ! Determine if this user has not logged-in within UI$DaysAgo days:
 $      LLdelta = F$INTEGER( F$ELEMENT( 0, DASH, F$DELTA_TIME( lastlogin, F$TIME(), "DCL" ) ) )
 $      IF ( LLdelta .GE. UI$DaysAgo )
-$      THEN Msg = Msg + F$FAO( ": last login was !AS, or !AS!ZL!AS days ago", -
-                               lastlogin, BOLD, LLdelta, NORM )
+$      THEN Msg1 = F$FAO( "!7* last interactive login was !AS, or !AS!ZL!AS days ago", -
+                          lastlogin, BOLD, LLdelta, NORM )
 $           UI$Aged = UI$Aged + 1
 $      ELSE GOTO Loop  ! nothing to report
 $      ENDIF
 $ ENDIF
 $ !
 $ !! $ IF Debug
-$ !! $ THEN wso F$FAO( "  username: ""!AS""", uname )
-$ !! $      wso F$FAO( "     flags: ""!AS""", flags )
-$ !! $      wso F$FAO( "last login: ""!AS""", lastlogin )
+$ !! $ THEN wso F$FAO( "        username: ""!AS""", uname )
+$ !! $      wso F$FAO( "           flags: ""!AS""", flags )
+$ !! $      wso F$FAO( "      last login: ""!AS""", lastlogin )
+$ !! $      wso F$FAO( "  last non-inter: ""!AS""", lastnonint )
 $ !! $      wso ""
 $ !! $ ENDIF
 $ !
-$ wso Msg
+$ wso Msg0
+$ IF ( Msg1 .NES. "" ) THEN wso Msg1
+$ IF ( Msg2 .NES. "" ) THEN wso Msg2
 $ GOTO Loop
 $LoopDone:
 $ !
@@ -166,8 +188,8 @@ $ !
 $ wso ""
 $ Msg = F$FAO( "%!AS-I-SUMMARY,", Fac )
 $ MsgL = F$LENGTH( Msg )
-$ wso F$FAO( "!AS !3UL user logins exceed !ZL days (!AS) ago", Msg, UI$Aged, UI$DaysAgo, UI$NNago )
-$ wso F$FAO( "!#* !3UL user!%S have never logged in", MsgL+1, UI$Never )
+$ wso F$FAO( "!AS !3UL user interactive logins exceed !ZL days (!AS) ago", Msg, UI$Aged, UI$DaysAgo, UI$NNago )
+$ wso F$FAO( "!#* !3UL user!%S have never logged in, either interactive or non-interactive", MsgL+1, UI$Never )
 $ wso F$FAO( "!#* !3UL total users", MsgL+1, UI$Aged + UI$Never )
 $ !
 $ IF ( .NOT. Debug )
