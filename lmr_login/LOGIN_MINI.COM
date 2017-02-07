@@ -1,6 +1,6 @@
 $ ! LOGIN.COM -- Lorin's minimal login                                  'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -198,7 +198,8 @@ $ sysgen   == "MCR SYSGEN"
 $ !
 $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
-$ upt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
+$ clupt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
+$ upt*ime   == "PIPE uptm$ = F$DELTA_TIME( F$GETSYI(""BOOTTIME""), F$TIME(), ""ASCTIM"" ) ; WRITE sys$output uptm$"
 $ !
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
