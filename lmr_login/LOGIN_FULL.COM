@@ -1,6 +1,6 @@
 $ ! [L_RICKER]LOGIN.COM --                                         'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1986-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -134,7 +134,7 @@ $ IF Term .NES. "" THEN isTerm = F$GETDVI(Term,"TRM")
 $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LBase  = F$TRNLNM("sys$login_device") -
          + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
-$ DEFINE /JOB /NOLOG lmr$login 'LBase'.$login],'LBase'.$decw$]
+$ DEFINE /JOB /NOLOG lmr$login 'LBase'.login]    !!,'LBase'.$decw$]
 $ !
 $ HomeNodes = ",CLASS8,VMSPR1,VMSPR3,"   ! <== customized <== !
 $ atHome    = ( F$LOCATE(",''LNode',",HomeNodes) .LT. F$LENGTH(HomeNodes) )

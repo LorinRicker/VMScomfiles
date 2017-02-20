@@ -184,7 +184,12 @@ $ where    == "SHOW DEFAULT"
 $ glo*bal  == "SHOW SYMBOL /GLOBAL"
 $ lnm      == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
 $ ftpcl8   == "ftp class8.parsec.com"
-$ reLog*in == "@sys$login:login"
+$ !
+$ LFull = ""
+$ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
+$ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
+$ reLog*in == "@SYS$LOGIN:LOGIN''LFull'"
+$ !
 $ ssys*tem == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ submit   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
 $ !

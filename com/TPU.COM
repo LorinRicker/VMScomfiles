@@ -1,6 +1,6 @@
 $ ! TPU.COM -- defines KED/TTK editor environment                  'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -21,7 +21,7 @@ $ LBase = F$TRNLNM("sys$login_device") -
 $ Architecture = F$EDIT(F$GETSYI("ARCH_NAME"),"UPCASE,TRIM")
 $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
-$ DEFINE tpu$src   'Lbase'.$tpu]
+$ DEFINE tpu$src   'Lbase'.tpu]
 $ DEFINE ked$utils 'F$TRNLNM("tpu$src")',site$utils
 $ DEFINE tpu$section ked$section  !for MAIL, etc.
 $ DEFINE ked$src   site$sources:[ked]

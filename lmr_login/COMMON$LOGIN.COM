@@ -90,7 +90,7 @@ $      !!dfn site$startup site$root:[startup]
 $      !!dfn site$sources 'LBase'.e$r.] /TRANSLATION=CONCEALED
 $      !!dfn e$r          'LBase'.e$r]
 $ !
-$      DEFINE /PROCESS kstart 'LBase'.$tpu],lmr$login,site$root:[startup]
+$      DEFINE /PROCESS kstart 'LBase'.tpu],lmr$login,site$root:[startup]
 $      @kstart:ked$startup JOB
 $      DEASSIGN /PROCESS kstart
 $ !

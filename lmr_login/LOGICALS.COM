@@ -66,8 +66,9 @@ $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ DEFINE base         'Lbase''Rooted'
 $ DEFINE logs         'Lbase'.logs]
-$ DEFINE com          'Lbase'.$com],site$utils
-$ DEFINE lib          'Lbase'.$lib...]
+$ DEFINE com          'Lbase'.com],site$utils
+$ DEFINE cmd          'Lbase'.com]
+$ DEFINE lib          'Lbase'.lib...]
 $ DEFINE root         'Lbase']
 $ DEFINE sys$scratch  'Lbase'.scratch]
 $ DEFINE jnk          sys$scratch
@@ -134,7 +135,8 @@ $      ENDIF
 $ ENDIF
 $ !
 $ ! PARSEC
-$ DEFINE storage vmspr1::disk$storage:
+$ IF ( F$EXTRACT(0,5,F$GETSYI("NODENAME")) .NES. "VMSPR" ) -
+  THEN DEFINE storage vmspr1::disk$storage:
 $ !
 $ EXIT
 $ !

@@ -170,8 +170,12 @@ $ glo*bal      == "SHOW SYMBOL /GLOBAL"
 $ lnm          == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
 $ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
-$ reLog*in     == "@sys$login:login"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ !
+$ LFull = ""
+$ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
+$ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
+$ reLog*in == "@SYS$LOGIN:LOGIN''LFull'"
 $ !
 $ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
