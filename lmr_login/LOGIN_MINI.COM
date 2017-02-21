@@ -108,8 +108,8 @@ $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ CALL TestDir "SCRATCH"   "sys$scratch" "''LBase'"
 $ CALL TestDir "LOGS"      "logs"        "''LBase'"
-$ CALL TestDir "$COM"      "com"         "''LBase'"
-$ CALL TestDir "$LOGIN"    "lmr$login"   "''LBase'"
+$ CALL TestDir "COM"       "com"         "''LBase'"
+$ CALL TestDir "LOGIN"     "lmr$login"   "''LBase'"
 $ CALL TestDir "VMSAUDITS" "v$audit"     "''LBase'"
 $ IF ( F$TRNLNM("site$utils") .EQS. "" ) THEN DEFINE site$utils com
 $ !
@@ -205,6 +205,7 @@ $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
 $ clupt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ upt*ime   == "PIPE uptm$ = F$DELTA_TIME( F$GETSYI(""BOOTTIME""), F$TIME(), ""ASCTIM"" ) ; WRITE sys$output uptm$"
+$ boot*time == uptime
 $ !
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
@@ -236,9 +237,9 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.$com]privilege.com;,where.com;"                   -
-          + ",''LBase'.$com]fix$bck.com;,zips.com;"                     -
-          + ",''LBase'.$login]show_cluster$init.ini;,fixprivs.com;"     -
+$ comlist = "''LBase'.com]privilege.com;,where.com;"                    -
+          + ",''LBase'.com]fix$bck.com;,zips.com;"                      -
+          + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
           + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
