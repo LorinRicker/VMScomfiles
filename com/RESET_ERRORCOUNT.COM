@@ -21,6 +21,7 @@ $ !
 $ Debug = F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
 $ !
 $ resetcount = 0
+$ Prv        = "CMKRNL,DIAGNOSE,PHY_IO" 
 $ !
 $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Proc   = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
@@ -37,11 +38,10 @@ $ P1 = F$EDIT( P1, "TRIM,UPCASE" ) - DASH - DASH
 $ IF ( F$EXTRACT( 0, 1, P1 ) .EQS. "H" ) .OR. ( F$EXTRACT( 0, 1, P1 ) .EQS. "?" ) -
   THEN GOTO Help
 $ confirm = ( P1 .EQS. "" ) .OR. ( F$EXTRACT( 0, 4, P1 ) .EQS. "CONF" )
-$ SHOW SYMBOL confirm
 $ !
 $ IF Debug
 $ THEN erroutf = "''DD'''Fac'.TMP"
-$      outqual = ""
+$      outqual = "/OUTPUT=NLA0:"  ! discard the SHOW ERROR output for this case...
 $      wso F$FAO( "%!AS-I-TEST_DATA, using test data file !AS", Fac, erroutf )
 $ ELSE erroutf = "SYS$SCRATCH:''Fac'.TMP"
 $      outqual = "/OUTPUT=''erroutf'"
@@ -54,7 +54,7 @@ $ READ ef Rec /END_OF_FILE=Done       ! discard header-line "Device ... Error Co
 $ ! or it contains "%SHOW-S-NOERRORS, no device errors found", so done...
 $ IF ( F$LOCATE( "NOERRORS", Rec ) .LT. F$LENGTH( Rec ) ) THEN GOTO Done
 $ !
-$ Prv = F$SETPRV( "CMKRNL,DIAGNOSE" )
+$ Prv = F$SETPRV( Prv )
 $ !
 $Loop:
 $ READ ef Rec /END_OF_FILE=LoopDone
@@ -115,7 +115,7 @@ $ TYPE /PAGE sys$input
 
     --CONFIRM  (default) Prompts for Yes/No permission before resetting
           the device's error count.  Resets that device's error count
-          only if you respond "Yes" for that device.
+          only if you respond "y[es]" for that device.
 
    --HELP or -?  Prints this help text.
 

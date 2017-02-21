@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.08-01 (10-Feb-2017)"
+$ VA$ProcVersion = "V2.10-01 (21-Feb-2017)"
 $ VA$Copyright   = "Copyright © 2014-2017"
 $ !
 $ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,8 +28,10 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  21-FEB-2017 : Use non-searc-list logical CMD rather than COM.
+$ !  20-FEB-2017 : Add RESET_ERRORCOUNT.(COM,TMP) to VMS$AUDIT.(BCK,ZIP) archives.
 $ !  10-FEB-2017 : Add USERS_INACTIVE.(COM,CONFIG) and USERS_PASSWORDS.(COM,CONFIG)
-$ !                tools to VMS$AUDIT.(BCK,ZIP) archives.
+$ !                to VMS$AUDIT.(BCK,ZIP) archives.
 $ !  03-FEB-2017 : Add command alias TYR*EPORT to type "this" report to terminal.
 $ !                Also add [.DFU]dfu*.* to saveset and zip.
 $ !                Update copyright year.
@@ -745,7 +747,8 @@ $ V$BckList  = "''Fac'.com;" -
              + ",uaf$detailed_analysis.com;" -
              + ",uaf$quick_analysis.com;" -
              + ",parsec_autogen.com;" -
-             + ",com:USERS_*.CO*;" -  ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
+             + ",cmd:USERS_*.CO*;" -         ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
+             + ",cmd:RESET_ERRORCOUNT.*;" -  ! RESET_ERRORCOUNT.(COM,TMP)
              + ",[.DFU]*.*;"
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
@@ -758,7 +761,8 @@ $ V$ZipList  = "''Fac'.com" -
              + " uaf$detailed_analysis.com" -
              + " uaf$quick_analysis.com" -
              + " parsec_autogen.com" -
-             + " com:USERS_*.CO*" -   ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
+             + " cmd:USERS_*.CO*" -         ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
+             + " cmd:RESET_ERRORCOUNT.*" -  ! RESET_ERRORCOUNT.(COM,TMP)
              + " [.DFU]*.*"
 $ !
 $ ! Calculate the first of last month (approx):
