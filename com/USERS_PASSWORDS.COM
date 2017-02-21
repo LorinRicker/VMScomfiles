@@ -43,7 +43,9 @@ $        ULINE = ""
 $ ENDIF
 $ !
 $ wso    = "WRITE sys$output"
+$ wserr  = "WRITE sys$error"
 $ SPC    = " "
+$ COMMA  = ","
 $ COLON  = ":"
 $ DASH   = "-"
 $ NONE   = "(none)"
@@ -77,22 +79,21 @@ $IUCdone:
 $ CLOSE /NOLOG iuconfig
 $ ! ===========================================
 $ !
-$ IF ( P3 .NES. "" )
-$ THEN UP$CSVoutput = "TRUE"
-$      CSVfile      = P3
-$ ENDIF
-$ IF ( UP$CSVoutput )
-$ THEN CSVfile = "[]''Fac'_''Node'.csv"
+$ IF ( .NOT. CFG$CSVoutput ) THEN CFG$CSVoutput = ( P3 .NES. "" )
+$ IF ( CFG$CSVoutput )
+$ THEN defcsv  = RptDir + Fac + "_" + Node + ".CSV"
+$      CSVfile = F$PARSE( P3, defcsv )
+$      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, CSVfile )
 $      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
-$      Hdr = "Username,Pwd-Lifetime,Pwd-Minimum-Len"
-$      IF ( UP$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
+$      Hdr = "Username,Owner,Pwd-Lifetime,Pwd-Minimum-Len"
+$      IF ( CFG$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
 $      wso Hdr
 $ ENDIF
 $ !
-$ IF ( P2 .NES. "" ) THEN UP$PwdMinimum  = P2
-$ IF ( P1 .NES. "" ) THEN UP$PwdLifeTime = P1
-$ NNval = F$INTEGER( F$ELEMENT( 0, DASH, UP$PwdLifeTime ) )
-$ Units = F$EXTRACT( 0, 2, F$EDIT( F$ELEMENT( 1, DASH, UP$PwdLifeTime ), "UPCASE" ) )
+$ IF ( P2 .NES. "" ) THEN CFG$PwdMinimum  = P2
+$ IF ( P1 .NES. "" ) THEN CFG$PwdLifeTime = P1
+$ NNval = F$INTEGER( F$ELEMENT( 0, DASH, CFG$PwdLifeTime ) )
+$ Units = F$EXTRACT( 0, 2, F$EDIT( F$ELEMENT( 1, DASH, CFG$PwdLifeTime ), "UPCASE" ) )
 $ IF ( Units .EQS. DASH ) THEN Units = "DA"
 $ IF ( F$LOCATE( ",''Units',", LegalUnits ) .LT. F$LENGTH( LegalUnits ) )
 $ THEN GOTO 'Units'mult
@@ -118,11 +119,11 @@ $      GOTO Done
 $ ENDIF
 $ !
 $ IF Debug
-$ THEN wso F$FAO( "%!AS-I-DEBUG, sys$output is ANSI-terminal: !AS", Fac, isANSI )
-$      wso F$FAO( "%!AS-I-DEBUG, UP$PwdLifeTime: !AS", Fac, UP$PwdLifeTime )
-$      wso F$FAO( "%!AS-I-DEBUG, !ZL (!AS) * !ZL = !ZL", -
+$ THEN wserr F$FAO( "%!AS-I-DEBUG, sys$output is ANSI-terminal: !AS", Fac, isANSI )
+$      wserr F$FAO( "%!AS-I-DEBUG, CFG$PwdLifeTime: !AS", Fac, CFG$PwdLifeTime )
+$      wserr F$FAO( "%!AS-I-DEBUG, !ZL (!AS) * !ZL = !ZL", -
                   Fac, NNval, Units, multiplier, REQ$PwdLifeTime )
-$      wso F$FAO( "%!AS-I-DEBUG, REQ$PwdLifeTime: !ZL", Fac, REQ$PwdLifeTime )
+$      wserr F$FAO( "%!AS-I-DEBUG, REQ$PwdLifeTime: !ZL", Fac, REQ$PwdLifeTime )
 $ ENDIF
 $ !
 $ Count$Total  = 0
@@ -140,10 +141,11 @@ $ SEARCH /OUTPUT='shortlist' 'sysuaflis' 'SearchFilter' /MATCH=OR /EXACT
 $ !
 $ OPEN /READ iuc 'shortlist'
 $Loop:
-$ READ /END_OF_FILE=LoopDone iuc line                              ! Username: ...
+$ READ /END_OF_FILE=LoopDone iuc line                              ! Username: Uname     Owner: Fname Lname
 $ uname = F$ELEMENT( 1, SPC, line )
+$ owner = F$EDIT( F$ELEMENT( 2, COLON, line ), "TRIM,COMPRESS" )
 $ READ /END_OF_FILE=LoopDone iuc line                              ! Flags: ...
-$ flags = F$EDIT( F$ELEMENT( 1, COLON, line ), "COMPRESS" )
+$ flags = F$EDIT( F$ELEMENT( 1, COLON, line ), "TRIM,COMPRESS" )
 $ READ /END_OF_FILE=LoopDone iuc line                              ! Pwdminimum: ...
 $ line = F$EDIT( line, "COMPRESS" )
 $ IF ( F$ELEMENT( 1, SPC, line ) .EQS. NONE )
@@ -160,8 +162,8 @@ $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
-$ Msg = "User " + uname
-$ IF ( UP$IncludeFlags ) THEN Msg = Msg + " (''F$EDIT( flags, "TRIM" )')"
+$ Msg0 = uname + ", " + owner + " -"
+$ IF ( CFG$IncludeFlags ) THEN Msg0 = Msg0 + " (''flags')"
 $ !
 $ msglif = ""
 $ msgmin = ""
@@ -172,7 +174,7 @@ $      IF ( pwdlifetime .EQS. MAXINT ) THEN pwdlifetime = NONE
 $      msglif = F$FAO( "lifetime: !AS", pwdlifetime )
 $      Count$VioLif = Count$VioLif + 1
 $ ENDIF
-$ IF ( F$INTEGER( UP$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
+$ IF ( F$INTEGER( CFG$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
 $ THEN VIO$pwdminimum = 0
 $ ELSE VIO$pwdminimum = 1
 $      msgmin = F$FAO( "minimum: !AS", pwdminimum )
@@ -180,24 +182,24 @@ $      Count$VioMin = Count$VioMin + 1
 $ ENDIF
 $ !
 $ IF ( VIO$pwdlifetime ) .OR. ( VIO$pwdminimum )
-$ THEN Msg = Msg + F$FAO( "!AS  Password violation!AS - !AS  !AS", BOLD, NORM, msglif, msgmin )
+$ THEN Msg0 = Msg0 + F$FAO( "!AS  Password violation!AS - !AS  !AS", BOLD, NORM, msglif, msgmin )
 $      Count$Total = Count$Total + 1
 $ ELSE GOTO Loop  ! nothing to report
 $ ENDIF
 $ !
 $ IF Debug
-$ THEN wso F$FAO( "    username: ""!AS""", uname )
-$      wso F$FAO( "       flags: ""!AS""", flags )
-$      wso F$FAO( "pwd lifetime: ""!AS""", pwdlifetime )
-$      wso F$FAO( " pwd minimum: ""!AS""", pwdminimum )
-$      wso ""
+$ THEN wserr F$FAO( "    username: ""!AS""", uname )
+$      wserr F$FAO( "       flags: ""!AS""", flags )
+$      wserr F$FAO( "pwd lifetime: ""!AS""", pwdlifetime )
+$      wserr F$FAO( " pwd minimum: ""!AS""", pwdminimum )
+$      wserr ""
 $ ENDIF
 $ !
-$ IF ( UP$CSVoutput )
-$ THEN CSVmsg = """''uname'"",""''pwdlifetime'"",""''pwdminimum'"""
-$      IF ( UP$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
+$ IF ( CFG$CSVoutput )
+$ THEN CSVmsg = """''uname'"",""''owner'"",""''pwdlifetime'"",""''pwdminimum'"""
+$      IF ( CFG$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
 $      wso CSVmsg
-$ ELSE wso Msg
+$ ELSE wso Msg0
 $ ENDIF
 $ GOTO Loop
 $LoopDone:
@@ -205,15 +207,35 @@ $ !
 $Done:
 $ CLOSE /NOLOG iuc
 $ !
-$ IF ( UP$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
+$ IF ( CFG$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
 $ !
 $ wso ""
 $ Msg = F$FAO( "%!AS-I-SUMMARY,", Fac )
 $ MsgL = F$LENGTH( Msg )
-$ wso F$FAO( "!AS !3UL user account!%S violate !AS password lifetime", Msg, Count$VioLif, UP$PwdLifeTime )
-$ wso F$FAO( "!#* !3UL user account!%S violate !AS-character password minimum", MsgL+1, Count$VioMin, UP$PwdMinimum  )
+$ wso F$FAO( "!AS !3UL user account!%S violate !AS password lifetime", Msg, Count$VioLif, CFG$PwdLifeTime )
+$ wso F$FAO( "!#* !3UL user account!%S violate !AS-character password minimum", MsgL+1, Count$VioMin, CFG$PwdMinimum  )
 $ wso F$FAO( "!#* !3UL total users reported", MsgL+1, Count$Total )
 $ !
+$ ! === Optional Special Function process(es) invocation, ===
+$ ! ===   up to five (5) special function com-files:      ===
+$ i = 1
+$SFLoop:
+$ IF ( F$TYPE( CFG$SpecFunc'i' ) .NES. "STRING" ) THEN GOTO Cleanup
+$ IF ( i .GT. 5 ) THEN GOTO Cleanup  ! hard limit...
+$ IF ( CFG$SpecFunc'i' .NES. "" )
+$ THEN specfunc = F$TRNLNM( CFG$SpecFunc'i' )
+$      IF ( specfunc .EQS. "" ) THEN specfunc = F$PARSE( CFG$SpecFunc'i', "''RptDir'.COM" )
+$      IF ( F$SEARCH( specfunc ) .NES. "" )
+$      THEN IF Debug THEN wserr F$FAO( "%!AS-I-INVOKE, $ @!AS", Fac, specfunc )
+$           @'specfunc'
+$      ELSE wserr F$FAO( "%!AS-E-FNF, CFG$SpecFunc!1ZL file not found: !AS", -
+                         Fac, i, specfunc )
+$      ENDIF
+$ ENDIF
+$ i = i + 1
+$ GOTO SFLoop
+$ !
+$Cleanup:
 $ IF ( .NOT. Debug )
 $ THEN IF ( F$SEARCH( sysuaflis ) .NES. "" ) THEN DELETE /NOLOG 'sysuaflis';*
 $      IF ( F$SEARCH( shortlist ) .NES. "" ) THEN DELETE /NOLOG 'shortlist';*
