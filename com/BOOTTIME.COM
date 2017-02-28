@@ -1,6 +1,6 @@
 $ ! BOOTTIME.COM -- display system re-boot time                    'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -18,7 +18,7 @@ $ wso = "WRITE sys$output"
 $ !
 $ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
 $ IF ( isANSI )
-$ THEN esc[0,8]= %X1B              !  27 decimal,  033 octal - ESCape character
+$ THEN esc[0,8]= %X1B              ! 27 decimal,  033 octal - ESCape character
 $         NORM = esc + "[0m"       ! Normal rendition
 $         BOLD = esc + "[1m"       ! Bold
 $ ELSE    NORM = ""
