@@ -158,10 +158,21 @@ $ DEFINE Z   sys$scratch:Z.tmp
 $ !
 $ esc[0,32]= %X1B
 $ esc[0,1]:= 'esc'
-$ _clrscr  == esc + "[m" + esc + "[H" + esc + "[2J"
-$ _clrscrL == esc + "[?5h" !light
-$ _clrscrD == esc + "[?5l" !dark
+$ ! --------------------------------
+$ ! Define screen-clearing commands:
+$ _bckscrL == esc + "[?5h"      ! set background light
+$ _bckscrD == esc + "[?5l"      ! set background dark
+$ _clrscr  == esc + "[m"  -     ! set rendition normal
+            + esc + "[H"  -     ! cursor to 0,0
+            + esc + "[2J"       ! clear entire screen
+$ !
 $ clr      == "WRITE sys$output _clrscr"
+$ cls      == "WRITE sys$output _clrscr"
+$ clrd     == "WRITE sys$output _bckscrL,_clrscr"
+$ clsd     == "WRITE sys$output _bckscrL,_clrscr"
+$ clrl     == "WRITE sys$output _bckscrD,_clrscr"
+$ clsl     == "WRITE sys$output _bckscrD,_clrscr"
+$ ! --------------------------------
 $ !
 $ LMR$UNAVAILABLE == ""
 $ Redefine = "TRUE"   ! for now, always redefine...

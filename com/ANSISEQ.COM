@@ -1,6 +1,6 @@
 $ ! ANSISEQ.COM --                                                 'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -12,10 +12,21 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ WRITE sys$output "%ANSISEQ-I-DEFSYM, defining ANSI Escape Sequences, including color..."
+$TestOutput:  SUBROUTINE
+$ IF ( P4 .EQS. "" )
+$ THEN wso F$FAO( "!#* !AS -- !AS!AS!AS", 7, P1, P3, P2, NC )
+$ ELSE wso F$FAO( "!#* !AS -- !AS!AS!AS -- visible as !AS!AS!AS", 7, P1, P3, P2, NC, P4, P5, NC )
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! TestOutput
+$ !
+$ !
+$ !
+$ wso = "WRITE sys$output"
+$ wso "%ANSISEQ-I-DEFSYM, defining ANSI Escape Sequences, including color..."
 $ !
 $ esc[0,8]== %X1B                   !  27 decimal,  033 octal - ESCape character
-$ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character,
+$ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character
 $ !
 $ ! ANSI renditions:
 $         NORM == esc + "[0m"       ! Normal rendition
@@ -65,10 +76,82 @@ $  LIGHTPURPLE == esc + "[1;35m"    ! bright magenta   [255, 85,255] |
 $    LIGHTCYAN == esc + "[1;36m"    ! bright cyan      [ 85,255,255] |
 $        WHITE == esc + "[1;37m"    ! bright white     [255,255,255] /
 $ !
+$ ! --------------------------------
+$ ! Define screen-clearing commands:
+$     _bckscrL == esc + "[?5h"      ! set background light
+$     _bckscrD == esc + "[?5l"      ! set background dark
 $     _clrscr  == esc + "[m"  -     ! set rendition normal
                 + esc + "[H"  -     ! cursor to 0,0
                 + esc + "[2J"       ! clear entire screen
-$     _clrscrL == esc + "[?5h"      !light
-$     _clrscrD == esc + "[?5l"      !dark
+$ !
+$     clr      == "WRITE sys$output _clrscr"
+$     cls      == "WRITE sys$output _clrscr"
+$     clrd     == "WRITE sys$output _bckscrL,_clrscr"
+$     clsd     == "WRITE sys$output _bckscrL,_clrscr"
+$     clrl     == "WRITE sys$output _bckscrD,_clrscr"
+$     clsl     == "WRITE sys$output _bckscrD,_clrscr"
+$ ! --------------------------------
+$ !
+$ !
+$TestMode:
+$ IF ( P1 .NES. "" )
+$ THEN ! test-output mode
+$      IF ( P1 .EQS. "DARK" )
+$      THEN wso _clrscrL
+$      ELSE wso _clrscrD
+$      ENDIF
+$                  wso " Frequently supported renditions --"
+$                  wso "  Supported? Attribute"
+$      CALL TestOutput "Yes : BOLD"        "Bold"            "''BOLD'"
+$      CALL TestOutput "Yes : ULINE"       "Underlined"      "''ULINE'"
+$      CALL TestOutput " No : BLINK"       "Blinking"        "''BLINK'"
+$      CALL TestOutput "Yes : REVRS"       "ReverseVideo"    "''REVRS'"
+$      CALL TestOutput " No : CONCEAL"     "concealed"       "''CONCEAL'"
+$ !
+$                  wso " Rarely supported renditions --"
+$                  wso "  Supported? Attribute"
+$      CALL TestOutput " No : FAINT"       "faint"           "''FAINT'"
+$      CALL TestOutput " No : BLINKRAPID"  "BlinkingRapidly" "''BLINKRAPID'"
+$      CALL TestOutput " No : CROSSOUT"    "Crossed Out"     "''CROSSOUT'"
+$ !
+$ ! Note: Specify background color before foreground color --
+$                  wso " Foreground (text) colors --"
+$                  wso "  Supported? Attribute"
+$      CALL TestOutput "Yes : BLACK"       "Black"           "''BLACK'"
+$      CALL TestOutput "Yes : RED"         "Red"             "''RED'"
+$      CALL TestOutput "Yes : GREEN"       "Green"           "''GREEN'"
+$      CALL TestOutput "Yes : BROWN"       "Brown"           "''BROWN'"
+$      CALL TestOutput "Yes : BLUE"        "Blue"            "''BLUE'"
+$      CALL TestOutput "Yes : PURPLE"      "Purple"          "''PURPLE'"
+$      CALL TestOutput "Yes : CYAN"        "Cyan"            "''CYAN'"
+$      CALL TestOutput "Yes : LIGHTGRAY"   "LightGray"       "''LIGHTGRAY'" "''BLACK_BG'''LIGHTGRAY'" "Lightgray-on-Black (error)"
+$ !
+$                  wso " Background colors --"
+$                  wso "  Supported? Attribute"
+$      CALL TestOutput "Yes : BLACK_BG"     "Black"          "''BLACK_BG'"  "''BLACK_BG'''WHITE'" "White-on-Black"
+$      CALL TestOutput "Yes : RED_BG"       "Red"            "''RED_BG'"
+$      CALL TestOutput "Yes : GREEN_BG"     "Green"          "''GREEN_BG'"
+$      CALL TestOutput "Yes : BROWN_BG"     "Brown"          "''BROWN_BG'"
+$      CALL TestOutput "Yes : BLUE_BG"      "Blue"           "''BLUE_BG'"   "''BLUE_BG'''WHITE'" "White-on-Blue"
+$      CALL TestOutput "Yes : PURPLE_BG"    "Purple"         "''PURPLE_BG'"
+$      CALL TestOutput "Yes : CYAN_BG"      "Cyan"           "''CYAN_BG'"
+$      CALL TestOutput "Yes : LIGHTGRAY_BG" "LightGray"      "''LIGHTGRAY_BG'"
+$ !
+$                  wso " Foreground bright intensity (text) colors --"
+$                  wso "  Supported? Attribute"
+$      CALL TestOutput "Yes : DARKGRAY"    "DarkGray"        "''DARKGRAY'"
+$      CALL TestOutput "Yes : LIGHTRED"    "LightRed"        "''LIGHTRED'"
+$      CALL TestOutput "Yes : LIGHTGREEN"  "LightGreen"      "''LIGHTGREEN'"
+$      CALL TestOutput "Yes : YELLOW"      "Yellow"          "''YELLOW'"   "''BLUE_BG'''YELLOW'" "Yellow-on-Blue"
+$      CALL TestOutput "Yes : LIGHTBLUE"   "LightBlue"       "''LIGHTBLUE'"
+$      CALL TestOutput "Yes : LIGHTPURPLE" "LightPurple"     "''LIGHTPURPLE'"
+$      CALL TestOutput "Yes : LIGHTCYAN"   "LightCyan"       "''LIGHTCYAN'"
+$      CALL TestOutput "Yes : WHITE"       "White"           "''WHITE'"    "''WHITE_BG'''BLACK'" "Black-on-White"
+$ !
+       wso ""
+       wso "Note: Usability of these renditions, especially color, depend intimately upon"
+       wso "      terminal emulator settings (e.g., PuTTY: Window|Colours), and upon the"
+       wso "      terminal display's background color (dark or light)."
+$ ENDIF
 $ !
 $ EXIT  ! 'F$VERIFY(0)'
