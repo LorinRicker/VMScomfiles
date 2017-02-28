@@ -12,22 +12,28 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ SET NOON
+$ !
+$ wso = "WRITE sys$output"
+$ !
+$ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
+$ IF ( isANSI )
+$ THEN esc[0,8]= %X1B              !  27 decimal,  033 octal - ESCape character
+$         NORM = esc + "[0m"       ! Normal rendition
+$         BOLD = esc + "[1m"       ! Bold
+$ ELSE    NORM = ""
+$         BOLD = ""
+$ ENDIF
+$ !
+$ Node    = F$GETSYI("NODENAME")
 $ Cluster = "Node "
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN cluster = "VMScluster member "
-$ Node = F$GETSYI("NODENAME")
-$ BootTime = F$GETSYI("BOOTTIME")
-$ Dc = "site$utils:dc$datecalc.exe"
-$ UpTime = ""
-$ IF F$SEARCH(Dc) .NES. ""
-$ THEN Days = "$" + Dc
-$      Days "''BootTime'" /DELTA /SYMBOL=UpTime /SCOPE=LOCAL
-$ ENDIF
-$ DaysUp = F$INTEGER(F$ELEMENT(0," ",UpTime))
-$ HMTime = F$ELEMENT(1," ",UpTime)
-$ HrsUp  = F$INTEGER(F$ELEMENT(0,":",HMTime))
-$ MinsUp = F$INTEGER(F$ELEMENT(1,":",HMTime))
-$ WRITE sys$output "%BOOTTIME-I, ''cluster'''node' rebooted at ''boottime'."
-$ IF UpTime .NES. "" -
-  THEN WRITE sys$output F$FAO("!13* Up-time is [1m!ZL day!%S, !ZL hour!%S, !ZL minute!%S[0m (!AS)", DaysUp, HrsUp, MinsUp, UpTime)
 $ !
-$ EXIT
+$ BootTime = F$EDIT(F$GETSYI("BOOTTIME"),"TRIM")
+$ UpTime   = F$EDIT( F$DELTA_TIME( BootTime, F$TIME(), "ASCTIM" ), "TRIM" )
+$ !
+$ wso "%BOOTTIME-I-REBOOT, ''Cluster'''Node' rebooted on ''BOLD'''BootTime'''NORM'"
+$ wso "         -I-UPTIME, Uptime is ''BOLD'''UpTime'''NORM'"
+$ !
+$ EXIT 1   !'F$VERIFY(0)'
+$ !

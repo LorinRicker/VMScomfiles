@@ -205,7 +205,7 @@ $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
 $ clupt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ upt*ime   == "PIPE uptm$ = F$DELTA_TIME( F$GETSYI(""BOOTTIME""), F$TIME(), ""ASCTIM"" ) ; WRITE sys$output uptm$"
-$ boot*time == uptime
+$ boot*time == "@com:bootttime.com"
 $ !
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
@@ -237,7 +237,7 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.com]privilege.com;,where.com;"                    -
+$ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
           + ",''LBase'.com]fix$bck.com;,zips.com;"                      -
           + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -

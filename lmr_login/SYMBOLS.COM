@@ -95,7 +95,7 @@ $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
 $ !establish symbol before mgr$login:
 $ IF F$TYPE(dwho)     .EQS. "" THEN CALL CDefine "dwho"     "@mgr$command:dclwho"
-$ IF F$TYPE(boottime) .EQS. "" THEN CALL CDefine "boottime" "@mgr$command:boottime.com"
+$ IF F$TYPE(boottime) .EQS. "" THEN CALL CDefine "boottime" "@com:boottime.com"
 $ IF F$TYPE(breakin)  .EQS. ""
 $ THEN CALL CDefine "break*in" "@mgr$command:breakin.com"
 $      IF F$TYPE(breakin)  .EQS. ""  !mgr$command:breakin.com not found?
