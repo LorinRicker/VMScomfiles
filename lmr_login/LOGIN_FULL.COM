@@ -145,8 +145,6 @@ $INTERACTIVE:
 $ LMR$Unavailable == ""
 $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com
-$ show logical com
-$ show logical lmr$login
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
@@ -158,7 +156,7 @@ $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $      CALL SearchAt dcl$init
-$      CALL SearchAt mgr$login
+$!! $  !!! retired --> CALL SearchAt mgr$login
 $      CALL SearchAt com:tpu.com
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
 $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) THEN cjobs  !check periodic jobs
@@ -189,15 +187,15 @@ $ !
 $ GOTO Done
 $ !
 $NETWORK:
-$ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
-$ CALL SearchAt lmr$login:logicals.com
-$ CALL SearchAt mgr$login
+$!! $ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
+$!! $ CALL SearchAt lmr$login:logicals.com
+$!! $ !!! retired --> CALL SearchAt mgr$login
 $ Lprv = "sysprv"
 $ GOTO Done
 $ !
 $BATCH:
 $ CALL SearchAt lmr$login:logicals.com
-$ CALL SearchAt mgr$login
+$!! $ !!! retired --> CALL SearchAt mgr$login
 $ subm*it == "SUBMIT /KEEP /NOPRINT /LOG_FILE=logs:"
 $ make == "@site$utils:make"
 $ !!!«» IF atHome THEN @'LBase'.music]context LOG   !for weekly backup (Music$Database)

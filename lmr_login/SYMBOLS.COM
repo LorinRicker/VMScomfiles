@@ -93,16 +93,10 @@ $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PNam
 $ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
-$ !establish symbol before mgr$login:
-$ IF F$TYPE(dwho)     .EQS. "" THEN CALL CDefine "dwho"     "@mgr$command:dclwho"
-$ IF F$TYPE(boottime) .EQS. "" THEN CALL CDefine "boottime" "@com:boottime.com"
-$ IF F$TYPE(breakin)  .EQS. ""
-$ THEN CALL CDefine "break*in" "@mgr$command:breakin.com"
-$      IF F$TYPE(breakin)  .EQS. ""  !mgr$command:breakin.com not found?
-$      THEN break*in    == "SHOW INTRUSION /TYPE=ALL"
-$           delbreak*in == "DELETE /INTRUSION_RECORD"
-$      ENDIF
-$ ENDIF
+$ CALL CDefine "dwho"     "@cmd:dclwho"
+$ CALL CDefine "boottime" "@cmd:boottime.com"
+$ break*in    == "SHOW INTRUSION /TYPE=ALL"
+$ delbreak*in == "DELETE /INTRUSION_RECORD"
 $ IF F$TYPE(authorize) .EQS. "" THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
 $ IF F$TYPE(sysgen)    .EQS. "" THEN sysgen     == "$SYS$SYSTEM:SYSGEN"
 $ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
@@ -116,10 +110,10 @@ $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
 $      sudo   == "''privilege' SUDO"  ! make a Linux-synonym too...
 $ ENDIF
-$ CALL CDefine "rid*manager"  "@mgr$command:rid$manager.com"
+$!! $ CALL CDefine "rid*manager"  "@mgr$command:rid$manager.com"
 $ CALL CDefine "spy"          "@com:showproc.com"
-$ CALL CDefine "loop*iso"     "@com:loop$iso"
-$ !!CALL CDefine "mcd"          "@com:cdrom"
+$!! $ CALL CDefine "loop*iso"     "@com:loop$iso"
+$!! $ CALL CDefine "mcd"          "@com:cdrom"
 $ !
 $ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !

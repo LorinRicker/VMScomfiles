@@ -1,6 +1,6 @@
 $ ! COMMON$LOGIN.COM --                                           'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -107,12 +107,10 @@ $ !       sys$sysdevice,disk$user2,disk$rdb_backup
 $      priv = F$SETPRV(priv)
 $ ENDIF
 $ !
-$ CALL CDefine "disk*space"   "@site$utils:diskspace.com"
 $ CALL CDefine "ked"          "$site$utils:ked.exe"
 $ !
-$ CALL CDefine "who"          "$site$utils:who.exe"
 $ IF F$TYPE(who) .EQS. ""
-$ THEN CALL CDefine "who" "@mgr$command:dclwho"
+$ THEN CALL CDefine "who" "@cmd:dclwho"
 $      IF F$TYPE(who) .EQS. ""
 $      THEN who == "SHOW USERS"
 $      ENDIF
