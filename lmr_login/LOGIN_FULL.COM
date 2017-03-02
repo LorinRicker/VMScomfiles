@@ -97,6 +97,7 @@ $ !
 $MAIN:
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB Ctrl_Y
+$ !      
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
@@ -106,6 +107,18 @@ $ CALL PureDCL "RENAME"
 $ CALL PureDCL "PURGE"
 $ CALL PureDCL "DIRECTORY"
 $ CALL PureDCL "SEARCH"
+$ !
+$ ! Copy-a-new-version-of-self support:
+$ IF ( P1 .EQS. "NEW" )
+$ THEN IF ( F$SEARCH("sys$login:LOGIN_FULL.COM") .NES. "" )
+$      THEN COPY /LOG lmr$login:LOGIN_FULL.COM sys$login:*.*
+$      ELSE COPY /LOG lmr$login:LOGIN_FULL.COM sys$login:LOGIN.*
+$      ENDIF
+$      PURGE /SINCE  /NOLOG sys$login:LOGIN*.COM
+$      PURGE /KEEP=2 /NOLOG sys$login:LOGIN*.COM
+$      EXIT 1  ! 'F$VERIFY(0)'
+$ !    ======
+$ ENDIF
 $ !
 $ Interactive = ( F$MODE() .EQS. "INTERACTIVE" )
 $ Lprv = ""
@@ -187,8 +200,8 @@ $ !
 $ GOTO Done
 $ !
 $NETWORK:
+$ CALL SearchAt lmr$login:logicals.com
 $!! $ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
-$!! $ CALL SearchAt lmr$login:logicals.com
 $!! $ !!! retired --> CALL SearchAt mgr$login
 $ Lprv = "sysprv"
 $ GOTO Done
