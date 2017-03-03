@@ -21,9 +21,7 @@ $ EXIT 1
 $ ENDSUBROUTINE  ! TestOutput
 $ !
 $ !
-$ !
 $ wso = "WRITE sys$output"
-$ wso "%ANSISEQ-I-DEFSYM, defining ANSI Escape Sequences, including color..."
 $ !
 $ esc[0,8]== %X1B                   !  27 decimal,  033 octal - ESCape character
 $ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character
@@ -85,15 +83,21 @@ $     _clrscr  == esc + "[m"  -     ! set rendition normal
                 + esc + "[2J"       ! clear entire screen
 $ !
 $     clr      == "WRITE sys$output _clrscr"
-$     cls      == "WRITE sys$output _clrscr"
+$     cls      == clr     ! alias
 $     clrd     == "WRITE sys$output _bckscrL,_clrscr"
-$     clsd     == "WRITE sys$output _bckscrL,_clrscr"
+$     clsd     == clrd    ! alias
 $     clrl     == "WRITE sys$output _bckscrD,_clrscr"
-$     clsl     == "WRITE sys$output _bckscrD,_clrscr"
+$     clsl     == clrl    ! alias
 $ ! --------------------------------
+$ !
+$ IF ( F$EXTRACT( 0, 4, P1 ) .EQS. "TEST" ) THEN GOTO TestMode
+$ !
+$ EXIT  ! 'F$VERIFY(0)'
 $ !
 $ !
 $TestMode:
+$ wso "%ANSISEQ-I-DEFSYM, defined ANSI Escape Sequences, including color..."
+$ !
 $ IF ( P1 .NES. "" )
 $ THEN ! test-output mode
 $      IF ( P1 .EQS. "DARK" )
@@ -155,3 +159,4 @@ $ !
 $ ENDIF
 $ !
 $ EXIT  ! 'F$VERIFY(0)'
+$ !
