@@ -1,0 +1,11 @@
+! AUDITREPORT.DISTR --
+!   This is the distribution list (distro) for AUDITREPORT.COM's report emails.
+!
+!   Add one email address per line.
+!   Blank lines and comments ("! comment line") are permitted.
+!
+!   Each email address *must* be surrounded by twin double-quotes ""user@sample.com"",
+!   like this: ""lricker@parsec.com""
+
+""lricker@parsec.com""
+!! ""dfleury@parsec.com""

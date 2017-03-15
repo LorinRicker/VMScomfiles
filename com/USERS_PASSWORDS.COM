@@ -85,7 +85,7 @@ $ THEN defcsv  = RptDir + Fac + "_" + Node + ".CSV"
 $      CSVfile = F$PARSE( P3, defcsv )
 $      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, CSVfile )
 $      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
-$      Hdr = "Username,Owner,Pwd-Lifetime,Pwd-Minimum-Len"
+$      Hdr = "Username,Owner,Pwd-Lifetime,Pwd-Minimum-Len,Last-Login"
 $      IF ( CFG$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
 $      wso Hdr
 $ ENDIF
@@ -157,32 +157,39 @@ $ pwdlifetime = F$ELEMENT( 1, SPC, F$EDIT( line, "COMPRESS" ) )
 $ IF ( pwdlifetime .EQS. NONE ) THEN pwdlifetime = MAXINT
 $ READ /END_OF_FILE=LoopDone iuc line                              ! Last Login: ...
 $ line = F$EDIT( line, "COMPRESS" )
-$ lastlogin = F$ELEMENT( 2, SPC, line ) + SPC + F$ELEMENT( 3, SPC, line )
+$ tmp  = F$ELEMENT( 3, SPC, line )
+$ IF ( F$EXTRACT( 0, 1, tmp ) .NES. "(" )
+$ THEN tmp = F$EXTRACT( 0, 17, tmp )
+$ ELSE tmp = ""
+$ ENDIF
+$ lastlogin = F$ELEMENT( 2, SPC, line ) + SPC + tmp - COMMA
 $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
-$ Msg0 = uname + ", " + owner + " -"
-$ IF ( CFG$IncludeFlags ) THEN Msg0 = Msg0 + " (''flags')"
+$ Msg0 = F$FAO( "!12AS: !16AS -", uname, owner )
 $ !
 $ msglif = ""
 $ msgmin = ""
+$ msglgi = ""
 $ IF ( F$INTEGER( REQ$PwdLifeTime ) .EQ. F$INTEGER( pwdlifetime ) )
 $ THEN VIO$pwdlifetime = 0
 $ ELSE VIO$pwdlifetime = 1
 $      IF ( pwdlifetime .EQS. MAXINT ) THEN pwdlifetime = NONE
-$      msglif = F$FAO( "lifetime: !AS", pwdlifetime )
+$      msglif = F$FAO( " lifetime: !6AS", pwdlifetime )
 $      Count$VioLif = Count$VioLif + 1
 $ ENDIF
 $ IF ( F$INTEGER( CFG$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
 $ THEN VIO$pwdminimum = 0
 $ ELSE VIO$pwdminimum = 1
-$      msgmin = F$FAO( "minimum: !AS", pwdminimum )
+$      msgmin = F$FAO( " minimum: !2AS", pwdminimum )
 $      Count$VioMin = Count$VioMin + 1
 $ ENDIF
 $ !
 $ IF ( VIO$pwdlifetime ) .OR. ( VIO$pwdminimum )
-$ THEN Msg0 = Msg0 + F$FAO( "!AS  Password violation!AS - !AS  !AS", BOLD, NORM, msglif, msgmin )
+$ THEN msglgi = F$FAO( " last-login: !17AS", lastlogin )
+$      Msg0 = Msg0 + F$FAO( " !ASViolation!AS - !AS!AS!AS", BOLD, NORM, msglif, msgmin, msglgi )
+$      IF ( CFG$IncludeFlags ) THEN Msg0 = Msg0 + " [''flags']"
 $      Count$Total = Count$Total + 1
 $ ELSE GOTO Loop  ! nothing to report
 $ ENDIF
@@ -192,11 +199,12 @@ $ THEN wserr F$FAO( "    username: ""!AS""", uname )
 $      wserr F$FAO( "       flags: ""!AS""", flags )
 $      wserr F$FAO( "pwd lifetime: ""!AS""", pwdlifetime )
 $      wserr F$FAO( " pwd minimum: ""!AS""", pwdminimum )
+$      wserr F$FAO( "  last login: ""!AS""", lastlogin )
 $      wserr ""
 $ ENDIF
 $ !
 $ IF ( CFG$CSVoutput )
-$ THEN CSVmsg = """''uname'"",""''owner'"",""''pwdlifetime'"",""''pwdminimum'"""
+$ THEN CSVmsg = """''uname'"",""''owner'"",""''pwdlifetime'"",""''pwdminimum'"",""''lastlogin'"""
 $      IF ( CFG$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
 $      wso CSVmsg
 $ ELSE wso Msg0

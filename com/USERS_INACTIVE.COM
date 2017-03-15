@@ -152,23 +152,23 @@ $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
 $ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
-$ Msg0 = uname + ", " + owner + " -"
+$ Msg0 = F$FAO( "!12AS: !31AS", uname, owner )
+$ IF CFG$IncludeFlags THEN Msg0 = Msg0 + " [''flags']"
 $ Msg1 = ""
 $ Msg2 = ""
-$ IF CFG$IncludeFlags THEN Msg0 = Msg0 + " (''flags')"
 $ !
 $ IF ( F$EDIT( lastlogin, "COLLAPSE" ) .EQS. "" )
 $ THEN ! An "empty" lastlogin means that user has never logged in interactively
-$      Msg1 = F$FAO( "!7* !AShas never logged-in!AS", ULINE, NORM )
+$      Msg1 = F$FAO( "!4* !AShas never logged-in!AS", ULINE, NORM )
 $      ! Consider non-interactive login only when interactive login is never/"(none)":
 $      IF ( F$EDIT( lastnonint, "COLLAPSE" ) .EQS. "" )
 $      THEN ! An "empty" lastnonint means that user has never logged in non-interactively/batch
-$           Msg2 = F$FAO( "!7* !AShas never logged-in noninteractive (batch)!AS", ULINE, NORM )
+$           Msg2 = F$FAO( "!4* !AShas never logged-in noninteractive (batch)!AS", ULINE, NORM )
 $           UI$Never = UI$Never + 1
 $      ELSE ! Determine if this user has not logged-in within UI$DaysAgo days:
 $           LLdelta = F$INTEGER( F$ELEMENT( 0, DASH, F$DELTA_TIME( lastnonint, F$TIME(), "DCL" ) ) )
 $           IF ( LLdelta .GE. UI$DaysAgo )
-$           THEN Msg2 = F$FAO( "!7* last non-interactive (batch) login was !AS, or !AS!ZL!AS days ago", -
+$           THEN Msg2 = F$FAO( "!4* last non-interactive (batch) login was !AS, or !AS!ZL!AS days ago", -
                                 lastnonint, BOLD, LLdelta, NORM )
 $           ELSE GOTO Loop  ! nothing to report
 $           ENDIF
@@ -176,7 +176,7 @@ $      ENDIF
 $ ELSE ! Determine if this user has not logged-in within UI$DaysAgo days:
 $      LLdelta = F$INTEGER( F$ELEMENT( 0, DASH, F$DELTA_TIME( lastlogin, F$TIME(), "DCL" ) ) )
 $      IF ( LLdelta .GE. UI$DaysAgo )
-$      THEN Msg1 = F$FAO( "!7* last interactive login was !AS, or !AS!ZL!AS days ago", -
+$      THEN Msg1 = F$FAO( "!4* last interactive login was !AS, or !AS!ZL!AS days ago", -
                           lastlogin, BOLD, LLdelta, NORM )
 $           UI$Aged = UI$Aged + 1
 $      ELSE GOTO Loop  ! nothing to report
