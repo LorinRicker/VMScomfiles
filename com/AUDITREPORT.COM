@@ -22,6 +22,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ ! 16-Mar-2017 -- Refactor subroutine SelfSubmit.  LMR
+$ ! 15-Mar-2017 -- Tweaks to HELP text. LMR
 $ ! 23-Oct-2016 -- Provide "$STARTUP$" as command-line parameter to
 $ !                force the use of config-file (AUDITREPORT.CONFIG)
 $ !                values for batch submission.  LMR
@@ -42,7 +44,7 @@ $ ! P5 : output report filespec
 $ ! P6 : VMS Security Audit Journal filespec
 $ !
 $ ON ERROR THEN GOTO ARErr
-$ privs = F$SETPRV(requiredprivs)
+$ requiredprivs = F$SETPRV( "SECURITY,SYSPRV" )
 $ IF .NOT. F$PRIVILEGE("SECURITY") THEN EXIT %x2934  ! operation requires SECURITY privilege
 $ wso F$FAO( "%!AS-I-SINCE, reporting Audit Events since ""!AS""", -
               Fac, P4 )
@@ -50,10 +52,11 @@ $ ANALYZE /AUDIT 'P1' /EVENT=('P2') 'P3' /SINCE="''P4'" -
     /OUTPUT='P5' 'P6'
 $ Stat = $STATUS
 $ARErr:
-$ IF ( F$TYPE(privs) .EQS. "STRING" ) THEN privs = F$SETPRV(privs)
+$ IF ( F$TYPE( requiredprivs ) .EQS. "STRING" ) THEN requiredprivs = F$SETPRV( requiredprivs )
 $ EXIT 'Stat'
 $ ENDSUBROUTINE  ! GenAuditReport
 $ !
+$ ! -----------------------
 $AttachMIME:  SUBROUTINE
 $ ! P1 : Audit Email-Msg filespec
 $ ! P2 : Audit Report filespec
@@ -90,6 +93,7 @@ $ wso "%''Fac'-E-OPENERR, cannot open temp-file ''TempF'"
 $ EXIT %x2C
 $ ENDSUBROUTINE  ! AttachMIME
 $ !
+$ ! -----------------------
 $ArchivePastReports:  SUBROUTINE
 $ archive = "AR$REPORTS"
 $ ! If there is more than one report, push 'em all into archive sub-dir:
@@ -99,6 +103,7 @@ $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! ArchivePastReports
 $ !
+$ ! -----------------------
 $ArchivePreviousReport:  SUBROUTINE
 $ archive = "AR$REPORTS"
 $ ! Push previous report into archive:
@@ -109,6 +114,71 @@ $ EXIT 1
 $ ENDSUBROUTINE  ! ArchivePreviousReport
 $ !
 $ ! -----------------------
+$SelfSubmit:  SUBROUTINE
+$ ! P1 = Filespec for this procedure (command file)
+$ ! P2 = Report directory
+$ ! P3 = Process mode (BATCH or INTERACTIVE)
+$ ! P4 = calculated next-submit-after-time (BATCH, recurring)
+$ ! The following P5 & P6 are used only if submitting from command line (INTERACTIVE mode):
+$ ! P5 = special tag "$STARTUP$", or username to submit for
+$ ! P6 = specific submit-after-time
+$ !
+$ ON CONTROL_Y THEN GOSUB SSCtrl_Y
+$ ON ERROR THEN GOTO NoSubmit
+$ !
+$ Proc     = P1
+$ RptDir   = P2
+$ ProcMode = P3
+$ After    = P4
+$ notify   = ""
+$ foruser  = ""
+$ !
+$ IF ( ProcMode .EQS. "INTERACTIVE" )
+$ THEN ! INTERACTIVE mode -- set-up, and possibly prompt for, various parameters...
+$      notify = "/NOTIFY"
+$      IF ( P5 .EQS. "$STARTUP$" )
+$      THEN submitfor = AR$SubmitForDef
+$      ELSE IF ( P5 .NES. "" )
+$           THEN submitfor = P5
+$           ELSE READ sys$command answer /PROMPT="Submit for user [''AR$SubmitForDef']: " /END_OF_FILE=Done
+$                submitfor = F$PARSE(answer,AR$SubmitForDef,,"NAME","SYNTAX_ONLY")
+$           ENDIF
+$           IF ( P6 .EQS. "" )
+$           THEN After = ""
+$           ELSE After = "/AFTER=" + DQUOTE + P6 + DQUOTE
+$           ENDIF
+$      ENDIF
+$      IF ( F$EXTRACT(0,5,ThisUser) .EQS. F$EXTRACT(0,5,submitfor) )
+$      THEN ! submitting job for self:
+$           foruser = ""
+$      ELSE ! submitting for another user; must be (re)submitted by a privileged
+$           ! user/account with IMPERSONATE/DETACH and CMKRNL privilege:
+$           submitprivs = F$SETPRV( "IMPERSONATE,CMKRNL" )
+$           IF F$PRIVILEGE("IMPERSONATE") .AND. F$PRIVILEGE("CMKRNL")
+$           THEN foruser = "/USER=''submitfor'"
+$           ELSE ! no priv: IMPERSONATE or DETACH
+$                wso "%''Fac'-E-NOPRIV, must have IMPERSONATE/DETACH and CMKRNL to submit for another user"
+$                GOTO NoSubmit
+$           ENDIF
+$      ENDIF
+$ ELSE ! BATCH mode, so just resubmit self...
+$      notify = ""
+$ ENDIF
+$ !
+$ SUBMIT = ""  ! don't use any process global symbol/alias...
+$ IF ( After .NES. "" )
+$ THEN After = "/AFTER=" + DQUOTE + After + DQUOTE
+$ ENDIF
+$ SUBMIT 'Proc' 'notify' 'foruser' 'After' -
+    /LOG_FILE='RptDir' /QUEUE=sys$batch /NOPRINT
+$ !
+$NoSubmit:
+$ IF ( F$TYPE( submitprivs ) .EQS. "STRING" ) THEN submitprivs = F$SETPRV( submitprivs )
+$ EXIT 1
+$ !
+$SSCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! SelfSubmit
 $ !
 $ !
 $ ! -----------------------
@@ -122,9 +192,6 @@ $ ThisUser = F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
 $ !
 $ wso      = "WRITE sys$output"
 $ DQUOTE   = """"
-$ !
-$ requiredprivs = "SECURITY,SYSPRV"
-$ submitprivs   = "IMPERSONATE,CMKRNL"
 $ !
 $ Proc       = F$ENVIRONMENT("PROCEDURE")
 $ Proc       = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
@@ -154,15 +221,13 @@ $ARCdone:
 $ CLOSE /NOLOG arc
 $ ! ===========================================
 $ !
-$ after   = ""
 $ IF ( F$INTEGER(AR$DaysAgo) .LT. 28 )
 $ THEN ! doing Daily or Weekly reporting...
 $      NextBatchRun = "TODAY+" + AR$DaysAgo + "-" + AR$HourRun + ":00.00"
-         ! "+1-xx:xx" = "TOMORROW" -- for test/eval
-         ! "+7-xx:xx" = "Weekly/next week" -- for production
-         ! VMS help: Whenever a plus sign (+) precedes the delta time,
-         !           enclose the entire time spec in quotation marks.
-$      after = "/AFTER=" + DQUOTE + NextBatchRun + DQUOTE
+$ !      "+1-xx:xx" = "TOMORROW" -- for test/eval
+$ !      "+7-xx:xx" = "Weekly/next week" -- for production
+$ !      VMS help: Whenever a plus sign (+) precedes the delta time,
+$ !                enclose the entire time spec in quotation marks.
 $ ELSE ! doing Monthly reporting...
 $      now = F$TIME()
 $      nowday = F$CVTIME(now,"COMPARISON","DAY")
@@ -180,7 +245,6 @@ $      nextmonth    = F$CVTIME(nextdate,"ABSOLUTE","MONTH")
 $      nextyear     = F$CVTIME(nextdate,"ABSOLUTE","YEAR")
 $      ReportDate   = "1-" + prevmonth + "-" + prevyear
 $      NextBatchRun = "1-" + nextmonth + "-" + nextyear + "+" + AR$HourRun + ":00.00"
-$      after = "/AFTER=" + DQUOTE + NextBatchRun + DQUOTE
 $ ENDIF
 $ !
 $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) -
@@ -266,46 +330,7 @@ $ CALL ArchivePreviousReport "''ThisMsg'"
 $ !
 $ !
 $Submit:
-$ notify  = ""
-$ foruser = ""
-$ IF ( ProcMode .EQS. "INTERACTIVE" )
-$ THEN notify = "/NOTIFY"
-$      IF ( P2 .EQS. "$STARTUP$" )
-$      THEN submitfor = AR$SubmitForDef
-$      ELSE IF ( P2 .NES. "" )
-$           THEN submitfor = P2
-$           ELSE READ sys$command answer /PROMPT="Submit for user [''AR$SubmitForDef']: " /END_OF_FILE=Done
-$                submitfor = F$PARSE(answer,AR$SubmitForDef,,"NAME","SYNTAX_ONLY")
-$           ENDIF
-$           IF ( P3 .EQS. "" )
-$           THEN after = ""
-$           ELSE after = "/AFTER=" + DQUOTE + P3 + DQUOTE
-$           ENDIF
-$      ENDIF
-$      IF ( F$EXTRACT(0,5,ThisUser) .EQS. F$EXTRACT(0,5,submitfor) )
-$      THEN ! submitting job for self:
-$           foruser = ""
-$      ELSE ! submitting for another user; must be (re)submitted by a privileged
-$           ! user/account with IMPERSONATE/DETACH and CMKRNL privilege:
-$           privs = F$SETPRV(submitprivs)
-$           IF F$PRIVILEGE("IMPERSONATE") .AND. F$PRIVILEGE("CMKRNL")
-$           THEN foruser = "/USER=''submitfor'"
-$           ELSE ! no priv: IMPERSONATE or DETACH
-$                wso "%''Fac'-E-NOPRIV, must have IMPERSONATE/DETACH and CMKRNL to submit for another user"
-$                GOTO NoSubmit
-$           ENDIF
-$      ENDIF
-$ ELSE notify = ""
-$ ENDIF
-$ !
-$ submit = ""  ! don't use the process's global symbol/alias...
-$ SUBMIT 'Proc' 'notify' 'foruser' 'after' -
-    /LOG_FILE='RptDir' /QUEUE=sys$batch /NOPRINT
-$ !
-$NoSubmit:
-$ IF ( F$TYPE(privs) .EQS. "STRING" ) THEN privs = F$SETPRV(privs)
-$ !
-$ GOTO Done
+$ CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $ !
 $Done:
 $ IF ( F$SEARCH("''ThisMsg';-1") .NES. "" )
@@ -370,7 +395,17 @@ $ TYPE /PAGE sys$input
             configured in the AUDITREPORT.CONFIG file).
 
   [1mSUBMIT[0m    Submits the command procedure to the SYS$BATCH batch queue for
-            nightly recurring report generation.  You can use
+            recurring report generation, using either or both the [1mforuser[0m and/or
+            [1mdate+time[0m parameters following [1mSUBMIT[0m.
+            If P2 is the literal string "[1m$STARTUP$[0m", then the variables from
+            the configuration file to specify batch username (AR$SubmitForDef),
+            resubmission period (AR$DaysAgo) and hour to run (AR$HourRun).  This
+            is how this AUDITREPORT command procedure is resubmitted from the
+            Security Startup command file SECAUDIT$TOP:SECAUDIT$STARTUP.COM:
+                $ [1m@SECAUDIT$Top:AUDITREPORT SUBMIT [4m$STARTUP$[0m
+            Thus, the above command can be used directly from the command line's
+            $-prompt to resubmit this script for the next regular monthly run.
+            You can use:
                 $ [1mSHOW QUEUE /BATCH /ALL SYS$BATCH[0m
             to review/check this recurring batch job.
 
@@ -432,7 +467,7 @@ $ TYPE sys$input
        provides the events to the /EVENT_TYPE=(...) selection.
 
   AR$SecJouFile -- The full file specification of the Security Audit
-       Journal File for this system (may be relocated from the "standard"
+       Journal File for this system (may be different from the "standard"
        SYS$MANAGER:SECURITY.AUDIT$JOURNAL file location).
 
   AR$SubmitForDef -- The username (e.g., LRICKER) of the user account which
