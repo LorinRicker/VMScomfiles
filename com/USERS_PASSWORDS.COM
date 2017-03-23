@@ -12,44 +12,27 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !  useage:
+$ !  usage:
 $ !    $ @USERS_PASSWORDS [ NN[-DAYS]
 $ !                       | NN-WEEKS
 $ !                       | NN-MONTHS
 $ !                       | NN-QUARTERS
 $ !                       | NN-YEARS
+$ !                       | SUBMIT
 $ !                       | HELP | ? ] [ pwd-minimum-chars ] [ CSVfile ]
 $ !
-$ ON CONTROL THEN GOSUB Ctrl_Y
-$ ON ERROR THEN GOTO Done
+$ !
+$ ! -----------------------
+$GenReport: SUBROUTINE
+$ ! P1 : Reporting time-interval
+$ ! P2 : Password minimum character length
+$ ! P3 : CSV filespec
+$ ! P4 : Text report filespec
 $ !
-$ Debug = F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
-$ !
-$ Proc   = F$ENVIRONMENT("PROCEDURE")
-$ Proc   = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
-$ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
-$ RptDir = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
-$ Node   = F$EDIT( F$GETSYI( "NODENAME" ), "COLLAPSE" )
-$ !
-$ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
-$ IF ( isANSI )
-$ THEN esc[0,8]= %X1B              !  27 decimal,  033 octal - ESCape character
-$         NORM = esc + "[0m"       ! Normal rendition
-$         BOLD = esc + "[1m"       ! Bold
-$        ULINE = esc + "[4m"       ! Underline
-$ ELSE    NORM = ""
-$         BOLD = ""
-$        ULINE = ""
-$ ENDIF
-$ !
-$ wso    = "WRITE sys$output"
-$ wserr  = "WRITE sys$error"
-$ SPC    = " "
-$ COMMA  = ","
-$ COLON  = ":"
-$ DASH   = "-"
-$ NONE   = "(none)"
-$ MAXINT = "4294967296"
+$ ON ERROR THEN GOTO GRerr
+$ requiredprivs = F$SETPRV( "SECURITY,SYSPRV" )
+$ IF .NOT. F$PRIVILEGE("SECURITY") THEN EXIT %x2934  ! operation requires SECURITY privilege
+$ wso F$FAO( "%!AS-I-SINCE, reporting current Password Violations in SYSUAF", Fac )
 $ !
 $ ! Modify this filter to modify which SYSUAF record/lines are filtered
 $ !   into the processing loop (watch the double-quoting!):
@@ -61,33 +44,18 @@ $ sysuaflis = "[]SYSUAF.LIS"
 $ shortlist = "[]SYSUAF_SHORT.LIS"
 $ CSVfile   = ""
 $ !
-$ IF ( P1 .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
-$ !
-$ ! ===========================================
-$ ! Read/execute lines from configuration file:
-$ config = RptDir + Fac + ".CONFIG"
-$ IF ( F$SEARCH(config) .NES. "" )
-$ THEN OPEN /READ /ERROR=FNFerror iuconfig 'config'
-$IUCloop:
-$      READ /END_OF_FILE=IUCdone iuconfig line
-$      cmd = F$EDIT(line,"UNCOMMENT,COMPRESS")
-$      IF ( cmd .NES. "" ) THEN 'cmd'  ! execute config-file lines directly...
-$      GOTO IUCloop
-$ ELSE GOTO FNFerror
-$ ENDIF
-$IUCdone:
-$ CLOSE /NOLOG iuconfig
-$ ! ===========================================
-$ !
 $ IF ( .NOT. CFG$CSVoutput ) THEN CFG$CSVoutput = ( P3 .NES. "" )
 $ IF ( CFG$CSVoutput )
-$ THEN defcsv  = RptDir + Fac + "_" + Node + ".CSV"
+$ THEN ! Generating a Comma-Separated Value (CSV) output file:
+$      defcsv  = RptDir + Fac + "_" + Node + ".CSV"
 $      CSVfile = F$PARSE( P3, defcsv )
 $      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, CSVfile )
 $      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
 $      Hdr = "Username,Owner,Pwd-Lifetime,Pwd-Minimum-Len,Last-Login"
 $      IF ( CFG$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
 $      wso Hdr
+$ ELSE wserr F$FAO( "%!AS-I-TEXT_OUTPUT, text output file: !AS", Fac, P4 )
+$      DEFINE /PROCESS /NOLOG sys$output "''P4'"
 $ ENDIF
 $ !
 $ IF ( P2 .NES. "" ) THEN CFG$PwdMinimum  = P2
@@ -137,7 +105,11 @@ $ DEFINE /USER sys$output NLA0:  ! suppres the %UAF-I-LSTMSG1, writing listing f
 $ DEFINE /USER sys$error  NLA0:
 $ MCR AUTHORIZE list /full *     ! creates SYSUAF.LIS in current working directory
 $ !
-$ SEARCH /OUTPUT='shortlist' 'sysuaflis' 'SearchFilter' /MATCH=OR /EXACT
+$ ! Suppress the SEARCH output-footer stats, but retain the "good stuff" with /OUTPUT= --:
+$ DEFINE /NOLOG /USER_MODE sys$output NLA0:
+$ DEFINE /NOLOG /USER_MODE sys$error  NLA0:
+$ SEARCH /OUTPUT='shortlist' 'sysuaflis' 'SearchFilter' /MATCH=OR /EXACT /STATISTICS=SYMBOLS
+$ UI$search_records_matched == SEARCH$RECORDS_MATCHED 
 $ !
 $ OPEN /READ iuc 'shortlist'
 $Loop:
@@ -204,18 +176,15 @@ $      wserr ""
 $ ENDIF
 $ !
 $ IF ( CFG$CSVoutput )
-$ THEN CSVmsg = """''uname'"",""''owner'"",""''pwdlifetime'"",""''pwdminimum'"",""''lastlogin'"""
+$ THEN ! Generating a Comma-Separated Value (CSV) output file:
+$      CSVmsg = """''uname'"",""''owner'"",""''pwdlifetime'"",""''pwdminimum'"",""''lastlogin'"""
 $      IF ( CFG$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
 $      wso CSVmsg
-$ ELSE wso Msg0
+$ ELSE ! Generating a standard, printable or terminal-display report:
+$      wso Msg0
 $ ENDIF
 $ GOTO Loop
 $LoopDone:
-$ !
-$Done:
-$ CLOSE /NOLOG iuc
-$ !
-$ IF ( CFG$CSVoutput ) THEN DEASSIGN /PROCESS sys$output
 $ !
 $ wso ""
 $ Msg = F$FAO( "%!AS-I-SUMMARY,", Fac )
@@ -223,6 +192,310 @@ $ MsgL = F$LENGTH( Msg )
 $ wso F$FAO( "!AS !3UL user account!%S violate !AS password lifetime", Msg, Count$VioLif, CFG$PwdLifeTime )
 $ wso F$FAO( "!#* !3UL user account!%S violate !AS-character password minimum", MsgL+1, Count$VioMin, CFG$PwdMinimum  )
 $ wso F$FAO( "!#* !3UL total users reported", MsgL+1, Count$Total )
+$ !
+$GRerr:
+$ DEASSIGN /PROCESS sys$output
+$ IF ( .NOT. Debug )
+$ THEN IF ( F$SEARCH( sysuaflis ) .NES. "" ) THEN DELETE /NOLOG 'sysuaflis';*
+$      IF ( F$SEARCH( shortlist ) .NES. "" ) THEN DELETE /NOLOG 'shortlist';*
+$ ENDIF
+$ IF ( F$TYPE( requiredprivs ) .EQS. "STRING" ) THEN requiredprivs = F$SETPRV( requiredprivs )
+$ EXIT 1
+$ ENDSUBROUTINE  ! GenReport
+$ !
+$ ! -----------------------
+$EMailIt:  SUBROUTINE
+$ ! P1 : Number (string) of search records matched to produce this report
+$ ! P2 : Name of this node
+$ ! P3 : Report filename
+$ ! P4 : Report date
+$ ! P5 : Email Message filename
+$ ON CONTROL_Y THEN GOSUB EMICtrl_Y
+$ ON ERROR THEN EXIT %X2C
+$ !
+$ recmatched = F$INTEGER( P1 )
+$ IF ( recmatched .EQ. 0 )
+$ THEN subjline = F$FAO( "%!AS-I-NOVIOLATIONS, system !AS, no password violations found for this report run", -
+                         Fac, P2 )
+$      OPEN /WRITE erf 'P3'
+$      WRITE erf subjline
+$      WRITE erf ""
+$      WRITE erf "Report period: ''P4' to ''F$CVTIME(F$TIME(),"ABSOLUTE","DATE")'"
+$      WRITE erf ""
+$      CLOSE erf
+$      PURGE /NOLOG 'P3'
+$ ELSE subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible password violation!%S found to review", -
+                         Fac, P2, recmatched )
+$ ENDIF
+$ !
+$ CALL AttachMIME "''P5'" "''P3'" "''subjline'"
+$ ! P5-ThisMsg now has attachment P3-ThisReport:
+$ MAIL 'P5' /SUBJECT="''subjline'" "@UPwdList"
+$ MailStat = $STATUS
+$ msg1 = F$FAO( "%!AS-I-MAILED, report attached:", Fac )
+$ msg2 = "subject line:"
+$ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 )
+$ wso F$FAO( "!AS !AS", msg1, P3 )
+$ wso F$FAO( "!#* !AS !AS", indL, msg2, subjline )
+$ wso ""
+$ wso F$FAO( "%!AS-I-STATUS, mail-report status code: !ZL", -
+             Fac, MailStat )
+$ wso F$FAO( "%!AS-I-STATUS, !AS", -
+             Fac, F$MESSAGE( MailStat ) )
+$ wso ""
+$ EXIT 1
+$ !
+$EMICtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! EMailIt
+$ !
+$ ! -----------------------
+$AttachMIME:  SUBROUTINE
+$ ! P1 : Email-Msg filespec
+$ ! P2 : Report filespec
+$ ! P2 : Subject line
+$ !
+$ ON ERROR THEN EXIT %x2C
+$ IF ( F$TYPE(mime) .NES. "STRING" ) THEN mime = "$sys$system:mime"
+$ !
+$ TempF = RptDir + F$PARSE(P1,,,"NAME","SYNTAX_ONLY") + ".COMTMP"
+$ !
+$ OPEN /WRITE /ERROR=AMerror tmp 'TempF'
+$ wtmp = "WRITE tmp"
+$ wtmp "$ ! ''TempF' --       !'F$VERIFY(0)'"
+$ wtmp "$ CREATE /OWNER=PARENT /PROT=(O:RWED) ''ThisMsg'"
+$ wtmp P3    ! use the subject line as message-body
+$ wtmp "$ ! [EOD]"
+$ wtmp "$ DEFINE /USER_MODE sys$output NLA0:"
+$ wtmp "$ DEFINE /USER_MODE sys$error  NLA0:"
+$ wtmp "$ mime"
+$ wtmp "open /draft ''ThisMsg'"
+$ wtmp "add /text ''P2'"        ! attach the Audit Report file
+$ wtmp "save"
+$ wtmp "exit"
+$ wtmp "$ ! [EOD]"
+$ wtmp "$ EXIT 1"
+$ CLOSE tmp
+$ !
+$ @'TempF'
+$ IF ( F$SEARCH(TempF) .NES. "" ) THEN DELETE /NOLOG 'TempF';*
+$ !
+$ EXIT 1
+$AMerror:
+$ wso "%''Fac'-E-OPENERR, cannot open temp-file ''TempF'"
+$ EXIT %x2C
+$ ENDSUBROUTINE  ! AttachMIME
+$ !
+$ ! -----------------------
+$ArchiveReports:  SUBROUTINE
+$ ! P1 : Report filename to archive
+$ archive = "AR$REPORTS"
+$ IF ( F$TRNLNM( "SECAUDIT$Top" ) .NES "" ) .AND. ( F$TRNLNM( "SECAUDIT$Root" ) .NES. "" )
+$ THEN ! If there is more than one report, push 'em all into archive sub-dir:
+$APRloop:
+$      IF ( F$SEARCH( "SECAUDIT$Top:''P1';-1" ) .NES. "" )
+$      THEN RENAME /LOG SECAUDIT$Top:'P1';-1 SECAUDIT$ROOT:['archive']*.*;*
+$           GOTO APRloop
+$      ENDIF
+$ ELSE IF Debug THEN wserr "%''Fac'-E-NO_LOGICALS, no logical names SECAUDIT$*"
+$      PURGE /SINCE /NOLOG 'P1'
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! ArchiveReports
+$ !
+$ ! -----------------------
+$SelfSubmit:  SUBROUTINE
+$ ! P1 = Filespec for this procedure (command file)
+$ ! P2 = Report directory
+$ ! P3 = Process mode (BATCH or INTERACTIVE)
+$ ! P4 = calculated next-submit-after-time (BATCH, recurring)
+$ ! The following P5 & P6 are used only if submitting from command line (INTERACTIVE mode):
+$ ! P5 = special tag "$STARTUP$", or username to submit for
+$ ! P6 = specific submit-after-time
+$ !
+$ ON CONTROL_Y THEN GOSUB SSCtrl_Y
+$ ON ERROR THEN GOTO NoSubmit
+$ !
+$ Proc     = P1
+$ RptDir   = P2
+$ ProcMode = P3
+$ After    = P4
+$ notify   = ""
+$ foruser  = ""
+$ !
+$ IF ( ProcMode .EQS. "INTERACTIVE" )
+$ THEN ! INTERACTIVE mode -- set-up, and possibly prompt for, various parameters...
+$      notify = "/NOTIFY"
+$      IF ( P5 .EQS. "$STARTUP$" )
+$      THEN submitfor = CFG$SubmitForDef
+$      ELSE IF ( P5 .NES. "" )
+$           THEN submitfor = P5
+$           ELSE READ sys$command answer /PROMPT="Submit for user [''CFG$SubmitForDef']: " /END_OF_FILE=Done
+$                submitfor = F$PARSE(answer,CFG$SubmitForDef,,"NAME","SYNTAX_ONLY")
+$           ENDIF
+$           IF ( P6 .EQS. "" )
+$           THEN After = ""
+$           ELSE After = "/AFTER=" + DQUOTE + P6 + DQUOTE
+$           ENDIF
+$      ENDIF
+$      IF ( F$EXTRACT(0,5,ThisUser) .EQS. F$EXTRACT(0,5,submitfor) )
+$      THEN ! submitting job for self:
+$           foruser = ""
+$      ELSE ! submitting for another user; must be (re)submitted by a privileged
+$           ! user/account with IMPERSONATE/DETACH and CMKRNL privilege:
+$           submitprivs = F$SETPRV( "IMPERSONATE,CMKRNL" )
+$           IF F$PRIVILEGE("IMPERSONATE") .AND. F$PRIVILEGE("CMKRNL")
+$           THEN foruser = "/USER=''submitfor'"
+$           ELSE ! no priv: IMPERSONATE or DETACH
+$                wso "%''Fac'-E-NOPRIV, must have IMPERSONATE/DETACH and CMKRNL to submit for another user"
+$                GOTO NoSubmit
+$           ENDIF
+$      ENDIF
+$ ELSE ! BATCH mode, so just resubmit self...
+$      notify = ""
+$ ENDIF
+$ !
+$ SUBMIT = ""  ! don't use any process global symbol/alias...
+$ IF ( After .NES. "" )
+$ THEN After = "/AFTER=" + DQUOTE + After + DQUOTE
+$ ENDIF
+$ SUBMIT 'Proc' 'notify' 'foruser' 'After' -
+    /LOG_FILE='RptDir' /QUEUE=sys$batch /NOPRINT
+$ !
+$NoSubmit:
+$ IF ( F$TYPE( submitprivs ) .EQS. "STRING" ) THEN submitprivs = F$SETPRV( submitprivs )
+$ EXIT 1
+$ !
+$SSCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! SelfSubmit
+$ !
+$ !
+$ ! -----------------------
+$Main:
+$ ON CONTROL THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ !
+$ Debug = F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
+$ !
+$ ProcMode = F$MODE()
+$ ThisNode = F$EDIT(F$GETSYI("NODENAME"),"TRIM")
+$ ThisUser = F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ !
+$ wso      = "WRITE sys$output"
+$ DQUOTE   = """"
+$ !
+$ Proc     = F$ENVIRONMENT("PROCEDURE")
+$ Proc     = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
+$ Fac      = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ RptDir   = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
+$ rptdstr    = RptDir + Fac + "_" + F$CVTIME("","COMPARISON","DATE")
+$ ThisReport = rptdstr + ".REPORT"
+$ TmpReport  = rptdstr + ".TMP"
+$ ThisMsg    = RptDir + F$PARSE(ThisReport,,,"NAME","SYNTAX_ONLY") + ".MSG"
+$ !
+$ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
+$ IF ( isANSI )
+$ THEN esc[0,8]= %X1B              !  27 decimal,  033 octal - ESCape character
+$         NORM = esc + "[0m"       ! Normal rendition
+$         BOLD = esc + "[1m"       ! Bold
+$        ULINE = esc + "[4m"       ! Underline
+$ ELSE    NORM = ""
+$         BOLD = ""
+$        ULINE = ""
+$ ENDIF
+$ !
+$ wso    = "WRITE sys$output"
+$ wserr  = "WRITE sys$error"
+$ SPC    = " "
+$ COMMA  = ","
+$ COLON  = ":"
+$ DASH   = "-"
+$ NONE   = "(none)"
+$ MAXINT = "4294967296"
+$ !
+$ ! ===========================================
+$ ! Read/execute lines from configuration file:
+$ config = RptDir + Fac + ".CONFIG"
+$ IF ( F$SEARCH(config) .NES. "" )
+$ THEN OPEN /READ /ERROR=FNFerror iuconfig 'config'
+$IUCloop:
+$      READ /END_OF_FILE=IUCdone iuconfig line
+$      cmd = F$EDIT(line,"UNCOMMENT,COMPRESS")
+$      IF ( cmd .NES. "" ) THEN 'cmd'  ! execute config-file lines directly...
+$      GOTO IUCloop
+$ ELSE GOTO FNFerror
+$ ENDIF
+$IUCdone:
+$ CLOSE /NOLOG iuconfig
+$ ! ===========================================
+$ !
+
+$ IF ( F$INTEGER(CFG$DaysAgo) .LT. 28 )
+$ THEN ! doing Daily or Weekly reporting...
+$      NextBatchRun = "TODAY+" + CFG$DaysAgo + "-" + CFG$HourRun + ":00.00"
+$ !      "+1-xx:xx" = "TOMORROW" -- for test/eval
+$ !      "+7-xx:xx" = "Weekly/next week" -- for production
+$ !      VMS help: Whenever a plus sign (+) precedes the delta time,
+$ !                enclose the entire time spec in quotation marks.
+$ ELSE ! doing Monthly reporting...
+$      now = F$TIME()
+$      nowday = F$CVTIME(now,"COMPARISON","DAY")
+$      IF ( F$INTEGER(nowday) .LT. 16 )
+$      THEN forward  = "32"
+$           backward = "16"
+$      ELSE forward  = "16"
+$           backward = "32"
+$      ENDIF
+$      prevdate     = F$CVTIME("TODAY-''backward'-00:00","ABSOLUTE","DATE")
+$      prevmonth    = F$CVTIME(prevdate,"ABSOLUTE","MONTH")
+$      prevyear     = F$CVTIME(prevdate,"ABSOLUTE","YEAR")
+$      nextdate     = F$CVTIME("TODAY+''forward'-00:00","ABSOLUTE","DATE")
+$      nextmonth    = F$CVTIME(nextdate,"ABSOLUTE","MONTH")
+$      nextyear     = F$CVTIME(nextdate,"ABSOLUTE","YEAR")
+$      ReportDate   = "1-" + prevmonth + "-" + prevyear
+$      NextBatchRun = "1-" + nextmonth + "-" + nextyear + "+" + CFG$HourRun + ":00.00"
+$ ENDIF
+$ !
+
+
+
+$ !
+$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) -
+    THEN GOTO Help
+$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" ) THEN GOTO Submit
+$ GOTO 'ProcMode'
+$ !
+$ !
+$INTERACTIVE:
+$ CALL GenReport "''P1'" "''P2'" "''P3'" "''ThisReport'"
+$ CALL ArchiveReports "''ThisReport'"
+$ !
+$ READ sys$command answer -
+    /END_OF_FILE=Done /PROMPT="Display report (Yes/no)? "
+$ answer = F$EXTRACT(0,1,F$PARSE(F$EDIT(answer,"TRIM,COLLAPSE,UPCASE"),"Yes",,"NAME","SYNTAX_ONLY"))
+$ IF ( answer .EQS. "Y" )
+$ THEN wso ""
+$      wso "[4mSystem: ''ThisNode'[0m"
+$      TYPE /PAGE 'ThisReport'
+$ ENDIF
+$ !
+$ GOTO Done
+$ !
+$ !
+$BATCH:
+$ DEFINE /NOLOG /PROCESS UPwdList "''RptDir'''Fac'.distr"
+$ !
+$ CALL GenReport "''P1'" "''P2'" "''P3'" "''ThisReport'"
+$ CALL ArchiveReports "''ThisReport'"
+$ CALL EMailIt "''UI$search_records_matched'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
+$ !
+$ !
+$Submit:
+$ CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
+$ !
+$Done:
+$ CLOSE /NOLOG iuc
 $ !
 $ ! === Optional Special Function process(es) invocation, ===
 $ ! ===   up to five (5) special function com-files:      ===
@@ -244,10 +517,9 @@ $ i = i + 1
 $ GOTO SFLoop
 $ !
 $Cleanup:
-$ IF ( .NOT. Debug )
-$ THEN IF ( F$SEARCH( sysuaflis ) .NES. "" ) THEN DELETE /NOLOG 'sysuaflis';*
-$      IF ( F$SEARCH( shortlist ) .NES. "" ) THEN DELETE /NOLOG 'shortlist';*
-$ ENDIF
+$ SET NOON
+$ IF ( .NOT. Debug ) THEN IF ( F$TYPE(UI$search_records_matched) .EQS. "STRING" ) -
+  THEN DELETE /SYMBOL /GLOBAL UI$search_records_matched
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $FNFerror:
@@ -271,6 +543,7 @@ $ TYPE /PAGE sys$input
                      | [1mNN-MONTHS[0m
                      | [1mNN-QUARTERS[0m
                      | [1mNN-YEARS[0m
+                     | [1mSUBMIT[0m [[1mforuser[0m] [[1mdate+time[0m]
                      | [1mHELP[0m | [1m?[0m ] [ [1mpwd-minimum-chars[0m ] [ [1mCSVfile[0m ]
 
   where:
@@ -296,6 +569,15 @@ $ TYPE /PAGE sys$input
 
     [1mP3[0m    If present, names and enables output to a spreadsheet comma-separated
           value (CSV) file.
+
+    [1mSUBMIT[0m  Submits the command procedure to the SYS$BATCH batch queue for
+          recurring report generation, using either or both the [1mforuser[0m and/or
+          [1mdate+time[0m parameters following [1mSUBMIT[0m, and/or the variables from the
+          the configuration file to specify batch username (CFG$SubmitForDef),
+          resubmission period (CFG$DaysAgo) and hour to run (CFG$HourRun).
+          You can use:
+              $ [1mSHOW QUEUE /BATCH /ALL SYS$BATCH[0m
+          to review/check this recurring batch job.
 
     [1mHELP[0m  Displays this help text.
     or [1m?[0m

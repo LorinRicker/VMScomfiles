@@ -12,12 +12,13 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !  useage:
+$ !  usage:
 $ !    $ @USERS_INACTIVE [ NN[-DAYS]
 $ !                      | NN-WEEKS
 $ !                      | NN-MONTHS
 $ !                      | NN-QUARTERS
 $ !                      | NN-YEARS
+$ !                      | SUBMIT
 $ !                      | HELP | ? ] [ CSVfile ]
 $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
@@ -59,7 +60,9 @@ $ sysuaflis = "[]SYSUAF.LIS"
 $ shortlist = "[]SYSUAF_SHORT.LIS"
 $ CSVfile   = ""
 $ !
-$ IF ( P1 .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
+$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) -
+    THEN GOTO Help
+$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" ) THEN GOTO Submit
 $ !
 $ ! ===========================================
 $ ! Read/execute lines from configuration file:
@@ -79,7 +82,8 @@ $ ! ===========================================
 $ !
 $ IF ( .NOT. CFG$CSVoutput ) THEN CFG$CSVoutput = ( P2 .NES. "" )
 $ IF ( CFG$CSVoutput )
-$ THEN defcsv  = RptDir + Fac + "_" + Node + ".CSV"
+$ THEN ! Generating a Comma-Separated Value (CSV) output file:
+$      defcsv  = RptDir + Fac + "_" + Node + ".CSV"
 $      CSVfile = F$PARSE( P2, defcsv )
 $      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, CSVfile )
 $      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
@@ -192,10 +196,12 @@ $      wserr ""
 $ ENDIF
 $ !
 $ IF ( CFG$CSVoutput )
-$ THEN CSVmsg = """''uname'"",""''owner'"",""''lastlogin'"",""''lastnonint'"",""''LLdelta'"""
+$ THEN ! Generating a Comma-Separated Value (CSV) output file:
+$      CSVmsg = """''uname'"",""''owner'"",""''lastlogin'"",""''lastnonint'"",""''LLdelta'"""
 $      IF ( CFG$IncludeFlags ) THEN CSVmsg = CSVmsg + ",""''flags'"""
 $      wso CSVmsg
-$ ELSE wso Msg0
+$ ELSE ! Generating a standard, printable or terminal-display report:
+$      wso Msg0
 $      IF ( Msg1 .NES. "" ) THEN wso Msg1
 $      IF ( Msg2 .NES. "" ) THEN wso Msg2
 $ ENDIF
@@ -261,6 +267,7 @@ $ TYPE /PAGE sys$input
                     | [1mNN-MONTHS[0m
                     | [1mNN-QUARTERS[0m
                     | [1mNN-YEARS[0m
+                    | [1mSUBMIT[0m [[1mforuser[0m] [[1mdate+time[0m]
                     | [1mHELP[0m | [1m?[0m ] [ [1mCSVfile[0m ]
   where:
 
@@ -280,6 +287,15 @@ $ TYPE /PAGE sys$input
           NN-MONTHS   (results in NN *  30 days)
           NN-QUARTERS (results in NN *  91 days)
           NN-YEARS    (results in NN * 365 days)
+
+    [1mSUBMIT[0m  Submits the command procedure to the SYS$BATCH batch queue for
+          recurring report generation, using either or both the [1mforuser[0m and/or
+          [1mdate+time[0m parameters following [1mSUBMIT[0m, and/or the variables from the
+          the configuration file to specify batch username (AR$SubmitForDef),
+          resubmission period (AR$DaysAgo) and hour to run (AR$HourRun).
+          You can use:
+              $ [1mSHOW QUEUE /BATCH /ALL SYS$BATCH[0m
+          to review/check this recurring batch job.
 
     [1mP2[0m    If present, names and enables output to a spreadsheet comma-separated
           value (CSV) file.
