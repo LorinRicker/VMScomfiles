@@ -42,15 +42,14 @@ $ LegalUnits   = ",DA,WE,MO,QU,YE,"  ! DAYS, WEEKS, MONTHS, QUARTERS, YEARS
 $ !
 $ sysuaflis = "[]SYSUAF.LIS"
 $ shortlist = "[]SYSUAF_SHORT.LIS"
-$ CSVfile   = ""
 $ !
 $ IF ( .NOT. CFG$CSVoutput ) THEN CFG$CSVoutput = ( P3 .NES. "" )
 $ IF ( CFG$CSVoutput )
 $ THEN ! Generating a Comma-Separated Value (CSV) output file:
-$      defcsv  = RptDir + Fac + "_" + Node + ".CSV"
-$      CSVfile = F$PARSE( P3, defcsv )
-$      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, CSVfile )
-$      DEFINE /PROCESS /NOLOG sys$output "''CSVfile'"
+$      defcsv  = RptDir + Fac + "_" + ThisNode + ".CSV"
+$      ThisReport == F$PARSE( P3, defcsv )
+$      wserr F$FAO( "%!AS-I-CSV_OUTPUT, comma-sep output file: !AS", Fac, ThisReport )
+$      DEFINE /PROCESS /NOLOG sys$output "''ThisReport'"
 $      Hdr = "Username,Owner,Pwd-Lifetime,Pwd-Minimum-Len,Last-Login"
 $      IF ( CFG$IncludeFlags ) THEN Hdr = Hdr + ",Flags"
 $      wso Hdr
@@ -203,39 +202,42 @@ $ IF ( F$TYPE( requiredprivs ) .EQS. "STRING" ) THEN requiredprivs = F$SETPRV( r
 $ EXIT 1
 $ ENDSUBROUTINE  ! GenReport
 $ !
+$ !
 $ ! -----------------------
 $EMailIt:  SUBROUTINE
 $ ! P1 : Number (string) of search records matched to produce this report
-$ ! P2 : Name of this node
-$ ! P3 : Report filename
-$ ! P4 : Report date
-$ ! P5 : Email Message filename
+$ ! P2 : Subject-line text
+$ ! P3 : Facility name
+$ ! P4 : Name of this node
+$ ! P5 : Report filename
+$ ! P6 : Report date
+$ ! P7 : Email Message filename
+$ !
 $ ON CONTROL_Y THEN GOSUB EMICtrl_Y
 $ ON ERROR THEN EXIT %X2C
 $ !
 $ recmatched = F$INTEGER( P1 )
-$ IF ( recmatched .EQ. 0 )
-$ THEN subjline = F$FAO( "%!AS-I-NOVIOLATIONS, system !AS, no password violations found for this report run", -
-                         Fac, P2 )
-$      OPEN /WRITE erf 'P3'
-$      WRITE erf subjline
-$      WRITE erf ""
-$      WRITE erf "Report period: ''P4' to ''F$CVTIME(F$TIME(),"ABSOLUTE","DATE")'"
-$      WRITE erf ""
-$      CLOSE erf
-$      PURGE /NOLOG 'P3'
-$ ELSE subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible password violation!%S found to review", -
-                         Fac, P2, recmatched )
+$ IF ( recmatched .GT. 0 )
+$ THEN subjline = P2
+$ ELSE subjline = F$FAO( "%!AS-I-NOVIOLATIONS, system !AS, no violations found for this report period", -
+                         Fac, P4 )
+$      OPEN /WRITE /ERROR=EMIerror emf 'P5'
+$      WRITE emf subjline
+$      WRITE emf ""
+$      WRITE emf "Report period: ''P6' to ''F$CVTIME(F$TIME(),"ABSOLUTE","DATE")'"
+$      WRITE emf ""
+$      CLOSE emf
+$      PURGE /NOLOG 'P5'
 $ ENDIF
 $ !
-$ CALL AttachMIME "''P5'" "''P3'" "''subjline'"
-$ ! P5-ThisMsg now has attachment P3-ThisReport:
-$ MAIL 'P5' /SUBJECT="''subjline'" "@UPwdList"
+$ CALL AttachMIME "''P7'" "''P5'" "''subjline'"
+$ ! P7-ThisMsg now has attachment P5-ThisReport:
+$ MAIL 'P7' /SUBJECT="''subjline'" "@UPwdList"
 $ MailStat = $STATUS
 $ msg1 = F$FAO( "%!AS-I-MAILED, report attached:", Fac )
 $ msg2 = "subject line:"
 $ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 )
-$ wso F$FAO( "!AS !AS", msg1, P3 )
+$ wso F$FAO( "!AS !AS", msg1, P5 )
 $ wso F$FAO( "!#* !AS !AS", indL, msg2, subjline )
 $ wso ""
 $ wso F$FAO( "%!AS-I-STATUS, mail-report status code: !ZL", -
@@ -245,15 +247,18 @@ $ wso F$FAO( "%!AS-I-STATUS, !AS", -
 $ wso ""
 $ EXIT 1
 $ !
+$EMIerror:
+$ wso "%''Fac'-E-OPENERR, cannot open temp-file ''P5'"
+$ EXIT %x2C
 $EMICtrl_Y:
 $ RETURN %X2C
 $ ENDSUBROUTINE  ! EMailIt
 $ !
 $ ! -----------------------
 $AttachMIME:  SUBROUTINE
-$ ! P1 : Email-Msg filespec
+$ ! P1 : Email Message filename
 $ ! P2 : Report filespec
-$ ! P2 : Subject line
+$ ! P2 : Subject-line text
 $ !
 $ ON ERROR THEN EXIT %x2C
 $ IF ( F$TYPE(mime) .NES. "STRING" ) THEN mime = "$sys$system:mime"
@@ -378,21 +383,17 @@ $ ON ERROR THEN GOTO Done
 $ !
 $ Debug = F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
 $ !
-$ ProcMode = F$MODE()
-$ ThisNode = F$EDIT(F$GETSYI("NODENAME"),"TRIM")
-$ ThisUser = F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ ProcMode    = F$MODE()
+$ ThisUser    = F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ ThisNode   == F$EDIT(F$GETSYI("NODENAME"),"TRIM")
 $ !
-$ wso      = "WRITE sys$output"
-$ DQUOTE   = """"
-$ !
-$ Proc     = F$ENVIRONMENT("PROCEDURE")
-$ Proc     = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
-$ Fac      = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
-$ RptDir   = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
-$ rptdstr    = RptDir + Fac + "_" + F$CVTIME("","COMPARISON","DATE")
-$ ThisReport = rptdstr + ".REPORT"
-$ TmpReport  = rptdstr + ".TMP"
-$ ThisMsg    = RptDir + F$PARSE(ThisReport,,,"NAME","SYNTAX_ONLY") + ".MSG"
+$ Proc        = F$ENVIRONMENT("PROCEDURE")
+$ Proc        = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
+$ Fac         = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ RptDir      = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
+$ rptdstr     = RptDir + Fac + "_" + F$CVTIME("","COMPARISON","DATE")
+$ ThisReport == rptdstr + ".REPORT"
+$ ThisMsg    == rptdstr + ".MSG"
 $ !
 $ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
 $ IF ( isANSI )
@@ -405,14 +406,16 @@ $         BOLD = ""
 $        ULINE = ""
 $ ENDIF
 $ !
-$ wso    = "WRITE sys$output"
-$ wserr  = "WRITE sys$error"
-$ SPC    = " "
-$ COMMA  = ","
-$ COLON  = ":"
-$ DASH   = "-"
-$ NONE   = "(none)"
-$ MAXINT = "4294967296"
+$ wso     = "WRITE sys$output"
+$ wserr   = "WRITE sys$error"
+$ SPC     = " "
+$ COMMA   = ","
+$ COLON   = ":"
+$ DASH    = "-"
+$ VERTBAR = "|"
+$ DQUOTE  = """"
+$ NONE    = "(none)"
+$ MAXINT  = "4294967296"
 $ !
 $ ! ===========================================
 $ ! Read/execute lines from configuration file:
@@ -430,7 +433,6 @@ $IUCdone:
 $ CLOSE /NOLOG iuconfig
 $ ! ===========================================
 $ !
-
 $ IF ( F$INTEGER(CFG$DaysAgo) .LT. 28 )
 $ THEN ! doing Daily or Weekly reporting...
 $      NextBatchRun = "TODAY+" + CFG$DaysAgo + "-" + CFG$HourRun + ":00.00"
@@ -457,12 +459,11 @@ $      ReportDate   = "1-" + prevmonth + "-" + prevyear
 $      NextBatchRun = "1-" + nextmonth + "-" + nextyear + "+" + CFG$HourRun + ":00.00"
 $ ENDIF
 $ !
-
-
-
-$ !
 $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) -
     THEN GOTO Help
+$ !
+$ DEFINE /NOLOG /PROCESS UPwdList "''RptDir'''Fac'.distr"
+$ !
 $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" ) THEN GOTO Submit
 $ GOTO 'ProcMode'
 $ !
@@ -473,8 +474,8 @@ $ CALL ArchiveReports "''ThisReport'"
 $ !
 $ READ sys$command answer -
     /END_OF_FILE=Done /PROMPT="Display report (Yes/no)? "
-$ answer = F$EXTRACT(0,1,F$PARSE(F$EDIT(answer,"TRIM,COLLAPSE,UPCASE"),"Yes",,"NAME","SYNTAX_ONLY"))
-$ IF ( answer .EQS. "Y" )
+$ type_it = F$EXTRACT(0,1,F$PARSE(F$EDIT(answer,"TRIM,COLLAPSE,UPCASE"),"Yes",,"NAME","SYNTAX_ONLY"))
+$ IF ( type_it .EQS. "Y" )
 $ THEN wso ""
 $      wso "[4mSystem: ''ThisNode'[0m"
 $      TYPE /PAGE 'ThisReport'
@@ -484,48 +485,76 @@ $ GOTO Done
 $ !
 $ !
 $BATCH:
-$ DEFINE /NOLOG /PROCESS UPwdList "''RptDir'''Fac'.distr"
-$ !
+$ type_it = "No"
 $ CALL GenReport "''P1'" "''P2'" "''P3'" "''ThisReport'"
 $ CALL ArchiveReports "''ThisReport'"
-$ CALL EMailIt "''UI$search_records_matched'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
+$ subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible violation!%S found to review", -
+                      Fac, ThisNode, UI$search_records_matched )
+$ CALL EMailIt "''UI$search_records_matched'" "''subjline'" -
+         "''Fac'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
 $ !
 $ !
 $Submit:
+$ type_it = "No"
 $ CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $ !
 $Done:
 $ CLOSE /NOLOG iuc
 $ !
-$ ! === Optional Special Function process(es) invocation, ===
-$ ! ===   up to five (5) special function com-files:      ===
+$ ! ---------------------------------------------------------
+$ ! *** Optional Special Function process(es) invocation, ***
+$ ! ***   up to five (5) special function com-files:      ***
 $ i = 1
 $SFLoop:
+$ ! If the special function com-file returns ThisReport global symbol
+$ ! with non-null content, then email that report:
+$ ThisReport == ""
+$ ThisMsg    == ""
 $ IF ( F$TYPE( CFG$SpecFunc'i' ) .NES. "STRING" ) THEN GOTO Cleanup
 $ IF ( i .GT. 5 ) THEN GOTO Cleanup  ! hard limit...
 $ IF ( CFG$SpecFunc'i' .NES. "" )
-$ THEN specfunc = F$TRNLNM( CFG$SpecFunc'i' )
-$      IF ( specfunc .EQS. "" ) THEN specfunc = F$PARSE( CFG$SpecFunc'i', "''RptDir'.COM" )
+$ THEN sf0 = F$ELEMENT( 0, VERTBAR, CFG$SpecFunc'i' )  ! com-file to invoke
+$      sf1 = F$ELEMENT( 1, VERTBAR, CFG$SpecFunc'i' )  ! parameter string(s) for com-file
+$      sf2 = F$ELEMENT( 2, VERTBAR, CFG$SpecFunc'i' )  ! F$FAO lex-function for email-rpt subject-line
+$      specfunc = F$TRNLNM( sf0 )
+$      IF ( specfunc .EQS. "" ) THEN specfunc = F$PARSE( sf0, "''RptDir'.COM" )
 $      IF ( F$SEARCH( specfunc ) .NES. "" )
 $      THEN IF Debug THEN wserr F$FAO( "%!AS-I-INVOKE, $ @!AS", Fac, specfunc )
-$           @'specfunc'
+$           @'specfunc' 'sf1'
+$           ! ThisReport non-null?  Email the report:
+$           IF ( ThisReport .NES. "" )
+$           THEN IF ( ProcMode .EQS. "BATCH" )
+$                THEN ! email the Msg-report
+$                     rfn = F$PARSE( ThisReport, , , "NAME", "SYNTAX_ONLY" )
+$                     ThisMsg == F$PARSE( rfn, "''RptDir'.MSG" )
+$                     ! sf2 contains an F$FAO() lex-function
+$                     subjline = 'sf2'
+$                     CALL EMailIt "1" "''subjline'" -
+                         "''Fac'" "''ThisNode'" "''ThisReport'" "" "''ThisMsg'"
+$                ELSE IF ( type_it .EQS. "Y" ) THEN TYPE /PAGE 'ThisReport'
+$                ENDIF
+$           ENDIF
 $      ELSE wserr F$FAO( "%!AS-E-FNF, CFG$SpecFunc!1ZL file not found: !AS", -
                          Fac, i, specfunc )
 $      ENDIF
 $ ENDIF
 $ i = i + 1
 $ GOTO SFLoop
+$ ! ---------------------------------------------------------
 $ !
 $Cleanup:
 $ SET NOON
 $ IF ( .NOT. Debug ) THEN IF ( F$TYPE(UI$search_records_matched) .EQS. "STRING" ) -
   THEN DELETE /SYMBOL /GLOBAL UI$search_records_matched
+$ IF ( F$TYPE(ThisNode)   .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisNode
+$ IF ( F$TYPE(ThisReport) .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisReport
+$ IF ( F$TYPE(ThisMsg)    .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisMsg
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $FNFerror:
 $ wso F$FAO( "%!AS-E-FNF, cannot find/read configuration file !AS", -
              Fac, config )
-$ EXIT %x2C    ! 'F$VERIFY(0)'
+$ GOTO CleanUp
 $ !
 $Ctrl_Y:
 $ RETURN %X2C
