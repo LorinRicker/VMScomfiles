@@ -53,7 +53,11 @@ $ !
 $ ! If this com-file is invoked interactively "@CHECK_SYSGEN_LGI"
 $ ! then just type out the report, else set-up for emailing by
 $ ! caller script:
+<<<<<<< HEAD
 $ IF ( F$ENVIRONMENT("DEPTH") .EQ. 1 ) .AND. ( F$MODE() .EQS. "INTERACTIVE" )
+=======
+$ IF ( F$ENVIRONMENT("DEPTH") .EQ. 1 )
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ THEN TYPE /PAGE 'ThisReport'
 $ ENDIF
 $ !

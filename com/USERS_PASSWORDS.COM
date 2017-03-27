@@ -223,13 +223,21 @@ $ IF ( recmatched .GT. 0 )
 $ THEN subjline = P2
 $ ELSE subjline = F$FAO( "%!AS-I-NOVIOLATIONS, system !AS, no violations found for this report period", -
                          Fac, P4 )
+<<<<<<< HEAD
 $      OPEN /WRITE /ERROR=EMIerror emf 'fspec'
+=======
+$      OPEN /WRITE /ERROR=EMIerror emf 'P5'
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $      WRITE emf subjline
 $      WRITE emf ""
 $      WRITE emf "Report period: ''P6' to ''F$CVTIME(F$TIME(),"ABSOLUTE","DATE")'"
 $      WRITE emf ""
 $      CLOSE emf
+<<<<<<< HEAD
 $      PURGE /NOLOG 'fspec'
+=======
+$      PURGE /NOLOG 'P5'
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ ENDIF
 $ !
 $ CALL AttachMIME "''P7'" "''P5'" "''subjline'"
@@ -238,7 +246,11 @@ $ MAIL 'P7' /SUBJECT="''subjline'" "@UPwdList"
 $ MailStat = $STATUS
 $ msg1 = F$FAO( "%!AS-I-MAILED, report attached:", Fac )
 $ msg2 = "subject line:"
+<<<<<<< HEAD
 $ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 ) - 3
+=======
+$ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 )
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ wso F$FAO( "!AS !AS", msg1, P5 )
 $ wso F$FAO( "!#* !AS !AS", indL, msg2, subjline )
 $ wso ""
@@ -468,11 +480,15 @@ $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?
 $ !
 $ DEFINE /NOLOG /PROCESS UPwdList "''RptDir'''Fac'.distr"
 $ !
+<<<<<<< HEAD
 $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" )
 $ THEN CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $      GOTO Done
 $ ENDIF
 $ !
+=======
+$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" ) THEN GOTO Submit
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ GOTO 'ProcMode'
 $ !
 $ !
@@ -500,9 +516,20 @@ $ subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible violation!%S fou
 $ CALL EMailIt "''UI$search_records_matched'" "''subjline'" -
          "''Fac'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
 $ CALL ArchiveReports "''ThisReport'"
+<<<<<<< HEAD
 $ CALL ArchiveReports "''ThisMsg'"
 $ !
 $ ! ReQueue self for next periodic run:
+=======
+$ subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible violation!%S found to review", -
+                      Fac, ThisNode, UI$search_records_matched )
+$ CALL EMailIt "''UI$search_records_matched'" "''subjline'" -
+         "''Fac'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
+$ !
+$ !
+$Submit:
+$ type_it = "No"
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $ !
 $ !
@@ -538,8 +565,11 @@ $                     ! sf2 contains an F$FAO() lex-function
 $                     subjline = 'sf2'
 $                     CALL EMailIt "1" "''subjline'" -
                          "''Fac'" "''ThisNode'" "''ThisReport'" "" "''ThisMsg'"
+<<<<<<< HEAD
 $                     CALL ArchiveReports "''ThisReport'"
 $                     CALL ArchiveReports "''ThisMsg'"
+=======
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $                ELSE IF ( type_it .EQS. "Y" ) THEN TYPE /PAGE 'ThisReport'
 $                ENDIF
 $           ENDIF
@@ -561,7 +591,10 @@ $ IF ( .NOT. Debug ) THEN IF ( F$TYPE(UI$search_records_matched) .EQS. "STRING" 
 $ IF ( F$TYPE(ThisNode)   .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisNode
 $ IF ( F$TYPE(ThisReport) .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisReport
 $ IF ( F$TYPE(ThisMsg)    .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisMsg
+<<<<<<< HEAD
 $ IF ( F$TRNLNM( "UPwdList", "LNM$PROCESS" ) .NES. "" ) THEN DEASSIGN /PROCESS UPwdList
+=======
+>>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $FNFerror:
