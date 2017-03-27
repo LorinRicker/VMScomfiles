@@ -12,23 +12,32 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ say  = "WRITE sys$output"
-$ node = F$GETSYI("NODENAME")
-$ fn   = "CHECK_SYSGEN_LGI"
-$ fext = ".REPORT"
-$ fspec = "[]" + fn + fext
+$ ! P1 = value of LGI_BRK_LIM to cross-check
 $ !
-$ Target_LGI_BRK_LIM = "3"  ! VWR's Security Policy requirement
+$ wso  = "WRITE sys$output"
 $ !
-$ DEFINE /NOLOG sys$output 'fspec'
+$ ThisNode    = F$EDIT(F$GETSYI("NODENAME"),"TRIM")
+$ Proc        = F$ENVIRONMENT("PROCEDURE")
+$ Proc        = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
+$ Fac         = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ RptDir      = F$PARSE(Proc,,,"DEVICE","SYNTAX_ONLY") + F$PARSE(Proc,,,"DIRECTORY","SYNTAX_ONLY")
+$ rptdstr     = RptDir + Fac + "_" + F$CVTIME("","COMPARISON","DATE")
+$ ThisReport == rptdstr + ".REPORT"
 $ !
-$ say "System ''node': Parameter LGI_BRK_LIM should be ''Target_LGI_BRK_LIM' ..."
-$ say ""
+$ IF ( P1 .NES. "" )
+$ THEN Target_LGI_BRK_LIM = P1
+$ ELSE Target_LGI_BRK_LIM =  5  ! VMS default
+$ ENDIF
+$ !
+$ DEFINE /NOLOG sys$output 'ThisReport'
+$ !
+$ wso "System ''ThisNode': Parameter LGI_BRK_LIM should be ''Target_LGI_BRK_LIM' ..."
+$ wso ""
 $ Active_LGI_BRK_LIM = F$GETSYI("LGI_BRK_LIM")
-$ say "Active LGI_BRK_LIM is: ''Active_LGI_BRK_LIM'"
+$ wso "Active LGI_BRK_LIM is: ''Active_LGI_BRK_LIM'"
 $ IF ( Active_LGI_BRK_LIM .EQ. Target_LGI_BRK_LIM )
-$ THEN say "Parameter is compliant."
-$ ELSE say "Parameter is NOT compliant!"
+$ THEN wso "Parameter is compliant."
+$ ELSE wso "Parameter is NOT compliant!"
 $ ENDIF
 $ !
 $ MCR SYSGEN
@@ -38,10 +47,15 @@ USE CURRENT
 SHOW /LGI
 EXIT
 $ !
-$ say ""
-$ !
+$ wso ""
 $ DEASSIGN sys$output
-$ TYPE 'fspec'
 $ !
-$ EXIT 1
+$ ! If this com-file is invoked interactively "@CHECK_SYSGEN_LGI"
+$ ! then just type out the report, else set-up for emailing by
+$ ! caller script:
+$ IF ( F$ENVIRONMENT("DEPTH") .EQ. 1 ) .AND. ( F$MODE() .EQS. "INTERACTIVE" )
+$ THEN TYPE /PAGE 'ThisReport'
+$ ENDIF
+$ !
+$ EXIT 1  ! 'F$VERIFY(0)'
 $ !
