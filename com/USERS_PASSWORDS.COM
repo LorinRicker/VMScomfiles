@@ -93,9 +93,9 @@ $      wserr F$FAO( "%!AS-I-DEBUG, !ZL (!AS) * !ZL = !ZL", -
 $      wserr F$FAO( "%!AS-I-DEBUG, REQ$PwdLifeTime: !ZL", Fac, REQ$PwdLifeTime )
 $ ENDIF
 $ !
-$ Count$Total  = 0
-$ Count$VioLif = 0
-$ Count$VioMin = 0
+$ Count$Total  == 0
+$ Count$VioLif == 0
+$ Count$VioMin == 0
 $ !
 $ IF ( F$TRNLNM( "sysuaf", "LNM$SYSTEM" ) .EQS. "" )
 $ THEN DEFINE /PROCESS /NOLOG sysuaf sys$system:sysuaf.dat
@@ -108,7 +108,6 @@ $ ! Suppress the SEARCH output-footer stats, but retain the "good stuff" with /O
 $ DEFINE /NOLOG /USER_MODE sys$output NLA0:
 $ DEFINE /NOLOG /USER_MODE sys$error  NLA0:
 $ SEARCH /OUTPUT='shortlist' 'sysuaflis' 'SearchFilter' /MATCH=OR /EXACT /STATISTICS=SYMBOLS
-$ UI$search_records_matched == SEARCH$RECORDS_MATCHED 
 $ !
 $ OPEN /READ iuc 'shortlist'
 $Loop:
@@ -136,32 +135,31 @@ $ ENDIF
 $ lastlogin = F$ELEMENT( 2, SPC, line ) + SPC + tmp - COMMA
 $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
-$ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
+$ IF ( F$LOCATE( "Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
 $ Msg0 = F$FAO( "!12AS: !16AS -", uname, owner )
 $ !
 $ msglif = ""
-$ msgmin = ""
 $ msglgi = ""
 $ IF ( F$INTEGER( REQ$PwdLifeTime ) .EQ. F$INTEGER( pwdlifetime ) )
 $ THEN VIO$pwdlifetime = 0
 $ ELSE VIO$pwdlifetime = 1
 $      IF ( pwdlifetime .EQS. MAXINT ) THEN pwdlifetime = NONE
 $      msglif = F$FAO( " lifetime: !6AS", pwdlifetime )
-$      Count$VioLif = Count$VioLif + 1
+$      Count$VioLif == Count$VioLif + 1
 $ ENDIF
+$ msgmin = F$FAO( " minimum: !2UL", F$INTEGER( pwdminimum ) )     ! want right-justification
 $ IF ( F$INTEGER( CFG$PwdMinimum ) .LE. F$INTEGER( pwdminimum ) )
 $ THEN VIO$pwdminimum = 0
 $ ELSE VIO$pwdminimum = 1
-$      msgmin = F$FAO( " minimum: !2AS", pwdminimum )
-$      Count$VioMin = Count$VioMin + 1
+$      Count$VioMin == Count$VioMin + 1
 $ ENDIF
 $ !
 $ IF ( VIO$pwdlifetime ) .OR. ( VIO$pwdminimum )
 $ THEN msglgi = F$FAO( " last-login: !17AS", lastlogin )
 $      Msg0 = Msg0 + F$FAO( " !ASViolation!AS - !AS!AS!AS", BOLD, NORM, msglif, msgmin, msglgi )
 $      IF ( CFG$IncludeFlags ) THEN Msg0 = Msg0 + " [''flags']"
-$      Count$Total = Count$Total + 1
+$      Count$Total == Count$Total + 1
 $ ELSE GOTO Loop  ! nothing to report
 $ ENDIF
 $ !
@@ -223,21 +221,13 @@ $ IF ( recmatched .GT. 0 )
 $ THEN subjline = P2
 $ ELSE subjline = F$FAO( "%!AS-I-NOVIOLATIONS, system !AS, no violations found for this report period", -
                          Fac, P4 )
-<<<<<<< HEAD
 $      OPEN /WRITE /ERROR=EMIerror emf 'fspec'
-=======
-$      OPEN /WRITE /ERROR=EMIerror emf 'P5'
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $      WRITE emf subjline
 $      WRITE emf ""
 $      WRITE emf "Report period: ''P6' to ''F$CVTIME(F$TIME(),"ABSOLUTE","DATE")'"
 $      WRITE emf ""
 $      CLOSE emf
-<<<<<<< HEAD
 $      PURGE /NOLOG 'fspec'
-=======
-$      PURGE /NOLOG 'P5'
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ ENDIF
 $ !
 $ CALL AttachMIME "''P7'" "''P5'" "''subjline'"
@@ -246,11 +236,7 @@ $ MAIL 'P7' /SUBJECT="''subjline'" "@UPwdList"
 $ MailStat = $STATUS
 $ msg1 = F$FAO( "%!AS-I-MAILED, report attached:", Fac )
 $ msg2 = "subject line:"
-<<<<<<< HEAD
 $ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 ) - 3
-=======
-$ indL = F$LENGTH( msg1 ) - F$LENGTH( msg2 )
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ wso F$FAO( "!AS !AS", msg1, P5 )
 $ wso F$FAO( "!#* !AS !AS", indL, msg2, subjline )
 $ wso ""
@@ -392,6 +378,56 @@ $ ENDSUBROUTINE  ! SelfSubmit
 $ !
 $ !
 $ ! -----------------------
+$SpecialFunctions: SUBROUTINE
+$ ! P1 : Number of special functions (limit)
+$ !
+$ ! *** Optional Special Function process(es) invocation, ***
+$ ! ***   up to P1 special function com-files:            ***
+$ i = 1
+$SFLoop:
+$ ! If the special function com-file returns ThisReport global symbol
+$ ! with non-null content, then email that report:
+$ ThisReport == ""
+$ ThisMsg    == ""
+$ IF ( i .GT. 'P1' ) THEN GOTO SFEnd       ! hard limit...
+$ IF ( F$TYPE( CFG$SpecFunc'i' ) .NES. "STRING" ) THEN GOTO SFEnd
+$ IF ( CFG$SpecFunc'i' .NES. "" )
+$ THEN sf0 = F$ELEMENT( 0, VERTBAR, CFG$SpecFunc'i' )  ! com-file to invoke
+$      sf1 = F$ELEMENT( 1, VERTBAR, CFG$SpecFunc'i' )  ! parameter string(s) for com-file
+$      sf2 = F$ELEMENT( 2, VERTBAR, CFG$SpecFunc'i' )  ! F$FAO lex-function for email-rpt subject-line
+$      specfunc = F$TRNLNM( sf0 )
+$      IF ( specfunc .EQS. "" ) THEN specfunc = F$PARSE( sf0, "''RptDir'.COM" )
+$      IF ( F$SEARCH( specfunc ) .NES. "" )
+$      THEN IF Debug THEN wserr F$FAO( "%!AS-I-INVOKE, $ @!AS", Fac, specfunc )
+$           @'specfunc' 'sf1'
+$           ! ThisReport non-null?  Email the report:
+$           IF ( ThisReport .NES. "" )
+$           THEN IF ( ProcMode .EQS. "BATCH" )
+$                THEN ! email the Msg-report
+$                     rfn = F$PARSE( ThisReport, , , "NAME", "SYNTAX_ONLY" )
+$                     ThisMsg == F$PARSE( rfn, "''RptDir'.MSG" )
+$                     ! sf2 contains an F$FAO() lex-function
+$                     subjline = 'sf2'
+$                     CALL EMailIt "1" "''subjline'" -
+                         "''Fac'" "''ThisNode'" "''ThisReport'" "" "''ThisMsg'"
+$                     CALL ArchiveReports "''ThisReport'"
+$                     CALL ArchiveReports "''ThisMsg'"
+$                ELSE IF ( type_it .EQS. "Y" ) THEN TYPE /PAGE 'ThisReport'
+$                ENDIF
+$           ENDIF
+$      ELSE wserr F$FAO( "%!AS-E-FNF, CFG$SpecFunc!1ZL file not found: !AS", -
+                         Fac, i, specfunc )
+$      ENDIF
+$ ENDIF
+$ i = i + 1
+$ GOTO SFLoop
+$SFEnd:
+$ EXIT 1
+$ ENDSUBROUTINE  ! SpecialFunctions
+$ ! -----------------------
+$ !
+$ !
+$ ! -----------------------
 $Main:
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
@@ -480,22 +516,18 @@ $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "HELP" ) .OR. ( P1 .EQS. "?
 $ !
 $ DEFINE /NOLOG /PROCESS UPwdList "''RptDir'''Fac'.distr"
 $ !
-<<<<<<< HEAD
 $ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" )
 $ THEN CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $      GOTO Done
 $ ENDIF
 $ !
-=======
-$ IF ( F$EXTRACT(0,4,F$EDIT(P1,"UPCASE,TRIM")) .EQS. "SUBM" ) THEN GOTO Submit
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ GOTO 'ProcMode'
 $ !
 $ !
 $INTERACTIVE:
 $ CALL GenReport "''P1'" "''P2'" "''P3'" "''ThisReport'"
 $ CALL ArchiveReports "''ThisReport'"
-$ CALL ArchiveReports "''ThisMsg'"
+$ IF ( F$SEARCH( ThisMsg ) .NES. "" ) THEN CALL ArchiveReports "''ThisMsg'"
 $ !
 $ READ sys$command answer -
     /END_OF_FILE=Done /PROMPT="Display report (Yes/no)? "
@@ -506,95 +538,42 @@ $      wso "[4mSystem: ''ThisNode'[0m"
 $      TYPE /PAGE 'ThisReport'
 $ ENDIF
 $ !
-$ GOTO SpecialFunctions
+$ GOTO SpecFunc
 $ !
 $BATCH:
 $ type_it = "No"
 $ CALL GenReport "''P1'" "''P2'" "''P3'" "''ThisReport'"
 $ subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible violation!%S found to review", -
-                      Fac, ThisNode, F$INTEGER( UI$search_records_matched ) )
-$ CALL EMailIt "''UI$search_records_matched'" "''subjline'" -
+                      Fac, ThisNode, Count$Total )
+$ CALL EMailIt "''Count$Total'" "''subjline'" -
          "''Fac'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
 $ CALL ArchiveReports "''ThisReport'"
-<<<<<<< HEAD
-$ CALL ArchiveReports "''ThisMsg'"
+$ IF ( F$SEARCH( ThisMsg ) .NES. "" ) THEN CALL ArchiveReports "''ThisMsg'"
 $ !
 $ ! ReQueue self for next periodic run:
-=======
-$ subjline = F$FAO( "%!AS-I-VIOLATION, system !AS, !ZL possible violation!%S found to review", -
-                      Fac, ThisNode, UI$search_records_matched )
-$ CALL EMailIt "''UI$search_records_matched'" "''subjline'" -
-         "''Fac'" "''ThisNode'" "''ThisReport'" "''ReportDate'" "''ThisMsg'"
-$ !
-$ !
-$Submit:
-$ type_it = "No"
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
 $ CALL SelfSubmit "''Proc'" "''RptDir'" "''ProcMode'" "''NextBatchRun'" "''P2'" "''P3'"
 $ !
-$ !
-$SpecialFunctions:
-$ !
-$ ! ---------------------------------------------------------
-$ ! *** Optional Special Function process(es) invocation, ***
-$ ! ***   up to five (5) special function com-files:      ***
-$ i = 1
-$SFLoop:
-$ ! If the special function com-file returns ThisReport global symbol
-$ ! with non-null content, then email that report:
-$ ThisReport == ""
-$ ThisMsg    == ""
-$ IF ( F$TYPE( CFG$SpecFunc'i' ) .NES. "STRING" ) THEN GOTO Cleanup
-$ IF ( i .GT. 5 ) THEN GOTO Cleanup  ! hard limit...
-$ IF ( CFG$SpecFunc'i' .NES. "" )
-$ THEN sf0 = F$ELEMENT( 0, VERTBAR, CFG$SpecFunc'i' )  ! com-file to invoke
-$      sf1 = F$ELEMENT( 1, VERTBAR, CFG$SpecFunc'i' )  ! parameter string(s) for com-file
-$      sf2 = F$ELEMENT( 2, VERTBAR, CFG$SpecFunc'i' )  ! F$FAO lex-function for email-rpt subject-line
-$      specfunc = F$TRNLNM( sf0 )
-$      IF ( specfunc .EQS. "" ) THEN specfunc = F$PARSE( sf0, "''RptDir'.COM" )
-$      IF ( F$SEARCH( specfunc ) .NES. "" )
-$      THEN IF Debug THEN wserr F$FAO( "%!AS-I-INVOKE, $ @!AS", Fac, specfunc )
-$           @'specfunc' 'sf1'
-$           ! ThisReport non-null?  Email the report:
-$           IF ( ThisReport .NES. "" )
-$           THEN IF ( ProcMode .EQS. "BATCH" )
-$                THEN ! email the Msg-report
-$                     rfn = F$PARSE( ThisReport, , , "NAME", "SYNTAX_ONLY" )
-$                     ThisMsg == F$PARSE( rfn, "''RptDir'.MSG" )
-$                     ! sf2 contains an F$FAO() lex-function
-$                     subjline = 'sf2'
-$                     CALL EMailIt "1" "''subjline'" -
-                         "''Fac'" "''ThisNode'" "''ThisReport'" "" "''ThisMsg'"
-<<<<<<< HEAD
-$                     CALL ArchiveReports "''ThisReport'"
-$                     CALL ArchiveReports "''ThisMsg'"
-=======
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
-$                ELSE IF ( type_it .EQS. "Y" ) THEN TYPE /PAGE 'ThisReport'
-$                ENDIF
-$           ENDIF
-$      ELSE wserr F$FAO( "%!AS-E-FNF, CFG$SpecFunc!1ZL file not found: !AS", -
-                         Fac, i, specfunc )
-$      ENDIF
-$ ENDIF
-$ i = i + 1
-$ GOTO SFLoop
-$ ! ---------------------------------------------------------
+$SpecFunc:
+$ CALL SpecialFunctions 1       ! Change this P1 if # of special functions changes!
 $ !
 $ !
 $Cleanup:
 $Done:
 $ SET NOON
 $ CLOSE /NOLOG iuc
-$ IF ( .NOT. Debug ) THEN IF ( F$TYPE(UI$search_records_matched) .EQS. "STRING" ) -
-  THEN DELETE /SYMBOL /GLOBAL UI$search_records_matched
-$ IF ( F$TYPE(ThisNode)   .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisNode
-$ IF ( F$TYPE(ThisReport) .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisReport
-$ IF ( F$TYPE(ThisMsg)    .EQS. "STRING" ) THEN DELETE /SYMBOL /GLOBAL ThisMsg
-<<<<<<< HEAD
 $ IF ( F$TRNLNM( "UPwdList", "LNM$PROCESS" ) .NES. "" ) THEN DEASSIGN /PROCESS UPwdList
-=======
->>>>>>> bd45700215a33876b5112b5b37da87d895c7536c
+$ ! Delete global symbols:
+$ glosyms = "ThisNode,ThisReport,ThisMsg" -
+          + ",Count$VioLif,Count$VioMin,Count$Total"
+$ i = 0
+$DSLoop:
+$ sym = F$ELEMENT( i, COMMA, glosyms )
+$ IF ( sym .EQS. COMMA ) THEN GOTO DScont
+$ IF ( F$TYPE( 'sym' ) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL 'sym'
+$ i = i + 1
+$ GOTO DSLoop
+$DSCont:
+$ !
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $FNFerror:
