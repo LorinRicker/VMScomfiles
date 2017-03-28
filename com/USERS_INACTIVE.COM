@@ -154,7 +154,7 @@ $ lastlogin  = F$EDIT( F$ELEMENT( 0, COMMA, line ), "TRIM" )       ! "<date> (in
 $ lastnonint = F$EDIT( F$ELEMENT( 1, COMMA, line ), "TRIM" )       ! "<date> (non-interactive)"
 $ !
 $ ! Ignore users who are "Restricted", e.g., TCPIP$*, UCX$*, other system/detached accounts:
-$ IF ( F$LOCATE( " Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
+$ IF ( F$LOCATE( "Restricted", flags ) .LT. F$LENGTH( flags ) ) THEN GOTO Loop
 $ !
 $ Msg0 = F$FAO( "!12AS: !31AS", uname, owner )
 $ IF CFG$IncludeFlags THEN Msg0 = Msg0 + " [''flags']"
