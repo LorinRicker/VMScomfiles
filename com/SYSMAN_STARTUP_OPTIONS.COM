@@ -24,7 +24,7 @@ $ Proc   = F$ENVIRONMENT("PROCEDURE")
 $ Proc   = Proc - F$PARSE(Proc,,,"VERSION","SYNTAX_ONLY")
 $ Fac    = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
-$ VMSStartupLog = "SYS$SYSROOT:[SYSEXE]STARTUP.LOG"  ! Node-specific
+$ VMSStartupLog = "SYS$SPECIFIC:[SYSEXE]STARTUP.LOG"  ! Node-specific
 $ !
 $ VersLimit = "10"  ! Edit this value for a different version_limit on VMSStartupLog
 $ !
@@ -76,9 +76,9 @@ $ IF veropt
 $ THEN wso ""
 $      wso "%''Fac'-I-LOGFILE, setting /VERSION_LIMIT=''VersLimit' on ''VMSStartupLog'"
 $      IF ( F$SEARCH(VMSStartupLog) .EQS. "" )  ! First-version exists?
-$      THEN CREATE /NOLOG 'VMSStartupLog'       ! No? touch it...
-! Initialize file STARTUP.LOG to attach /VERSION_LIMIT to...
+$      THEN CREATE /NOLOG 'VMSStartupLog'       ! No? touch it, create empty file...
 $      ENDIF
+$      ! Initialize file STARTUP.LOG to attach /VERSION_LIMIT to...
 $      IF ( F$SEARCH("''VMSStartupLog';-1") .NES. "" )
 $      THEN PURGE /KEEP='VersLimit' /NOLOG 'VMSStartupLog'
 $      ENDIF
