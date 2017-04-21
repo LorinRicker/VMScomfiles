@@ -13,20 +13,20 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ==========
-$TestDir:  SUBROUTINE
-$ ! P1 : Subdirectory name to detect, create if missing
-$ ! P2 : Logical name to create for subdirectory
-$ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
-$ ON CONTROL_Y THEN GOSUB TDCtrl_Y
-$ ON ERROR THEN EXIT %X2C
-$ dirspec = "sys$login:''P1'.dir"
-$ dir     = "''P3'.''P1']"
-$ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
-$ DEFINE 'P2' 'dir'
-$ EXIT 1
-$TDCtrl_Y:
-$ RETURN %X2C
-$ ENDSUBROUTINE  ! TestDir
+$!!  $TestDir:  SUBROUTINE
+$!!  $ ! P1 : Subdirectory name to detect, create if missing
+$!!  $ ! P2 : Logical name to create for subdirectory
+$!!  $ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
+$!!  $ ON CONTROL_Y THEN GOSUB TDCtrl_Y
+$!!  $ ON ERROR THEN EXIT %X2C
+$!!  $ dirspec = "sys$login:''P1'.dir"
+$!!  $ dir     = "''P3'.''P1']"
+$!!  $ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
+$!!  $ DEFINE 'P2' 'dir'
+$!!  $ EXIT 1
+$!!  $TDCtrl_Y:
+$!!  $ RETURN %X2C
+$!!  $ ENDSUBROUTINE  ! TestDir
 $ !
 $CDefine:  SUBROUTINE
 $ ! P1 : command symbol
@@ -106,11 +106,12 @@ $ SET NOON
 $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
-$ CALL TestDir "SCRATCH"   "sys$scratch" "''LBase'"
-$ CALL TestDir "LOGS"      "logs"        "''LBase'"
-$ CALL TestDir "COM"       "com"         "''LBase'"
-$ CALL TestDir "LOGIN"     "lmr$login"   "''LBase'"
-$ CALL TestDir "VMSAUDITS" "v$audit"     "''LBase'"
+$!! $ CALL TestDir "SCRATCH"   "sys$scratch" "''LBase'"
+$!! $ CALL TestDir "LOGS"      "logs"        "''LBase'"
+$!! $ CALL TestDir "COM"       "com"         "''LBase'"
+$!! $ CALL TestDir "LOGIN"     "lmr$login"   "''LBase'"
+$!! $ CALL TestDir "VMSAUDITS" "v$audit"     "''LBase'"
+$ @'LBase'.LOGIN]COMMON_LOGICALS COM "LOGIN|lmr$login"
 $ IF ( F$TRNLNM("site$utils") .EQS. "" ) THEN DEFINE site$utils com
 $ !
 $ ! Convenience logicals for VMS$AUDIT --

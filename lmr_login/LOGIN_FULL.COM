@@ -109,7 +109,7 @@ $ CALL PureDCL "DIRECTORY"
 $ CALL PureDCL "SEARCH"
 $ !
 $ ! Copy-a-new-version-of-self support:
-$ IF ( P1 .EQS. "NEW" )
+$ IF ( P1 .EQS. "NEW" ) .OR. ( P1 .EQS. "COPY" )
 $ THEN IF ( F$SEARCH("sys$login:LOGIN_FULL.COM") .NES. "" )
 $      THEN COPY /LOG lmr$login:LOGIN_FULL.COM sys$login:*.*
 $      ELSE COPY /LOG lmr$login:LOGIN_FULL.COM sys$login:LOGIN.*
@@ -144,10 +144,12 @@ $ !
 $ isTerm = ""
 $ Term   = F$GETJPI("","TERMINAL")
 $ IF Term .NES. "" THEN isTerm = F$GETDVI(Term,"TRM")
+$ !
 $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LBase  = F$TRNLNM("sys$login_device") -
          + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
-$ DEFINE /JOB /NOLOG lmr$login 'LBase'.login]    !!,'LBase'.$decw$]
+$ ! Personal logical name LMR$LOGIN is key:
+$ DEFINE /JOB /NOLOG lmr$login 'LBase'.login]
 $ !
 $ HomeNodes = ",CLASS8,VMSPR1,VMSPR3,"   ! <== customized <== !
 $ atHome    = ( F$LOCATE(",''LNode',",HomeNodes) .LT. F$LENGTH(HomeNodes) )
@@ -157,7 +159,8 @@ $ !
 $INTERACTIVE:
 $ LMR$Unavailable == ""
 $ CALL SearchAt lmr$login:common$login.com
-$ CALL SearchAt lmr$login:logicals.com
+$ CALL SearchAt lmr$login:logicals.com   ! now calls common_logicals.com
+$ !
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
@@ -169,7 +172,7 @@ $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $      CALL SearchAt dcl$init
-$!! $  !!! retired --> CALL SearchAt mgr$login
+$  !!! retired --> CALL SearchAt mgr$login
 $      CALL SearchAt com:tpu.com
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
 $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) THEN cjobs  !check periodic jobs
@@ -179,6 +182,7 @@ $           wso "%LOGIN-I-DBG$INIT, VMS debugger initialization: "
 $           wso "                   DBG$INIT = """,F$TRNLNM("dbg$init"),""""
 $      ENDIF
 $ ENDIF
+$ !
 $LogSpecific:
 $ !Invoke an optional, site-specific, personal <Locale>_SPECIFIC$LOGIN.COM:
 $ LoginSpecific = "sys$login:login$specific.dat"  !contains NAME of locale

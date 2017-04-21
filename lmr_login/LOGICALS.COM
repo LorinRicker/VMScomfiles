@@ -12,20 +12,20 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$TestDir:  SUBROUTINE
-$ ! P1 : Subdirectory name to detect, create if missing
-$ ! P2 : Logical name to create for subdirectory
-$ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
-$ ON CONTROL_Y THEN GOSUB TDCtrl_Y
-$ ON ERROR THEN EXIT %X2C
-$ dirspec = "sys$login:''P1'.dir"
-$ dir     = "''P3'.''P1']"
-$ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
-$ DEFINE 'P2' 'dir'
-$ EXIT 1
-$TDCtrl_Y:
-$ RETURN %X2C
-$ ENDSUBROUTINE  ! TestDir
+$!!  $TestDir:  SUBROUTINE
+$!!  $ ! P1 : Subdirectory name to detect, create if missing
+$!!  $ ! P2 : Logical name to create for subdirectory
+$!!  $ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
+$!!  $ ON CONTROL_Y THEN GOSUB TDCtrl_Y
+$!!  $ ON ERROR THEN EXIT %X2C
+$!!  $ dirspec = "sys$login:''P1'.dir"
+$!!  $ dir     = "''P3'.''P1']"
+$!!  $ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
+$!!  $ DEFINE 'P2' 'dir'
+$!!  $ EXIT 1
+$!!  $TDCtrl_Y:
+$!!  $ RETURN %X2C
+$!!  $ ENDSUBROUTINE  ! TestDir
 $ !
 $NCDefine:  SUBROUTINE     !Node-Conditional DEFINE
 $ ! P1 : node1 [|node2 ...]
@@ -65,16 +65,17 @@ $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ DEFINE base         'Lbase''Rooted'
-$ DEFINE logs         'Lbase'.logs]
-$ DEFINE com          'Lbase'.com],site$utils
-$ DEFINE cmd          'Lbase'.com]
-$ DEFINE lib          'Lbase'.lib...]
+$ @lmr$login:common_logicals "com||,site$utils" "com|cmd" lib
+$!! $ DEFINE sys$scratch  'Lbase'.scratch]
+$!! $ DEFINE logs         'Lbase'.logs]
+$!! $ DEFINE com          'Lbase'.com],site$utils
+$!! $ DEFINE cmd          'Lbase'.com]
+$!! $ DEFINE lib          'Lbase'.lib...]
+$ !
 $ DEFINE root         'Lbase']
-$ DEFINE sys$scratch  'Lbase'.scratch]
 $ DEFINE jnk          sys$scratch
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
-$ CALL TestDir "vmsaudits" "v$audit" "''LBase'"
 $ IF ( F$SEARCH("SYS$LOGIN:VMSAUDITS.DIR") .NES. "" )
 $ THEN DEFINE va  'LBase'.vmsaudits]
 $      DEFINE var 'LBase'.vmsaudits.reports'Rooted'
@@ -105,8 +106,6 @@ $ SET NOON
 $ GOTO 'F$MODE()'
 $ !
 $INTERACTIVE:
-$ DEFINE mfd sys$disk:[000000]
-$ !
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
 $ DEFINE dcl$keypad      lmr$login:DK$dcl_keypad.gold
 $ DEFINE dcl$init        lmr$login:DK$dcl.com
