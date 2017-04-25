@@ -177,11 +177,12 @@ $ ! --------------------------------
 $ !
 $ LMR$UNAVAILABLE == ""
 $ Redefine = "TRUE"   ! for now, always redefine...
-$ CALL CDefine "cd"         "@com:cd"        "SET DEFAULT"
-$ CALL CDefine "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
-$ CALL CDefine "where"      "@com:where"     "SHOW DEFAULT"
-$ CALL CDefine "who"        "@com:DCLwho"    "SHOW USERS"
-$ CALL CDefine "priv*ilege" "@com:privilege" "SET PROCESS /PRIVILEGE="
+$ CALL CDefine "cd"          "@com:cd"        "SET DEFAULT"
+$ CALL CDefine "disks*pace"  "@com:diskspace" "SHOW DEVICE D /MOUNTED"
+$ CALL CDefine "tool*sdebug" "@com:tools$debug"
+$ CALL CDefine "where"       "@com:where"     "SHOW DEFAULT"
+$ CALL CDefine "who"         "@com:DCLwho"    "SHOW USERS"
+$ CALL CDefine "priv*ilege"  "@com:privilege" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
 $      sudo   == "''privilege' SUDO"
@@ -250,7 +251,7 @@ $ EXIT 1
 $ !
 $BAC$:
 $ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
-          + ",''LBase'.com]fix$bck.com;,zips.com;"                      -
+          + ",''LBase'.com]fix$bck.com;,zips.com;,tools$debug.com;"     -
           + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
           + ",mgr$root:[commands]DCLwho.com;"                           -
