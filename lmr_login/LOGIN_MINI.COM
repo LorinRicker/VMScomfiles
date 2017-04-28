@@ -209,10 +209,16 @@ $ !
 $ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ !
-$ auth     == "MCR AUTHORIZE"
 $ ping     == "$SYS$SYSTEM:TCPIP$PING"
 $ sysman   == "MCR SYSMAN"
 $ sysgen   == "MCR SYSGEN"
+$ !
+$ IF F$TYPE(authorize) .EQS. ""
+$ THEN IF F$TRNLNM( "sysuaf", "lnm$system" ) .NES. ""
+$      THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
+$      ELSE auth*orize == "PIPE cd sys$system ; MCR AUTHORIZE"
+$      ENDIF
+$ ENDIF
 $ !
 $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
@@ -253,6 +259,7 @@ $BAC$:
 $ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
           + ",''LBase'.com]fix$bck.com;,zips.com;,tools$debug.com;"     -
           + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
+          + ",common_logicals.com;"                                     -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
           + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
@@ -271,7 +278,7 @@ $ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(show_cluster$init.ini,fixprivs.com) lmr$login:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(common_logicals.com,show_cluster$init.ini,fixprivs.com) lmr$login:*.* /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF

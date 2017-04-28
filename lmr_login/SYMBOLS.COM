@@ -93,11 +93,19 @@ $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PNam
 $ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
-$ CALL CDefine "dwho"     "@cmd:dclwho"
-$ CALL CDefine "boottime" "@cmd:boottime.com"
+$ CALL CDefine "dwho"       "@cmd:dclwho" "SHOW USERS"
+$ CALL CDefine "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
+$ CALL CDefine "boottime"   "@cmd:boottime.com"
 $ break*in    == "SHOW INTRUSION /TYPE=ALL"
-$ delbreak*in == "DELETE /INTRUSION_RECORD"
-$ IF F$TYPE(authorize) .EQS. "" THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
+$ delbr*eakin == "DELETE /INTRUSION_RECORD"
+$ !
+$ IF F$TYPE(authorize) .EQS. ""
+$ THEN IF F$TRNLNM( "sysuaf", "lnm$system" ) .NES. ""
+$      THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
+$      ELSE auth*orize == "PIPE cd sys$system ; MCR AUTHORIZE"
+$      ENDIF
+$ ENDIF
+$ !
 $ IF F$TYPE(sysgen)    .EQS. "" THEN sysgen     == "$SYS$SYSTEM:SYSGEN"
 $ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
 $ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
@@ -105,7 +113,7 @@ $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
 $ !
 $ CALL CDefine "lo*gout"      "@lmr$login:logout.com"
-$ CALL CDefine "priv*ilege"   "@com:privilege.com"
+$ CALL CDefine "priv*ilege"   "@com:privilege.com" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
 $      sudo   == "''privilege' SUDO"  ! make a Linux-synonym too...
@@ -118,8 +126,8 @@ $ !
 $ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !
 $ ! DCL:
-$ CALL CDefine "cd"        "@com:cd"
-$ CALL CDefine "dco*nt"    "@com:do_continuous"
+$ CALL CDefine "cd"     "@com:cd" "SET DEFAULT"
+$ CALL CDefine "dco*nt" "@com:do_continuous"
 $ ! Time how long to do something (once):
 $ IF F$TYPE(time) .EQS. "" THEN time == "@com:do_continuous -n:1 -t:1"
 $ !
@@ -213,7 +221,7 @@ $      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !
 $ IF F$SEARCH("com:where.com") .NES. ""
-$ THEN CALL CDefine "where" "@com:where.com"
+$ THEN CALL CDefine "where" "@com:where.com" "SHOW DEFAULT"
 $ ELSE CZ == ""
 $      where == "WRITE sys$output F$FAO(""!AS!AS !6* (prev: !AS)"""   -
               +                         ",F$TRNLNM(""SYS$NODE"")"     -
@@ -283,6 +291,7 @@ $ !
 $ ! Tools:
 $ CALL CDefine "cap*ture"    "@com:capture.com"     !capture SYS$OUTPUT to file
 $ CALL CDefine "day*s"       "$site$utils:dc$datecalc"
+$ CALL CDefine "deltree"     "@site$utils:deltree"
 $ CALL CDefine "flush"       "@com:flushscr.com"
 $ CALL CDefine "key*words"   "@site$utils:sql$keywords.com"
 $ CALL CDefine "sc*ontrol"   "@site$utils:source_control.com"
