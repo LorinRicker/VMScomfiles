@@ -12,21 +12,6 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$!!  $TestDir:  SUBROUTINE
-$!!  $ ! P1 : Subdirectory name to detect, create if missing
-$!!  $ ! P2 : Logical name to create for subdirectory
-$!!  $ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
-$!!  $ ON CONTROL_Y THEN GOSUB TDCtrl_Y
-$!!  $ ON ERROR THEN EXIT %X2C
-$!!  $ dirspec = "sys$login:''P1'.dir"
-$!!  $ dir     = "''P3'.''P1']"
-$!!  $ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
-$!!  $ DEFINE 'P2' 'dir'
-$!!  $ EXIT 1
-$!!  $TDCtrl_Y:
-$!!  $ RETURN %X2C
-$!!  $ ENDSUBROUTINE  ! TestDir
-$ !
 $NCDefine:  SUBROUTINE     !Node-Conditional DEFINE
 $ ! P1 : node1 [|node2 ...]
 $ ! P2 : logical name
@@ -53,7 +38,8 @@ $NC1:
 $ EXIT 1
 $ ENDSUBROUTINE  ! NCDefine
 $ !
-$common:
+$ !
+$Main:
 $ SET NOON  ! Don't abort, especially if QueMgr (batch, print) isn't running...
 $ !
 $ IF F$TYPE(Lbase) .EQS. "" -
@@ -64,16 +50,10 @@ $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
-$ DEFINE base         'Lbase''Rooted'
-$ @lmr$login:common_logicals "com||,site$utils" "com|cmd" lib
-$!! $ DEFINE sys$scratch  'Lbase'.scratch]
-$!! $ DEFINE logs         'Lbase'.logs]
-$!! $ DEFINE com          'Lbase'.com],site$utils
-$!! $ DEFINE cmd          'Lbase'.com]
-$!! $ DEFINE lib          'Lbase'.lib...]
-$ !
 $ DEFINE root         'Lbase']
-$ DEFINE jnk          sys$scratch
+$ DEFINE base         'Lbase''Rooted'
+$ @lmr$login:common_logicals "com||,''Lbase'.COM.VMSRUBY],site$utils" -
+                             "com|cmd" lib logs sys$scratch
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
 $ IF ( F$SEARCH("SYS$LOGIN:VMSAUDITS.DIR") .NES. "" )

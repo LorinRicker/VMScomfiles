@@ -193,7 +193,6 @@ $ !
 $ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
 $ !
-$ auth     == "MCR AUTHORIZE"
 $ ping     == "$SYS$SYSTEM:TCPIP$PING"
 $ sysman   == "MCR SYSMAN"
 $ sysgen   == "MCR SYSGEN"

@@ -166,7 +166,7 @@ $ THEN wso "..."   !type-ahead ok...
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
 $      CALL SearchAt com:ansiseq.com
 $      CALL SearchAt lmr$login:symbols.com REDEFINE
-$      CALL SearchAt lmr$login:Ruby_Setup.com
+$      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
 $      IF ( F$TYPE( LMR$promptstr ) .EQS. "STRING" )
 $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "

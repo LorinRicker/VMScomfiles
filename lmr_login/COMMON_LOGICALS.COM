@@ -66,9 +66,9 @@ $ ON CONTROL_Y THEN GOSUB SCtrl_Y
 $ ON ERROR THEN EXIT %X2C
 $ ! Just do a known, predefined group
 $ CALL DefMFD
-$! $ CALL DefLnm "''LBase'" "COM"          ""          ",SITE$UTILS"
-$! $ CALL DefLnm "''LBase'" "LIB"          ""          ""
-$! $ CALL DefLnm "''LBase'" "LOGIN"        "LMR$LOGIN" ""
+$ CALL DefLnm "''LBase'" "COM"          ""          ""
+$ CALL DefLnm "''LBase'" "LIB"          ""          ""
+$ CALL DefLnm "''LBase'" "LOGIN"        "LMR$LOGIN" ""
 $ CALL DefLnm "''LBase'" "LOGS"         ""          ""
 $ CALL DefLnm "''LBase'" "SYS$SCRATCH"  ""          ""
 $ EXIT 1
