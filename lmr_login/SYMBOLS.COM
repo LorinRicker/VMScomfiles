@@ -14,51 +14,17 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !    use:  @symbols [ REDEFINE | REFRESH ]
 $ !
-$CDefine:  SUBROUTINE
-$ ! P1 : command symbol
-$ ! P2 : command file
-$ ! P3 : alternate command string
-$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
-$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
-$ ELSE AbbrSym = P1
-$ ENDIF
-$ FullSym = P1 - "*"
-$ IF F$TYPE('AbbrSym') .EQS. "STRING"  !command symbol already exists?
-$ THEN IF Redefine
-$      THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
-$           GOTO CDef1
-$      ELSE IF Verbose THEN wso "%SYMBOLS-W-NOREDEFINE, command symbol ""''P1'"" already exists"
-$           EXIT 1
-$      ENDIF
-$ ENDIF
-$CDef1:
-$ P2 = F$EDIT(P2,"UPCASE")
-$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
-$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
-$ IF F$SEARCH(P2) .NES. ""
-$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
-$      THEN 'P1' == "$''P2'"
-$      ELSE 'P1' == "@''P2'"
-$      ENDIF
-$      IF Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
-$ ELSE IF ( P3 .NES. "" )
-$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
-$      ELSE IF LMR$Unavailable .EQS. ""
-$           THEN LMR$Unavailable == FullSym
-$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
-$           ENDIF
-$           IF Verbose THEN SHOW SYMBOL /LOCAL P1
-$           IF Verbose THEN SHOW SYMBOL /LOCAL P2
-$      ENDIF
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! CDefine
-$ !
-$ !
 $MAIN:
 $ SET NOON
 $ Verbose = F$TRNLNM("TOOLS$Debug")
 $ Redefine = ( F$EXTRACT(0,2,P1) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
+$ !
+$ ! ----------------------------------------------------------------------
+$ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( P1 .EQS. "RELOGIN" )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ ENDIF
+$ ! ----------------------------------------------------------------------
 $ !
 $ VMSArchitecture = F$EDIT( F$GETSYI("ARCH_NAME"), "TRIM" )
 $ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
@@ -93,9 +59,9 @@ $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PNam
 $ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
-$ CALL CDefine "dwho"       "@cmd:dclwho" "SHOW USERS"
-$ CALL CDefine "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
-$ CALL CDefine "boottime"   "@cmd:boottime.com"
+$ DCL$CALL Alias "dwho"       "@cmd:dclwho" "SHOW USERS"
+$ DCL$CALL Alias "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
+$ DCL$CALL Alias "boottime"   "@cmd:boottime.com"
 $ break*in    == "SHOW INTRUSION /TYPE=ALL"
 $ delbr*eakin == "DELETE /INTRUSION_RECORD"
 $ !
@@ -112,22 +78,22 @@ $ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
 $ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
 $ !
-$ CALL CDefine "lo*gout"      "@lmr$login:logout.com"
-$ CALL CDefine "priv*ilege"   "@com:privilege.com" "SET PROCESS /PRIVILEGE="
+$ DCL$CALL Alias "lo*gout"      "@lmr$login:logout.com"
+$ DCL$CALL Alias "priv*ilege"   "@com:privilege.com" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
 $      sudo   == "''privilege' SUDO"  ! make a Linux-synonym too...
 $ ENDIF
-$!! $ CALL CDefine "rid*manager"  "@mgr$command:rid$manager.com"
-$ CALL CDefine "spy"          "@com:showproc.com"
-$!! $ CALL CDefine "loop*iso"     "@com:loop$iso"
-$!! $ CALL CDefine "mcd"          "@com:cdrom"
+$!! $ DCL$CALL Alias "rid*manager"  "@mgr$command:rid$manager.com"
+$ DCL$CALL Alias "spy"          "@com:showproc.com"
+$!! $ DCL$CALL Alias "loop*iso"     "@com:loop$iso"
+$!! $ DCL$CALL Alias "mcd"          "@com:cdrom"
 $ !
 $ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !
 $ ! DCL:
-$ CALL CDefine "cd"     "@com:cd" "SET DEFAULT"
-$ CALL CDefine "dco*nt" "@com:do_continuous"
+$ DCL$CALL Alias "cd"     "@com:cd" "SET DEFAULT"
+$ DCL$CALL Alias "dco*nt" "@com:do_continuous"
 $ ! Time how long to do something (once):
 $ IF F$TYPE(time) .EQS. "" THEN time == "@com:do_continuous -n:1 -t:1"
 $ !
@@ -160,20 +126,20 @@ $ clrl     == "WRITE sys$output _bckscrD,_clrscr"
 $ clsl     == "WRITE sys$output _bckscrD,_clrscr"
 $ ! --------------------------------
 $ !
-$ CALL CDefine "bell"       "@com:bell"
-$ CALL CDefine "count"      "@com:count"
-$ CALL CDefine "delsym"     "@com:delsymbol"
-$ CALL CDefine "ec*ode"     "@com:error_code"
-$ CALL CDefine "ps"         "@com:print_dcps"
-$ CALL CDefine "dbg"        "@com:vmsdebug"
-$ CALL CDefine "ofil*es"    "@com:file$openfiles"
-$ CALL CDefine "what*edit"  "@com:what_edit"
-$ CALL CDefine "keepa*live" "@com:do_continuous"
+$ DCL$CALL Alias "bell"       "@com:bell"
+$ DCL$CALL Alias "count"      "@com:count"
+$ DCL$CALL Alias "delsym"     "@com:delsymbol"
+$ DCL$CALL Alias "ec*ode"     "@com:error_code"
+$ DCL$CALL Alias "ps"         "@com:print_dcps"
+$ DCL$CALL Alias "dbg"        "@com:vmsdebug"
+$ DCL$CALL Alias "ofil*es"    "@com:file$openfiles"
+$ DCL$CALL Alias "what*edit"  "@com:what_edit"
+$ DCL$CALL Alias "keepa*live" "@com:do_continuous"
 $ IF F$TYPE(keepalive) .EQS. "STRING" -
   THEN keepa*live == keepalive + " -w:120 ""TELL ''UName' """"Ping! (KeepAlive)"""""""
 $ !
 $ ! Useful with PIPEs
-$ CALL CDefine "tee" "@com:tee"
+$ DCL$CALL Alias "tee" "@com:tee"
 $ !
 $ ai           == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
 $ cftp         == "COPY /FTP /LOG"
@@ -188,7 +154,7 @@ $ !
 $ LFull = ""
 $ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
 $ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
-$ reLog*in == "@SYS$LOGIN:LOGIN''LFull'"
+$ reLog*in == "@SYS$LOGIN:LOGIN''LFull' RELOGIN"
 $ !
 $ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
 $ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
@@ -220,7 +186,7 @@ $      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !
 $ IF F$SEARCH("com:where.com") .NES. ""
-$ THEN CALL CDefine "where" "@com:where.com" "SHOW DEFAULT"
+$ THEN DCL$CALL Alias "where" "@com:where.com" "SHOW DEFAULT"
 $ ELSE CZ == ""
 $      where == "WRITE sys$output F$FAO(""!AS!AS !6* (prev: !AS)"""   -
               +                         ",F$TRNLNM(""SYS$NODE"")"     -
@@ -230,36 +196,36 @@ $ ENDIF
 $ !
 $ IF F$SEARCH("site$utils:file$setup.com") .NES. ""      !the FILE$* group
 $ THEN @site$utils:file$setup 'P1'
-$ ELSE CALL CDefine "chk"          "@com:file$compare"
+$ ELSE DCL$CALL Alias "chk"          "@com:file$compare"
 $      IF F$TYPE(chk) .EQS. "STRING" -
        THEN chk == chk - ".COM" - " CHECK" + " CHECK"
-$      CALL CDefine "comp*are"     "@com:file$compare"
+$      DCL$CALL Alias "comp*are"     "@com:file$compare"
 $      IF F$TYPE(compare) .EQS. "STRING" -
        THEN comp*are == compare - ".COM" - " COMPARE" + " COMPARE"
-$      CALL CDefine "frep*lace"    "@com:file$edit"
+$      DCL$CALL Alias "frep*lace"    "@com:file$edit"
 $      IF F$TYPE(freplace) .EQS. "STRING" -
        THEN frep*lace == freplace - ".COM" - " FINDREPLACE" + " FINDREPLACE"
-$      CALL CDefine "chop"         "$com:chop"
-$      CALL CDefine "clean*up"     "@com:file$cleanup"
-$      CALL CDefine "csum"         "@com:file$checksum"
-$      CALL CDefine "fat*tributes" "@com:file$attributes"
-$      CALL CDefine "fc*ompare"    "@com:file$compare"
-$      CALL CDefine "fcou*nt"      "$com:filecount"
-$      CALL CDefine "fix"          "@com:file$edit"
-$      CALL CDefine "fli*st"       "@com:file$preplist"
-$      CALL CDefine "mov*e"        "@com:file$move"
-$      CALL CDefine "prot*ect"     "@com:file$protect"
-$      CALL CDefine "slice"        "$com:slice"
-$      CALL CDefine "sscon*vert"   "@com:file$ssconvert"
-$      CALL CDefine "tail"         "$com:tail"
-$      CALL CDefine "tool*sdebug"  "@com:tools$debug"
-$      CALL CDefine "untang*le"    "@com:file$untangle"
-$      CALL CDefine "xf*er"        "@com:file$xfer"
-$      CALL CDefine "xftp"         "@com:file$ftp"
+$      DCL$CALL Alias "chop"         "$com:chop"
+$      DCL$CALL Alias "clean*up"     "@com:file$cleanup"
+$      DCL$CALL Alias "csum"         "@com:file$checksum"
+$      DCL$CALL Alias "fat*tributes" "@com:file$attributes"
+$      DCL$CALL Alias "fc*ompare"    "@com:file$compare"
+$      DCL$CALL Alias "fcou*nt"      "$com:filecount"
+$      DCL$CALL Alias "fix"          "@com:file$edit"
+$      DCL$CALL Alias "fli*st"       "@com:file$preplist"
+$      DCL$CALL Alias "mov*e"        "@com:file$move"
+$      DCL$CALL Alias "prot*ect"     "@com:file$protect"
+$      DCL$CALL Alias "slice"        "$com:slice"
+$      DCL$CALL Alias "sscon*vert"   "@com:file$ssconvert"
+$      DCL$CALL Alias "tail"         "$com:tail"
+$      DCL$CALL Alias "tool*sdebug"  "@com:tools$debug"
+$      DCL$CALL Alias "untang*le"    "@com:file$untangle"
+$      DCL$CALL Alias "xf*er"        "@com:file$xfer"
+$      DCL$CALL Alias "xftp"         "@com:file$ftp"
 $ ENDIF
 $ !
 $ ! Logicals:
-$ CALL CDefine "md*ir"     "@com:makedir"
+$ DCL$CALL Alias "md*ir"     "@com:makedir"
 $ ml*ogical == mdir + " *"
 $ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
 $ !
@@ -288,20 +254,24 @@ $ F = "site$utils:smart$sethost.com"
 $ IF F$SEARCH(F) .NES. "" THEN @'F' $LOGIN
 $ !
 $ ! Tools:
-$ CALL CDefine "cap*ture"    "@com:capture.com"     !capture SYS$OUTPUT to file
-$ CALL CDefine "day*s"       "$site$utils:dc$datecalc"
-$ CALL CDefine "deltree"     "@site$utils:deltree"
-$ CALL CDefine "flush"       "@com:flushscr.com"
-$ CALL CDefine "key*words"   "@site$utils:sql$keywords.com"
-$ CALL CDefine "sc*ontrol"   "@site$utils:source_control.com"
-$ CALL CDefine "tcom"        "@com:typecom.com"
-$ CALL CDefine scr*width     "@com:scrwidth.com"
+$ DCL$CALL Alias "cap*ture"    "@com:capture.com"     !capture SYS$OUTPUT to file
+$ DCL$CALL Alias "day*s"       "$site$utils:dc$datecalc"
+$ DCL$CALL Alias "deltree"     "@site$utils:deltree"
+$ DCL$CALL Alias "flush"       "@com:flushscr.com"
+$ DCL$CALL Alias "key*words"   "@site$utils:sql$keywords.com"
+$ DCL$CALL Alias "sc*ontrol"   "@site$utils:source_control.com"
+$ DCL$CALL Alias "tcom"        "@com:typecom.com"
+$ DCL$CALL Alias scr*width     "@com:scrwidth.com"
 $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
 $ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES. "" ) -
   THEN @site$utils:rapt_tools
 $ !
 $ ! PARSEC --
+$ IF ( LNode .EQS. "CLASS8" )
+$ THEN wso ""
+$      kitkosh == "ssh 40.129.101.176"
+$ ENDIF
 $ IF ( LNode .EQS. "VMSPR3" )
 $ THEN wso ""
 $      wso "%SYMBOLS-I-''LNode', tapes* command aliases --"

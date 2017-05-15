@@ -12,6 +12,12 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ dcl$slversion   = "01.00.00"         ! maintain with edits
+$ dcl$sldatestamp = "15-MAY-2017"
+$ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" )
+$ THEN DEFINE /PROCESS /NOLOG DCL$SLversion "v''dcl$slversion' (''dcl$sldatestamp')"
+$ ENDIF
+$ !
 $ ! Need some help?
 $ p1param = F$EXTRACT( 0, 4, F$EDIT(P1,"UPCASE,TRIM") ) - "-" - "-"  ! strip any leading - or --
 $ IF ( p1param .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
@@ -20,12 +26,13 @@ $ wso   = "WRITE sys$output"
 $ Fac   = "DCL$SUBROUTINE_LIBRARY"
 $ COMMA = ","
 $ !
-$ ! ==========
+$ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added:
-$ RegisteredRoutines = ",CmdParse,DeleteGlobalSymbols,MakeDir,ToolsDebug,Setup" -
+$ RegisteredRoutines = ",Alias,CmdParse,DeleteGlobalSymbols,MakeDir,PureDCL,ToolsDebug,Setup" -
                      + ",«»" -
                      + ",«»" -
                      + COMMA
+$ ! ----------------------------------------------------------------------
 $ ! ==========
 $ RRlen    = F$LENGTH( RegisteredRoutines )
 $ RegRouUC = F$EDIT( RegisteredRoutines, "UPCASE" )
@@ -62,7 +69,7 @@ $      EXIT %X2C  ! abort...
 $ ENDIF
 $ !
 $ ! ==========
-$ ! Dispatch:  P1 = Subroutine to call; P2..P8 are general parameters to pass --
+$ ! Dispatch:  P1 = Subroutine to call; P2..P8 are com-line parameters to pass --
 $ !            Note that internal subroutine names are prefixed by "DCL$" to
 $ !            limit conficts with external, non-library routines...
 $ ! ==========
@@ -180,6 +187,59 @@ $ ! ==========
 $ !
 $ !
 $ ! ==========
+$DCL$PureDCL:  SUBROUTINE
+$ ! Doc : Sanity check for a site-specific global string which uses a DCL
+$ !       command verb, make it go away!...
+$ !  Example:
+$ !     $ DCL$CALL PureDCL
+$ !  P1 : DCL command verb (word)
+$ !
+$ SET NOON
+$ IF ( F$TYPE('P1') .EQS. "STRING" )
+$ THEN DELETE = "DELETE"
+$      DEFINE = "DEFINE /NOLOG /USER_MODE"
+$      DEFINE sys$output NLA0:
+$      DEFINE sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'P1'
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$PureDCL
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$Setup:  SUBROUTINE
+$ ! Doc : Sets up all global symbols & logical names for
+$ !       this DCL$SUBROUTINE_LIBRARY
+$ !  Example:
+$ !     $ ! This is the library-initialization, so must use full file-spec:
+$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup
+$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ !  P1 : verification (output-trace)
+$ !
+$ proc = F$ENVIRONMENT( "PROCEDURE" )
+$ dd   = F$PARSE( proc, , , "DEVICE" ) + F$PARSE( proc, , , "DIRECTORY" )
+$ fac  = F$PARSE( proc, , , "NAME" )
+$ DEFINE /PROCESS /NOLOG DCL$SLhome 'dd'
+$ DCL$CALL == "@DCL$SLhome:''fac'"
+$ IF ( F$TRNLNM( "TOOLS$DEBUG" ) ) .OR. ( P1 )
+$ THEN dashcount = 80
+$      dashes = F$FAO( "!#*-", dashcount )
+$      wso ""
+$      wso dashes
+$      wso F$FAO( "%!AS-I-SETUP, done for !AS...", fac, fac )
+$      SHOW LOGICAL /PROCESS DCL$SLversion
+$      SHOW LOGICAL /PROCESS DCL$SLhome
+$      SHOW SYMBOL /GLOBAL DCL$CALL
+$      wso dashes
+$      wso ""
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Setup
+$ ! ==========
+$ !
+$ !
+$ ! ==========
 $DCL$ToolsDebug:  SUBROUTINE
 $ ! Doc : Turns on-or-off DCL com-file "verbosity" debugging.
 $ !       This subroutine does not fully supercede TOOLS$DEBUG.COM --
@@ -217,55 +277,51 @@ $ ! ==========
 $ !
 $ !
 $ ! ==========
-$DCL$Setup:  SUBROUTINE
-$ ! Doc : Sets up all global symbols & logical names for
-$ !       this DCL$SUBROUTINE_LIBRARY
+$DCL$Alias:  SUBROUTINE
+$ ! Doc : Conditionally define a global symbol (alias command) P1 for invoking
+$ !       the command file P2 (which must exist).
 $ !  Example:
-$ !     $ ! This is the library-initialization, so must use full file-spec:
-$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup
-$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup TRUE
-$ !  P1 : verification (output-trace)
-$ !
-$ proc = F$ENVIRONMENT( "PROCEDURE" )
-$ dd   = F$PARSE( proc, , , "DEVICE" ) + F$PARSE( proc, , , "DIRECTORY" )
-$ fac  = F$PARSE( proc, , , "NAME" )
-$ DEFINE /PROCESS /NOLOG DCL$SLhome 'dd'
-$ DCL$CALL == "@DCL$SLhome:''fac'"
-$ IF ( F$TRNLNM( "TOOLS$DEBUG" ) ) .OR. ( P1 )
-$ THEN dashcount = 70
-$      dashes = F$FAO( "!#*-", dashcount )
-$      wso ""
-$      wso dashes
-$      wso F$FAO( "%!AS-I-SETUP, done for !AS...", fac, fac )
-$      SHOW LOGICAL /FULL /PROCESS DCL$SLhome
-$      SHOW SYMBOL /GLOBAL DCL$CALL
-$      wso dashes
-$      wso ""
+$ !     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
+$ ! P1 : command symbol
+$ ! P2 : command file
+$ ! P3 : alternate command string
+$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
+$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
+$ ELSE AbbrSym = P1
+$ ENDIF
+$ FullSym = P1 - "*"
+$ IF F$TYPE('AbbrSym') .EQS. "STRING"  !command symbol already exists?
+$ THEN IF Redefine
+$      THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
+$           GOTO CDef1
+$      ELSE IF Verbose THEN wso "%SYMBOLS-W-NOREDEFINE, command symbol ""''P1'"" already exists"
+$           EXIT 1
+$      ENDIF
+$ ENDIF
+$CDef1:
+$ P2 = F$EDIT(P2,"UPCASE")
+$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
+$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
+$ IF F$SEARCH(P2) .NES. ""
+$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
+$      THEN 'P1' == "$''P2'"
+$      ELSE 'P1' == "@''P2'"
+$      ENDIF
+$      IF Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
+$ ELSE IF ( P3 .NES. "" )
+$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
+$      ELSE IF LMR$Unavailable .EQS. ""
+$           THEN LMR$Unavailable == FullSym
+$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
+$           ENDIF
+$           IF Verbose THEN SHOW SYMBOL /LOCAL P1
+$           IF Verbose THEN SHOW SYMBOL /LOCAL P2
+$      ENDIF
 $ ENDIF
 $ EXIT 1
-$ ENDSUBROUTINE  ! DCL$Setup
-$ ! ==========
+$ ENDSUBROUTINE  ! DCL$Alias
 $ !
 $ !
-$ ! ==========
-$DCL$«»:  SUBROUTINE
-$ ! Doc : «»
-$ !  Example:
-$ !     $ DCL$CALL «»
-$ !  P1 : «»
-$ !
-$ ON CONTROL_Y THEN GOSUB «»Ctrl_Y
-$ ON ERROR THEN EXIT %X2C  ! abort...
-$ 
-$ EXIT 1
-$ !
-$«»Ctrl_Y:
-$ RETURN %X2C  ! abort...
-$ ENDSUBROUTINE  ! DCL$«»
-$ ! ==========
-$ !
-$ !
-$ ! ==========
 $DCL$«»:  SUBROUTINE
 $ ! Doc : «»
 $ !  Example:

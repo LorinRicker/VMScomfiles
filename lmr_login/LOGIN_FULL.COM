@@ -81,33 +81,22 @@ $VMIDone:
 $ EXIT 1
 $ ENDSUBROUTINE  ! VMS$Install
 $ !
-$PureDCL: SUBROUTINE
-$ SET NOON
-$ ! Sanity check for site-specific global string, make it go away!...
-$ IF ( F$TYPE('P1') .EQS. "STRING" )
-$ THEN DELETE = "DELETE"
-$      DEFINE /NOLOG /USER_MODE sys$output NLA0:
-$      DEFINE /NOLOG /USER_MODE sys$error  NLA0:
-$      DELETE /SYMBOL /GLOBAL 'P1'
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! PureDCL
-$ !
 $ !
+$ ! ----------------------------------------------------------------------
 $MAIN:
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ !      
+$ ! ----------------------------------------------------------------------
+$ Verbosity == F$TRNLNM( "TOOLS$DEBUG" ) .OR. ( P2 .EQS. "TRUE" )
+$ ! ----------------------------------------------------------------------
+$ !      
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
-$ CALL PureDCL "DELETE"
-$ CALL PureDCL "COPY"
-$ CALL PureDCL "RENAME"
-$ CALL PureDCL "PURGE"
-$ CALL PureDCL "DIRECTORY"
-$ CALL PureDCL "SEARCH"
-$ !
+$ ! ----------------------------------------------------------------------
+$ LGI$Mode == F$MODE()
+$ ! ----------------------------------------------------------------------
 $ ! Copy-a-new-version-of-self support:
 $ IF ( P1 .EQS. "NEW" ) .OR. ( P1 .EQS. "COPY" )
 $ THEN IF ( F$SEARCH("sys$login:LOGIN_FULL.COM") .NES. "" )
@@ -119,17 +108,13 @@ $      PURGE /KEEP=2 /NOLOG sys$login:LOGIN*.COM
 $      EXIT 1  ! 'F$VERIFY(0)'
 $ !    ======
 $ ENDIF
-$ !
-$ Interactive = ( F$MODE() .EQS. "INTERACTIVE" )
+$ ! ----------------------------------------------------------------------
 $ Lprv = ""
 $ wso  = "WRITE sys$output"
-$ DD = F$ENVIRONMENT("PROCEDURE")
-$ DD = F$PARSE(DD,"sys$login","sys$disk:[]","DEVICE","SYNTAX_ONLY") -
-     + F$PARSE(DD,"sys$login","sys$disk:[]","DIRECTORY","SYNTAX_ONLY")
-$ !
-$ ! LTclient?
-$ IF Interactive .AND. (F$GETDVI("TT","DEVICE_TYPE_NAME") .EQS. "VT100") THEN EXIT
-$ !      
+$ DD   = F$ENVIRONMENT( "PROCEDURE" )
+$ DD   = F$PARSE( DD, "sys$login", "sys$disk:[]", "DEVICE", "SYNTAX_ONLY") -
+       + F$PARSE( DD, "sys$login", "sys$disk:[]", "DIRECTORY", "SYNTAX_ONLY")
+$ ! ----------------------------------------------------------------------
 $ ! Debugging support:
 $ Debug = ( P1 .EQS. "DEBUG" )
 $ IF Debug
@@ -137,24 +122,42 @@ $ THEN ver = F$VERIFY(1)
 $      OPEN /WRITE f 'DD'login.log
 $      CALL Trace
 $ ENDIF
-$ !
+$ ! ----------------------------------------------------------------------
 $ ! Support for VMSINSTAL, with restoration...
-$ IF Interactive .AND. ( P1 .EQS. "VMSINSTAL" ) THEN CALL VMS$Install
+$ IF ( lgi$mode .EQS. "INTERACTIVE" ) .AND. ( P1 .EQS. "VMSINSTAL" ) THEN CALL VMS$Install
 $ !
 $ isTerm = ""
 $ Term   = F$GETJPI("","TERMINAL")
 $ IF Term .NES. "" THEN isTerm = F$GETDVI(Term,"TRM")
-$ !
+$ ! ----------------------------------------------------------------------
 $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LBase  = F$TRNLNM("sys$login_device") -
          + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
 $ ! Personal logical name LMR$LOGIN is key:
 $ DEFINE /JOB /NOLOG lmr$login 'LBase'.login]
+$ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( P1 .EQS. "RELOGIN" )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ ENDIF
+$ ! ----------------------------------------------------------------------
 $ !
+$ DCL$CALL PureDCL "APPEND"
+$ DCL$CALL PureDCL "BACKUP"
+$ DCL$CALL PureDCL "COPY"
+$ DCL$CALL PureDCL "DELETE"
+$ DCL$CALL PureDCL "DIRECTORY"
+$ DCL$CALL PureDCL "DUMP"
+$ DCL$CALL PureDCL "PURGE"
+$ DCL$CALL PureDCL "RENAME"
+$ DCL$CALL PureDCL "SEARCH"
+$ DCL$CALL PureDCL "TYPE"
+$ !
+$ ! ----------------------------------------------------------------------
 $ HomeNodes = ",CLASS8,VMSPR1,VMSPR3,"   ! <== customized <== !
 $ atHome    = ( F$LOCATE(",''LNode',",HomeNodes) .LT. F$LENGTH(HomeNodes) )
-$ !
-$ GOTO 'F$MODE()'
+$ ! ----------------------------------------------------------------------
+$ GOTO 'LGI$Mode'
+$ ! ----------------------------------------------------------------------
 $ !
 $INTERACTIVE:
 $ LMR$Unavailable == ""
@@ -203,25 +206,29 @@ $ wso ""
 $ !
 $ GOTO Done
 $ !
-$NETWORK:
-$ CALL SearchAt lmr$login:logicals.com
-$!! $ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
-$!! $ !!! retired --> CALL SearchAt mgr$login
-$ Lprv = "sysprv"
-$ GOTO Done
-$ !
+$ ! ----------------------------------------------------------------------
 $BATCH:
 $ CALL SearchAt lmr$login:logicals.com
-$!! $ !!! retired --> CALL SearchAt mgr$login
+$ !!! retired --> CALL SearchAt mgr$login
 $ subm*it == "SUBMIT /KEEP /NOPRINT /LOG_FILE=logs:"
 $ make == "@site$utils:make"
 $ !!!«» IF atHome THEN @'LBase'.music]context LOG   !for weekly backup (Music$Database)
 $ GOTO Done
 $ !
-$OTHER:
-$ CALL SearchAt lmr$login:logicals.com
+$ ! ----------------------------------------------------------------------
+$NETWORK:
+$!! $ CALL SearchAt lmr$login:logicals.com
+$!! $ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
+$!! $ !!! retired --> CALL SearchAt mgr$login
+$ Lprv = "sysprv"
 $ GOTO Done
 $ !
+$ ! ----------------------------------------------------------------------
+$OTHER:
+$!! $ CALL SearchAt lmr$login:logicals.com
+$ GOTO Done
+$ !
+$ ! ----------------------------------------------------------------------
 $Done:
 $ SET NOON
 $ IF Lprv .NES. "" THEN Lprv = F$SETPRV(Lprv)
@@ -231,6 +238,8 @@ $ THEN DEASSIGN /PROCESS sys$output
 $      DEASSIGN /PROCESS sys$error
 $      CLOSE f
 $ ENDIF
+$ show symbol verbosity
+$ DCL$CALL DeleteGlobalSymbol "Verbosity"
 $ EXIT 1
 $ !
 $Ctrl_Y:
