@@ -1,6 +1,6 @@
 $ ! RUBY_SETUP.COM                                                 'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2015-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2015-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -23,19 +23,21 @@ $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
 $ wso = "WRITE sys$output"
 $ !
+$ Verbose = F$TRNLNM("TOOLS$Debug")
+$ !
 $ RubyVolumeOkay == 0  ! initial assumptions
 $ RubyVolumeODS5 == 0
 $ !
 $ReCheck:
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
-$ THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
+$ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
 $      RubyX == "$ruby$root:[bin]ruby"
 $ !
 $      f = "com:rubycmd"
 $      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
 $      THEN mkrub*ycmd == "@''f' CMD"
 $           ruby        == "@''f' RUN"
-$      ELSE wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
+$      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
 $      ENDIF
 $ !
 $      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
@@ -66,11 +68,13 @@ $ ENDIF
 $ !
 $Done:
 $ IF F$TYPE(ruby) .EQS. "STRING"
-$ THEN SHOW LOGICAL /SYSTEM /FULL Ruby*
-$      SHOW LOGICAL /JOB /FULL Ruby*
-$      wso ""
-$      SHOW SYMBOL /GLOBAL *Ruby*
-$      wso ""
+$ THEN IF Verbose
+$      THEN SHOW LOGICAL /SYSTEM Ruby*
+$           SHOW LOGICAL /JOB    Ruby*
+$           wso ""
+$           SHOW SYMBOL /GLOBAL *Ruby*
+$           wso ""
+$      ENDIF
 $      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
 $      RubyX -v   ! show version
 $ ENDIF

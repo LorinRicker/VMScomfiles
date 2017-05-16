@@ -72,11 +72,11 @@ $      ELSE auth*orize == "PIPE cd sys$system ; MCR AUTHORIZE"
 $      ENDIF
 $ ENDIF
 $ !
-$ IF F$TYPE(sysgen)    .EQS. "" THEN sysgen     == "$SYS$SYSTEM:SYSGEN"
-$ IF F$TYPE(sysman)    .EQS. "" THEN sysman     == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
-$ IF F$TYPE(lancp)     .EQS. "" THEN lancp      == "$SYS$SYSTEM:LANCP"
-$ IF F$TYPE(ncp)       .EQS. "" THEN ncp        == "$SYS$SYSTEM:NCP"
-$ IF F$TYPE(ncl)       .EQS. "" THEN ncl        == "$SYS$SYSTEM:NCL"
+$ IF F$TYPE(sysgen) .EQS. "" THEN sysgen == "$SYS$SYSTEM:SYSGEN"
+$ IF F$TYPE(sysman) .EQS. "" THEN sysman == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
+$ IF F$TYPE(lancp)  .EQS. "" THEN lancp  == "$SYS$SYSTEM:LANCP"
+$ IF F$TYPE(ncp)    .EQS. "" THEN ncp    == "$SYS$SYSTEM:NCP"
+$ IF F$TYPE(ncl)    .EQS. "" THEN ncl    == "$SYS$SYSTEM:NCL"
 $ !
 $ DCL$CALL Alias "lo*gout"      "@lmr$login:logout.com"
 $ DCL$CALL Alias "priv*ilege"   "@com:privilege.com" "SET PROCESS /PRIVILEGE="
@@ -107,24 +107,6 @@ $ XBin == "*.exe,*.mob,*.obj,*.pen,*.%lb"
 $ XLog == "*.*log*,*.lis,*.tmp,*.txt"
 $ XB   == "/EXCLUDE=(''XBin')"
 $ XL   == "/EXCLUDE=(''XLog')"
-$ !
-$ esc[0,32]= %X1B
-$ esc[0,1]:= 'esc'
-$ ! --------------------------------
-$ ! Define screen-clearing commands:
-$ _bckscrL == esc + "[?5h"      ! set background light
-$ _bckscrD == esc + "[?5l"      ! set background dark
-$ _clrscr  == esc + "[m"  -     ! set rendition normal
-            + esc + "[H"  -     ! cursor to 0,0
-            + esc + "[2J"       ! clear entire screen
-$ !
-$ clr      == "WRITE sys$output _clrscr"
-$ cls      == "WRITE sys$output _clrscr"
-$ clrd     == "WRITE sys$output _bckscrL,_clrscr"
-$ clsd     == "WRITE sys$output _bckscrL,_clrscr"
-$ clrl     == "WRITE sys$output _bckscrD,_clrscr"
-$ clsl     == "WRITE sys$output _bckscrD,_clrscr"
-$ ! --------------------------------
 $ !
 $ DCL$CALL Alias "bell"       "@com:bell"
 $ DCL$CALL Alias "count"      "@com:count"
@@ -269,12 +251,11 @@ $ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES
 $ !
 $ ! PARSEC --
 $ IF ( LNode .EQS. "CLASS8" )
-$ THEN wso ""
+$ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', alias ""kitkosh"""
 $      kitkosh == "ssh 40.129.101.176"
 $ ENDIF
 $ IF ( LNode .EQS. "VMSPR3" )
-$ THEN wso ""
-$      wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
+$ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
 $      tapesall  == "PIPE MDMS SHOW VOLUME | SORT /KEY=(POS:12,SIZ:10,ASC) /KEY=(POS:1,SIZ:6,ASC)" -
                   + " sys$pipe sys$scratch:all.tapes" -
                   + " ; TYPE /PAGE sys$scratch:all.tapes"
@@ -284,13 +265,12 @@ $      tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
 $      tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
                   + "| SORT /KEY=(POS:26,SIZ=14,ASC) sys$pipe sys$scratch:find.tapes" -
                   + " ; TYPE /PAGE sys$scratch:find.tapes"
-$      SHOW SYMBOL /GLOBAL tapes*
+$      IF Verbose THEN SHOW SYMBOL /GLOBAL tapes*
 $ ENDIF
 $ IF ( LNode .EQS. "VMSPR3" )
-$ THEN wso ""
-$      wso "%SYMBOLS-I-''LNode', license/PAK command alias --"
+$ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', license/PAK command alias --"
 $      mklic*ensepg == "@user_disk:[williams]pg_license"
-$      SHOW SYMBOL /GLOBAL mklic*
+$      IF Verbose THEN SHOW SYMBOL /GLOBAL mklic*
 $ ENDIF
 $ !
 $Done:

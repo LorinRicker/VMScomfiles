@@ -167,6 +167,7 @@ $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $ !
 $      !!! CALL SearchAt lmr$login:delsymbols.com NO
+$      ! Dependency: must invoke ansiseq.com before symbols.com...
 $      CALL SearchAt com:ansiseq.com
 $      CALL SearchAt lmr$login:symbols.com
 $      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
@@ -213,7 +214,7 @@ $ GOTO Done
 $ !
 $ ! ----------------------------------------------------------------------
 $NETWORK:
-$!! $ CALL SearchAt lmr$login:logicals.com
+$ CALL SearchAt lmr$login:logicals.com
 $!! $ !! IF atHome THEN DEFINE netserver$servers_L_RICKER 8
 $!! $ !!! retired --> CALL SearchAt mgr$login
 $ Lprv = "sysprv"
@@ -234,7 +235,6 @@ $ THEN DEASSIGN /PROCESS sys$output
 $      DEASSIGN /PROCESS sys$error
 $      CLOSE f
 $ ENDIF
-$ show symbol verbosity
 $ DCL$CALL DeleteGloSyms "Verbosity"
 $ EXIT 1
 $ !
