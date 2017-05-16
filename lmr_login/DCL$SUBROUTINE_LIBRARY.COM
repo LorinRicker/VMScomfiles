@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.04"         ! maintain with edits
+$ dcl$slversion   = "01.00.05"         ! maintain with edits
 $ dcl$sldatestamp = "16-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -26,14 +26,16 @@ $ IF ( p1param .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
 $ !
 $ dcl$Verbose = F$TRNLNM( "TOOLS$DEBUG" )
 $ !
-$ wso   = "WRITE sys$output"
-$ Fac   = "DCL$SUBROUTINE_LIBRARY"
-$ COMMA = ","
+$ wso        = "WRITE sys$output"
+$ Fac        = "DCL$SUBROUTINE_LIBRARY"
+$ COMMA      = ","
+$ BANG       = "!"
+$ UNDERSCORE = "_"
 $ !
 $ ! ----------------------------------------------------------------------
-$ ! Update this list as new subroutines are added:
-$ RegisteredRoutines = ",Alias,CmdParse,DeleteGloSyms,MakeDir,PureDCL,ToolsDebug,Setup" -
-                     + ",«»" -
+$ ! Update this list as new subroutines are added -- keep this sorted:
+$ RegisteredRoutines = ",Alias,CmdParse,DeleteGloSyms,DiscoverDisks" -
+                     + ",MakeDir,PureDCL,ToolsDebug,Setup" -
                      + ",«»" -
                      + COMMA
 $ ! ----------------------------------------------------------------------
@@ -183,9 +185,9 @@ $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
 $ j = 0
-$DGSLoop:
+$DCL$DGSLoop:
 $ sym = F$ELEMENT( j, COMMA, P1 )
-$ IF ( sym .EQS. COMMA ) THEN GOTO DGScont
+$ IF ( sym .EQS. COMMA ) THEN GOTO DCL$DGSexit
 $ IF ( F$TYPE( 'sym' ) .NES. "" )
 $ THEN IF dcl$Verbose THEN wso "%DCL$DELETEGLOSYMS-I-DELSYM, delete symbol ""''sym'"""
 $      DELETE = "DELETE"
@@ -194,10 +196,68 @@ $      dfn sys$error  NLA0:
 $      DELETE /SYMBOL /GLOBAL 'sym'
 $ ENDIF
 $ j = j + 1
-$ GOTO DGSLoop
-$DGSCont:
+$ GOTO DCL$DGSLoop
+$DCL$DGSexit:
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$DeleteGloSyms
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$DiscoverDisks:  SUBROUTINE
+$ ! Doc : Create, by discovery, a list (comma-separated string) of disks on this system,
+$ !       suitable for F$ELEMENT(j,...)-looping through for caller processing.
+$ !  Example:
+$ !     $ DCL$CALL DiscoverDisks "SHDW_MEMBER,FOR,AVL,!MNT"
+$ !  P1 : disk criteria list for inclusion in the result (comma-separated),
+$ !       with a leading "!" on the criterion name for negation of that one
+$ !       (e.g., "...,!MNT,..." means "not mounted").
+$ !       Criteria include:
+$ !       ALL (allocated), AVL (available), DMT (marked for dismount),
+$ !       EXISTS (device exists), FOD (file-oriented device),
+$ !       FOR (mounted foreign), SHDW_MEMBER (shadow-member device),
+$ !       SWL (software write-locked)
+$ !  P2 : TRUE (default) to filter out LDAxxx: type devices, FALSE to include them
+$ !
+$ SET NOON
+$ IF ( P1 .EQS. "" ) THEN P1 = "SHDW_MEMBER,FOR,AVL,!MNT"
+$ IF ( P2 .EQS. "" ) THEN P2 = "TRUE"
+$ DDpayload = ""
+$DCL$DDLoop:
+$ dev = F$DEVICE( "*", "DISK" ) - UNDERSCORE
+$ IF ( dev .EQS. "" ) THEN GOTO DCL$DDexit   ! done...
+$ j = 0
+$ rejected = 0
+$DCL$DD0:
+$ criterion = F$ELEMENT( j, COMMA, P1 )
+$ IF ( criterion .EQS. COMMA ) THEN GOTO DCL$DD1
+$ IF P2 -
+  THEN IF ( F$LOCATE( "LDA", dev ) .LT. F$LENGTH( dev ) ) -
+       THEN GOTO DCL$DDLoop  ! skip this disk
+$ IF ( F$EXTRACT( 0, 1, criterion ) .EQS. BANG )
+$ THEN criterion = criterion - BANG
+$      rejected = rejected .OR. ( .NOT. F$GETDVI( dev, criterion ) )
+$ ELSE rejected = rejected .OR. (       F$GETDVI( dev, criterion ) )
+$ ENDIF
+$DCL$DD1:
+$ IF rejected
+$ THEN GOTO DCL$DDLoop  ! skip this disk
+$ ELSE ! Accumulate the payload:
+$      DDpayload = DDpayload + COMMA + dev
+$ ENDIF
+$ GOTO DCL$DDLoop
+$ !
+$DCL$DDexit:
+$ DDlen = F$LENGTH( DDpayload )
+$ ! Assign payload to the global variable, but strip the leading ","
+$ IF ( DDpayload .NES. "" )
+$ THEN DD$DiscoveredDisks == F$EXTRACT( 1, DDlen, DDpayload )
+$ ELSE DD$DiscoveredDisks == ""
+$ ENDIF
+$ IF dcl$Verbose THEN wso F$FAO( "%DCL$DISCOVERDISKS-I-ECHO, DD$DiscoveredDisks == ""!AS""", -
+                                  DD$DiscoveredDisks )
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$DiscoverDisks
 $ ! ==========
 $ !
 $ !
@@ -212,7 +272,7 @@ $ !  P1 : Name of temporary subdirectory (default is "TEMP")
 $ !  P2 : Logical name for the full path to this subdirectory
 $ !  P3 : Logical name for this fully-specified subdirectory
 $ !
-$ ON CONTROL_Y THEN GOSUB MTDCtrl_Y
+$ ON CONTROL_Y THEN GOSUB DCL$MTDCtrl_Y
 $ ON ERROR THEN EXIT %X2C  ! abort...
 $ ! 
 $ IF ( P1 .EQS. "" ) THEN P1 = "TEMP"
@@ -226,7 +286,7 @@ $ ENDIF
 $ DEFINE /PROCESS /NOLOG 'P2' 'path'.'P1']
 $ EXIT 1
 $ !
-$MTDCtrl_Y:
+$DCL$MTDCtrl_Y:
 $ RETURN %X2C  ! abort...
 $ ENDSUBROUTINE  ! DCL$MakeDir
 $ ! ==========
@@ -243,9 +303,9 @@ $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
 $ j = 0
-$PDLoop:
+$DCL$PDLoop:
 $ sym = F$ELEMENT( j, COMMA, P1 )
-$ IF ( sym .EQS. COMMA ) THEN GOTO PDcont
+$ IF ( sym .EQS. COMMA ) THEN GOTO DCL$PDexit
 $ IF ( F$TYPE( 'sym' ) .NES. "" )
 $ THEN IF dcl$Verbose THEN wso "%DCL$PureDCL-I-DELSYM, purifying command verb ""''sym'"" (delete symbol)"
 $      DELETE = "DELETE"
@@ -254,8 +314,8 @@ $      dfn sys$error  NLA0:
 $      DELETE /SYMBOL /GLOBAL 'sym'
 $ ENDIF
 $ j = j + 1
-$ GOTO PDLoop
-$PDcont:
+$ GOTO DCL$PDLoop
+$DCL$PDexit:
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$PureDCL
 $ ! ==========
@@ -338,12 +398,12 @@ $ !! $ !  Example:
 $ !! $ !     $ DCL$CALL «»
 $ !! $ !  P1 : «»
 $ !! $ !
-$ !! $ ON CONTROL_Y THEN GOSUB «»Ctrl_Y
+$ !! $ ON CONTROL_Y THEN GOSUB DCL$«»Ctrl_Y
 $ !! $ ON ERROR THEN EXIT %X2C  ! abort...
 $ !! $
 $ !! $ EXIT 1
 $ !! $ !
-$ !! $«»Ctrl_Y:
+$ !! $DCL$«»Ctrl_Y:
 $ !! $ RETURN %X2C  ! abort...
 $ !! $ ENDSUBROUTINE  ! DCL$«»
 $ ! ==========
