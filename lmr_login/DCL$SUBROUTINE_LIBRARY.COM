@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.03"         ! maintain with edits
+$ dcl$slversion   = "01.00.04"         ! maintain with edits
 $ dcl$sldatestamp = "16-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -143,7 +143,7 @@ $ !
 $ IF ( P1 .EQS. "" ) THEN P1 = P3
 $ IF ( P2 .EQS. "" ) THEN P2 = "Cmd$Answer"
 $ IF ( P5 .EQS. "" ) THEN P5 = "|"
-$ IF ( P6 .EQS. "" ) THEN P6 = 0
+$ IF ( P6 .EQS. "" ) THEN P6 = "FALSE"
 $ IF F$EXTRACT(0,1,P4) .EQS. "@"
 $ THEN sym = P4 - "@"
 $      P4 = "''sym'"
@@ -163,8 +163,8 @@ $ ELSE 'P2'     == ""
 $      'P2'_Num == -1
 $      WRITE sys$output "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
 $      IF P6
-$      THEN EXIT 1           ! return "" and -1 to indicate parse-fail
-$      ELSE EXIT %X00038092  ! %DCL-E-IVVERB, unrecognized command verb (decimal 229522)
+$      THEN EXIT %X00038092  ! %DCL-E-IVVERB, unrecognized command verb (decimal 229522);
+$      ELSE EXIT 1           ! or return "" and -1 to indicate parse-fail
 $      ENDIF
 $ ENDIF
 $ ENDSUBROUTINE  ! DCL$CmdParse
@@ -276,7 +276,7 @@ $ dd   = F$PARSE( proc, , , "DEVICE" ) + F$PARSE( proc, , , "DIRECTORY" )
 $ fac  = F$PARSE( proc, , , "NAME" )
 $ DEFINE /PROCESS /NOLOG DCL$SLhome 'dd'
 $ DCL$CALL == "@DCL$SLhome:''fac'"
-$ IF ( F$TRNLNM( "TOOLS$DEBUG" ) ) .OR. ( P1 )
+$ IF ( dcl$Verbose ) .OR. ( P1 )
 $ THEN dashcount = 80
 $      dashes = F$FAO( "!#*-", dashcount )
 $      wso ""
@@ -306,7 +306,7 @@ $ !  P1 : TRUE/ON/1 enables debugging, FALSE/OFF/0 disables
 $ !  P2 : TRUE/YES/1 enables output verification of Tools$Debug state,
 $ !       FALSE/NO/0 disables same
 $ !
-$ ON ERROR THEN EXIT %X2C  ! abort...
+$ SET NOON
 $ IF ( P1 .EQS. "ON" ) .OR. ( F$EXTRACT(0,1,P1) .EQS. "Y" ) .OR. ( P1 .EQ. 1 )
 $ THEN P1 = "TRUE"
 $ ELSE P1 = "FALSE"
@@ -330,25 +330,9 @@ $ ENDSUBROUTINE  ! DCL$ToolsDebug
 $ ! ==========
 $ !
 $ !
-$DCL$«»:  SUBROUTINE
-$ ! Doc : «»
-$ !  Example:
-$ !     $ DCL$CALL «»
-$ !  P1 : «»
-$ !
-$ ON CONTROL_Y THEN GOSUB «»Ctrl_Y
-$ ON ERROR THEN EXIT %X2C  ! abort...
-$ 
-$ EXIT 1
-$ !
-$«»Ctrl_Y:
-$ RETURN %X2C  ! abort...
-$ ENDSUBROUTINE  ! DCL$«»
+$ ! Prototype:
 $ ! ==========
-$ !
-$ !
-$ ! ==========
-$DCL$ !! $«»:  SUBROUTINE
+$ !! DCL$ $«»:  SUBROUTINE
 $ !! $ ! Doc : «»
 $ !! $ !  Example:
 $ !! $ !     $ DCL$CALL «»
