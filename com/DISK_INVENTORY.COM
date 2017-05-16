@@ -1,6 +1,6 @@
 $ ! DISK_INVENTORY.COM --                                          'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -160,24 +160,8 @@ $ Node  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ Clu   = F$EXTRACT(0,4,Node)
 $ comma = ","
 $ !
-$ GOTO 'Clu'
-$R1SB:
-$ CluNodes = "R1SB10,R1SB11,R1SB12,R1SB13,R1SB14,R1SB15"
-$ GOTO CluCount
-$ !
-$R2BB:
-$ CluNodes = "R2BB10,R2BB11,R2BB12,R2BB13,R2BB14,R2BB15" -
-           + ",R2SB10,R2SB11,R2SB12,R2SB13,R2SB14,R2SB15,R2SB16,R2SB17,R2SB18"
-$ GOTO CluCount
-$ !
-$R4BB:
-$ CluNodes = "R4BB10,R4BB11,R4BB12,R4BB13,R4BB14,R4BB15" -
-           + ",R4SB10,R4SB11,R4SB12,R4SB13,R4SB14,R4SB15,R4SB16,R4SB17,R4SB18"
-$ GOTO CluCount
-$ !
-$MWC3:
-$ CluNodes = "MWC304"  !just for testing...
-$ GOTO CluCount
+$ ON WARNING THEN GOTO NoSuchSys
+$ GOTO 'Node'
 $ !
 $CluCount:
 $ IF F$ELEMENT(DI$CluNodeCount,comma,CluNodes) .EQS. comma
@@ -226,9 +210,14 @@ $ ENDIF
 $ GOTO L0
 $ !
 $Done:
-$ IF F$TYPE(DI$DevCount)     .NES. "" THEN DELETE /SYMBOL /GLOBAL DI$DevCount
-$ IF F$TYPE(DI$CluNodeCount) .NES. "" THEN DELETE /SYMBOL /GLOBAL DI$CluNodeCount
-$ EXIT
+$ DCL$CALL DeleteGloSyms "DI$DevCount,DI$CluNodeCount"
+$ EXIT 'stat'
+$ !
+$NoSuchSys:
+$ SET NOON
+$ wso F$FAO( "%!AS-I-NOSUCHSYS, no such system !AS yet enabled for this report", Fac, Node )
+$ stat = %X2C
+$ GOTO Done
 $ !
 $Ctrl_Y:
 $ RETURN %X2C
