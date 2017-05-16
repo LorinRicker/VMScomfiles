@@ -129,28 +129,23 @@ $ !
 $ isTerm = ""
 $ Term   = F$GETJPI("","TERMINAL")
 $ IF Term .NES. "" THEN isTerm = F$GETDVI(Term,"TRM")
-$ ! ----------------------------------------------------------------------
+$ !
 $ LNode  = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ LBase  = F$TRNLNM("sys$login_device") -
          + "[" + F$EDIT(F$GETJPI("","USERNAME"),"TRIM")
+$ !
+$ ! ----------------------------------------------------------------------
+$ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RELOGIN, RE-whatever
 $ ! Personal logical name LMR$LOGIN is key:
 $ DEFINE /JOB /NOLOG lmr$login 'LBase'.login]
 $ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
-$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( P1 .EQS. "RELOGIN" )
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( ReLogin )
 $ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
 $ ENDIF
 $ ! ----------------------------------------------------------------------
 $ !
-$ DCL$CALL PureDCL "APPEND"
-$ DCL$CALL PureDCL "BACKUP"
-$ DCL$CALL PureDCL "COPY"
-$ DCL$CALL PureDCL "DELETE"
-$ DCL$CALL PureDCL "DIRECTORY"
-$ DCL$CALL PureDCL "DUMP"
-$ DCL$CALL PureDCL "PURGE"
-$ DCL$CALL PureDCL "RENAME"
-$ DCL$CALL PureDCL "SEARCH"
-$ DCL$CALL PureDCL "TYPE"
+$ DCL$CALL PureDCL "APPEND,BACKUP,DIFFERENCE,DUMP,SEARCH,TYPE"
+$ DCL$CALL PureDCL "EDIT,COPY,DELETE,DIRECTORY,PURGE,RENAME"
 $ !
 $ ! ----------------------------------------------------------------------
 $ HomeNodes = ",CLASS8,VMSPR1,VMSPR3,"   ! <== customized <== !
@@ -166,16 +161,17 @@ $ CALL SearchAt lmr$login:logicals.com   ! now calls common_logicals.com
 $ !
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
-$      !!! CALL SearchAt lmr$login:delsymbols.com NO
-$      CALL SearchAt com:ansiseq.com
-$      CALL SearchAt lmr$login:symbols.com REDEFINE
-$      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
 $      IF ( F$TYPE( LMR$promptstr ) .EQS. "STRING" )
 $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
+$ !
+$      !!! CALL SearchAt lmr$login:delsymbols.com NO
+$      CALL SearchAt com:ansiseq.com
+$      CALL SearchAt lmr$login:symbols.com
+$      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
 $      CALL SearchAt dcl$init
-$  !!! retired --> CALL SearchAt mgr$login
+$      !!! CALL SearchAt mgr$login
 $      CALL SearchAt com:tpu.com
 $      dbginit = F$SEARCH("lmr$login:dbg$init.dbg")
 $      IF atHome .AND. ( F$TYPE(cjobs) .EQS. "STRING" ) THEN cjobs  !check periodic jobs
@@ -239,7 +235,7 @@ $      DEASSIGN /PROCESS sys$error
 $      CLOSE f
 $ ENDIF
 $ show symbol verbosity
-$ DCL$CALL DeleteGlobalSymbol "Verbosity"
+$ DCL$CALL DeleteGloSyms "Verbosity"
 $ EXIT 1
 $ !
 $Ctrl_Y:

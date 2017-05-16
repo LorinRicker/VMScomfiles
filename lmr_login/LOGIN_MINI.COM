@@ -1,4 +1,4 @@
-$ ! LOGIN.COM -- Lorin's minimal login                                  'F$VERIFY(0)'
+$ ! LOGIN_MINI.COM -- Lorin's minimal login                        'F$VERIFY(0)'
 $ !
 $ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -13,87 +13,22 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ==========
-$!!  $TestDir:  SUBROUTINE
-$!!  $ ! P1 : Subdirectory name to detect, create if missing
-$!!  $ ! P2 : Logical name to create for subdirectory
-$!!  $ ! P3 : Root/base user directory, e.g. "SYS$LOGIN_DEVICE:[username"
-$!!  $ ON CONTROL_Y THEN GOSUB TDCtrl_Y
-$!!  $ ON ERROR THEN EXIT %X2C
-$!!  $ dirspec = "sys$login:''P1'.dir"
-$!!  $ dir     = "''P3'.''P1']"
-$!!  $ IF ( F$SEARCH(dirspec) .EQS. "" ) THEN CREATE /DIRECTORY /LOG 'dir'
-$!!  $ DEFINE 'P2' 'dir'
-$!!  $ EXIT 1
-$!!  $TDCtrl_Y:
-$!!  $ RETURN %X2C
-$!!  $ ENDSUBROUTINE  ! TestDir
-$ !
-$CDefine:  SUBROUTINE
-$ ! P1 : command symbol
-$ ! P2 : command file
-$ ! P3 : alternate command string
-$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
-$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
-$ ELSE AbbrSym = P1
-$ ENDIF
-$ FullSym = P1 - "*"
-$ IF F$TYPE('AbbrSym') .EQS. "STRING"  !command symbol already exists?
-$ THEN IF Redefine
-$      THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
-$           GOTO CDef1
-$      ELSE wso "%SYMBOLS-W-NOREDEFINE, command symbol ""''P1'"" already exists"
-$           EXIT 1
-$      ENDIF
-$ ENDIF
-$CDef1:
-$ P2 = F$EDIT(P2,"UPCASE")
-$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
-$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
-$ IF F$SEARCH(P2) .NES. ""
-$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
-$      THEN 'P1' == "$''P2'"
-$      ELSE 'P1' == "@''P2'"
-$      ENDIF
-$ ELSE IF ( P3 .NES. "" )
-$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
-$      ELSE IF LMR$Unavailable .EQS. ""
-$           THEN LMR$Unavailable == FullSym
-$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
-$           ENDIF
-$      ENDIF
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! CDefine
-$ !
-$PureDCL: SUBROUTINE
-$ SET NOON
-$ ! Sanity check for site-specific global string, make it go away!...
-$ IF ( F$TYPE('P1') .EQS. "STRING" )
-$ THEN DELETE = "DELETE"
-$      DEFINE /NOLOG /USER_MODE sys$output NLA0:
-$      DEFINE /NOLOG /USER_MODE sys$error  NLA0:
-$      DELETE /SYMBOL /GLOBAL 'P1'
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! PureDCL
-$ !
-$ !
-$ ! ==========
 $MAIN:
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
-$ CALL PureDCL "BACKUP"
-$ CALL PureDCL "COPY"
-$ CALL PureDCL "DELETE"
-$ CALL PureDCL "DIFFERENCES"
-$ CALL PureDCL "DIRECTORY"
-$ CALL PureDCL "EDIT"
-$ CALL PureDCL "PURGE"
-$ CALL PureDCL "RENAME"
-$ CALL PureDCL "SEARCH"
+$ ! ----------------------------------------------------------------------
+$ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
+$ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( ReLogin )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup FALSE
+$ ENDIF
+$ ! ----------------------------------------------------------------------
+$ !
+$ DCL$CALL PureDCL "APPEND,BACKUP,DIFFERENCE,DUMP,SEARCH,TYPE"
+$ DCL$CALL PureDCL "EDIT,COPY,DELETE,DIRECTORY,PURGE,RENAME"
 $ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
@@ -106,11 +41,6 @@ $ SET NOON
 $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
-$!! $ CALL TestDir "SCRATCH"   "sys$scratch" "''LBase'"
-$!! $ CALL TestDir "LOGS"      "logs"        "''LBase'"
-$!! $ CALL TestDir "COM"       "com"         "''LBase'"
-$!! $ CALL TestDir "LOGIN"     "lmr$login"   "''LBase'"
-$!! $ CALL TestDir "VMSAUDITS" "v$audit"     "''LBase'"
 $ @'LBase'.LOGIN]COMMON_LOGICALS COM "LOGIN|lmr$login"
 $ IF ( F$TRNLNM("site$utils") .EQS. "" ) THEN DEFINE site$utils com
 $ !
@@ -176,13 +106,12 @@ $ clsl     == "WRITE sys$output _bckscrD,_clrscr"
 $ ! --------------------------------
 $ !
 $ LMR$UNAVAILABLE == ""
-$ Redefine = "TRUE"   ! for now, always redefine...
-$ CALL CDefine "cd"          "@com:cd"        "SET DEFAULT"
-$ CALL CDefine "disks*pace"  "@com:diskspace" "SHOW DEVICE D /MOUNTED"
-$ CALL CDefine "tool*sdebug" "@com:tools$debug"
-$ CALL CDefine "where"       "@com:where"     "SHOW DEFAULT"
-$ CALL CDefine "who"         "@com:DCLwho"    "SHOW USERS"
-$ CALL CDefine "priv*ilege"  "@com:privilege" "SET PROCESS /PRIVILEGE="
+$ DCL$CALL Alias "cd"          "@com:cd"        "SET DEFAULT"
+$ DCL$CALL Alias "disks*pace"  "@com:diskspace" "SHOW DEVICE D /MOUNTED"
+$ DCL$CALL Alias "tool*sdebug" "@com:tools$debug"
+$ DCL$CALL Alias "where"       "@com:where"     "SHOW DEFAULT"
+$ DCL$CALL Alias "who"         "@com:DCLwho"    "SHOW USERS"
+$ DCL$CALL Alias "priv*ilege"  "@com:privilege" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
 $      sudo   == "''privilege' SUDO"
@@ -243,7 +172,7 @@ $ IF ( F$SEARCH("com:zips.com") .NES. "" ) THEN @com:zips
 $ !
 $ ! Logicals:
 $ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
-$!! $ CALL CDefine "mkdir" "@com:makedir"
+$!! $ DCL$CALL Alias "mkdir" "@com:makedir"
 $!! $ ml*ogical == mkdir + " *"
 $ !
 $ EXIT 1
@@ -259,7 +188,7 @@ $BAC$:
 $ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
           + ",''LBase'.com]fix$bck.com;,zips.com;,tools$debug.com;"     -
           + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
-          + ",common_logicals.com;"                                     -
+          + ",dcl$subroutine_library.com;,common_logicals.com;"         -
           + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
           + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
@@ -278,7 +207,11 @@ $ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(common_logicals.com,show_cluster$init.ini,fixprivs.com) lmr$login:*.* /NEW_VERSION
+$      BACKUP /LOG 'ssnam' /SAVE_SET -
+         /SELECT=(dcl$subroutine_library.com, -
+                  common_logicals.com, -
+                  show_cluster$init.ini, -
+                  fixprivs.com) lmr$login:*.* /NEW_VERSION
 $      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF

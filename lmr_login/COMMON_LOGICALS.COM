@@ -48,7 +48,6 @@ $      arg2 = F$ELEMENT( 2, SEP, param )
 $      IF ( arg1 .EQS. SEP ) THEN arg1 = ""
 $      IF ( arg2 .EQS. SEP ) THEN arg2 = ""
 $      CALL DefLnm "''LBase'" "''arg0'" "''arg1'" "''arg2'"
-$      IF Debug THEN SHOW LOGICAL /FULL 'arg0'
 $      i = i + 1
 $      GOTO MLoop
 $ ENDIF

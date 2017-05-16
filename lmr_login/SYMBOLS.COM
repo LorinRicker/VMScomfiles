@@ -12,17 +12,17 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !    use:  @symbols [ REDEFINE | REFRESH ]
+$ !    use:  @symbols [ REDEFINE | REFRESH | RELOGIN ]
 $ !
 $MAIN:
 $ SET NOON
 $ Verbose = F$TRNLNM("TOOLS$Debug")
-$ Redefine = ( F$EXTRACT(0,2,P1) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
 $ !
 $ ! ----------------------------------------------------------------------
+$ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RELOGIN, RE-whatever
 $ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
-$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( P1 .EQS. "RELOGIN" )
-$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( ReLogin )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup FALSE
 $ ENDIF
 $ ! ----------------------------------------------------------------------
 $ !
@@ -194,8 +194,8 @@ $      where == "WRITE sys$output F$FAO(""!AS!AS !6* (prev: !AS)"""   -
               +                         ",CZ)"
 $ ENDIF
 $ !
-$ IF F$SEARCH("site$utils:file$setup.com") .NES. ""      !the FILE$* group
-$ THEN @site$utils:file$setup 'P1'
+$ IF F$SEARCH( "com:file$setup.com" ) .NES. ""      !the FILE$* group
+$ THEN @com:file$setup 'P1'
 $ ELSE DCL$CALL Alias "chk"          "@com:file$compare"
 $      IF F$TYPE(chk) .EQS. "STRING" -
        THEN chk == chk - ".COM" - " CHECK" + " CHECK"
