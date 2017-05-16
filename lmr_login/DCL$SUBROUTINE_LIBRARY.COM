@@ -12,9 +12,11 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.00"         ! maintain with edits
-$ dcl$sldatestamp = "15-MAY-2017"
-$ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" )
+$ dcl$slversion   = "01.00.03"         ! maintain with edits
+$ dcl$sldatestamp = "16-MAY-2017"
+$ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
+$ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
+  .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
 $ THEN DEFINE /PROCESS /NOLOG DCL$SLversion "v''dcl$slversion' (''dcl$sldatestamp')"
 $ ENDIF
 $ !
@@ -22,13 +24,15 @@ $ ! Need some help?
 $ p1param = F$EXTRACT( 0, 4, F$EDIT(P1,"UPCASE,TRIM") ) - "-" - "-"  ! strip any leading - or --
 $ IF ( p1param .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
 $ !
+$ dcl$Verbose = F$TRNLNM( "TOOLS$DEBUG" )
+$ !
 $ wso   = "WRITE sys$output"
 $ Fac   = "DCL$SUBROUTINE_LIBRARY"
 $ COMMA = ","
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added:
-$ RegisteredRoutines = ",Alias,CmdParse,DeleteGlobalSymbols,MakeDir,PureDCL,ToolsDebug,Setup" -
+$ RegisteredRoutines = ",Alias,CmdParse,DeleteGloSyms,MakeDir,PureDCL,ToolsDebug,Setup" -
                      + ",«»" -
                      + ",«»" -
                      + COMMA
@@ -80,6 +84,46 @@ $ EXIT 'stat'  ! 'F$VERIFY(0)'
 $ !
 $ !
 $ ! ==========
+$DCL$Alias:  SUBROUTINE
+$ ! Doc : Conditionally define a global symbol (alias command) P1 for invoking
+$ !       the command file P2 (which must exist).
+$ !  Example:
+$ !     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
+$ ! P1 : command symbol
+$ ! P2 : command file
+$ ! P3 : alternate command string
+$ !
+$ SET NOON
+$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
+$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
+$ ELSE AbbrSym = P1
+$ ENDIF
+$ FullSym = P1 - "*"
+$ IF ( F$TYPE( 'AbbrSym' ) .NES. "" )  !command symbol already exists?
+$ THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
+$ ENDIF
+$ P2 = F$EDIT(P2,"UPCASE")
+$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
+$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
+$ IF F$SEARCH(P2) .NES. ""
+$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
+$      THEN 'P1' == "$''P2'"
+$      ELSE 'P1' == "@''P2'"
+$      ENDIF
+$      IF dcl$Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
+$ ELSE IF ( P3 .NES. "" )
+$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
+$      ELSE IF LMR$Unavailable .EQS. ""
+$           THEN LMR$Unavailable == FullSym
+$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
+$           ENDIF
+$      ENDIF
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Alias
+$ !
+$ !
+$ ! ==========
 $DCL$CmdParse: SUBROUTINE
 $ ! Doc : Attempts to match a command word (P1) against a list of possible command words (P4),
 $ !       where P1 may be a uniquely-recognized abbreviation of any of the possible words;
@@ -128,30 +172,32 @@ $ ! ==========
 $ !
 $ !
 $ ! ==========
-$DCL$DeleteGlobalSymbols:  SUBROUTINE
+$DCL$DeleteGloSyms:  SUBROUTINE
 $ ! Doc : Deletes global symbols from list P1; usually called by com-file's cleanup,
 $ !       may be called more than once for separate lists.
 $ !  Examples:
-$ !     $ DCL$CALL DeleteGlobalSymbols "Cmd$Answer,Cmd$Answer_Num,Func_Result"
-$ !     $ DCL$CALL DeleteGlobalSymbols "ThisNode,ThisReport,ThisMsg,Count$Dups"
+$ !     $ DCL$CALL DeleteGloSyms "Cmd$Answer,Cmd$Answer_Num,Func_Result"
+$ !     $ DCL$CALL DeleteGloSyms "ThisNode,ThisReport,ThisMsg,Count$Dups"
 $ !  P1 : comma-separated list of global symbols to delete
 $ !
-$ ON CONTROL_Y THEN GOSUB DGSCtrl_Y
-$ ON ERROR THEN EXIT %X2C  ! abort...
-$ ! Delete global symbols --
+$ SET NOON
+$ dfn = "DEFINE /NOLOG /USER_MODE"
 $ j = 0
-$DSLoop:
+$DGSLoop:
 $ sym = F$ELEMENT( j, COMMA, P1 )
-$ IF ( sym .EQS. COMMA ) THEN GOTO DScont
-$ IF ( F$TYPE( 'sym' ) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL 'sym'
+$ IF ( sym .EQS. COMMA ) THEN GOTO DGScont
+$ IF ( F$TYPE( 'sym' ) .NES. "" )
+$ THEN IF dcl$Verbose THEN wso "%DCL$DELETEGLOSYMS-I-DELSYM, delete symbol ""''sym'"""
+$      DELETE = "DELETE"
+$      dfn sys$output NLA0:  ! suppress "undefined symbol" noise
+$      dfn sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'sym'
+$ ENDIF
 $ j = j + 1
-$ GOTO DSLoop
-$DSCont:
+$ GOTO DGSLoop
+$DGSCont:
 $ EXIT 1
-$ !
-$DGStrl_Y:
-$ RETURN %X2C  ! abort...
-$ ENDSUBROUTINE  ! DCL$DeleteGlobalSymbols
+$ ENDSUBROUTINE  ! DCL$DeleteGloSyms
 $ ! ==========
 $ !
 $ !
@@ -188,20 +234,28 @@ $ !
 $ !
 $ ! ==========
 $DCL$PureDCL:  SUBROUTINE
-$ ! Doc : Sanity check for a site-specific global string which uses a DCL
-$ !       command verb, make it go away!...
+$ ! Doc : Sanity check for a site-specific global symbol which appropriates
+$ !       a DCL command verb, make it go away!...
 $ !  Example:
 $ !     $ DCL$CALL PureDCL
-$ !  P1 : DCL command verb (word)
+$ !  P1 : comma-separated list of DCL command verbs (words) to decommission
 $ !
 $ SET NOON
-$ IF ( F$TYPE('P1') .EQS. "STRING" )
-$ THEN DELETE = "DELETE"
-$      DEFINE = "DEFINE /NOLOG /USER_MODE"
-$      DEFINE sys$output NLA0:
-$      DEFINE sys$error  NLA0:
-$      DELETE /SYMBOL /GLOBAL 'P1'
+$ dfn = "DEFINE /NOLOG /USER_MODE"
+$ j = 0
+$PDLoop:
+$ sym = F$ELEMENT( j, COMMA, P1 )
+$ IF ( sym .EQS. COMMA ) THEN GOTO PDcont
+$ IF ( F$TYPE( 'sym' ) .NES. "" )
+$ THEN IF dcl$Verbose THEN wso "%DCL$PureDCL-I-DELSYM, purifying command verb ""''sym'"" (delete symbol)"
+$      DELETE = "DELETE"
+$      dfn sys$output NLA0:  ! suppress "undefined symbol" noise
+$      dfn sys$error  NLA0:
+$      DELETE /SYMBOL /GLOBAL 'sym'
 $ ENDIF
+$ j = j + 1
+$ GOTO PDLoop
+$PDcont:
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$PureDCL
 $ ! ==========
@@ -274,52 +328,6 @@ $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ToolsDebug
 $ ! ==========
-$ !
-$ !
-$ ! ==========
-$DCL$Alias:  SUBROUTINE
-$ ! Doc : Conditionally define a global symbol (alias command) P1 for invoking
-$ !       the command file P2 (which must exist).
-$ !  Example:
-$ !     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
-$ ! P1 : command symbol
-$ ! P2 : command file
-$ ! P3 : alternate command string
-$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
-$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
-$ ELSE AbbrSym = P1
-$ ENDIF
-$ FullSym = P1 - "*"
-$ IF F$TYPE('AbbrSym') .EQS. "STRING"  !command symbol already exists?
-$ THEN IF Redefine
-$      THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
-$           GOTO CDef1
-$      ELSE IF Verbose THEN wso "%SYMBOLS-W-NOREDEFINE, command symbol ""''P1'"" already exists"
-$           EXIT 1
-$      ENDIF
-$ ENDIF
-$CDef1:
-$ P2 = F$EDIT(P2,"UPCASE")
-$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
-$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
-$ IF F$SEARCH(P2) .NES. ""
-$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
-$      THEN 'P1' == "$''P2'"
-$      ELSE 'P1' == "@''P2'"
-$      ENDIF
-$      IF Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
-$ ELSE IF ( P3 .NES. "" )
-$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
-$      ELSE IF LMR$Unavailable .EQS. ""
-$           THEN LMR$Unavailable == FullSym
-$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
-$           ENDIF
-$           IF Verbose THEN SHOW SYMBOL /LOCAL P1
-$           IF Verbose THEN SHOW SYMBOL /LOCAL P2
-$      ENDIF
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! DCL$Alias
 $ !
 $ !
 $DCL$«»:  SUBROUTINE
