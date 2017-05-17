@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.08"         ! maintain with edits
+$ dcl$slversion   = "01.00.09"         ! maintain with edits
 $ dcl$sldatestamp = "17-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -208,7 +208,7 @@ $DCL$DiscoverDisks:  SUBROUTINE
 $ ! Doc : Create, by discovery, a list (comma-separated string) of disks on this system,
 $ !       suitable for F$ELEMENT(j,...)-looping through for caller processing.
 $ !  Example:
-$ !     $ DCL$CALL DiscoverDisks "SHDW_MEMBER,FOR,AVL,!MNT"
+$ !     $ DCL$CALL DiscoverDisks DD$Disks "AVL,MNT,SHDW_MEMBER"
 $ !  P1 : Name of the user global symbol to receive the result-list
 $ !  P2 : Disk criteria list for inclusion in the result (comma-separated),
 $ !       with a leading "!" on the criterion name for negation of that one
@@ -219,6 +219,9 @@ $ !       EXISTS (device exists?)       FOD (file-oriented device?)   FOR (mount
 $ !       SHDW_MEMBER (shadow-member?)  SWL (software write-locked?)
 $ !       Only one of these criteria needs to be met (not all of them) for a disk
 $ !       device to be included in the result list.
+$ !       See 'DCL Dictionary', Lexicals, F$GETDVI for the complete list of
+$ !       argument/items for this lexical function -- here using only the
+$ !       "true/false" queries for disks (out of all the items possible).
 $ !  P3 : TRUE (default) to filter out DQxxx: (optical CD/DVD disk) devices,
 $ !       FALSE to include them
 $ !  P4 : TRUE (default) to filter out LDAxxx: (logical disk) devices,
