@@ -18,8 +18,9 @@ $ !
 $ ! No Ruby-startup comfile?  Don't even bother continuing:
 $ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
 $ !
-$ Proc = F$ENVIRONMENT("PROCEDURE")
-$ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ UName = F$EDIT( F$GETJPI("","USERNAME"), "TRIM,UPCASE" )
+$ Proc  = F$ENVIRONMENT("PROCEDURE")
+$ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
 $ wso = "WRITE sys$output"
 $ !
@@ -35,13 +36,14 @@ $      RubyX == "$ruby$root:[bin]ruby"
 $ !
 $      f = "com:rubycmd"
 $      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
-$      THEN mkrub*ycmd == "@''f' CMD"
-$           ruby        == "@''f' RUN"
+$      THEN rubyc*md   == "@''f' CMD"  ! rubycmd and mkrubycmd are synonyms
+$           mkrub*ycmd == "@''f' CMD"
+$           ruby       == "@''f' RUN"
 $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
 $      ENDIF
 $ !
 $      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
-$      rdir = "[LRICKER.RUBY]"
+$      rdir = "[''UName'.RUBY]"
 $      CALL VolCheck "''vol'" "''rdir'"
 $      IF .NOT. RubyVolumeOkay
 $      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
@@ -90,7 +92,7 @@ $ RubyVolumeOkay == "FALSE"
 $ dir = P2 - "[" - "]"
 $ d0  = F$EDIT( F$ELEMENT(0,".",dir), "UPCASE" )
 $ d1  = F$EDIT( F$ELEMENT(1,".",dir), "UPCASE" )
-$ IF ( d1 .EQS. "RUBY" ) .AND. ( d0 .EQS. "LRICKER" )
+$ IF ( d1 .EQS. "RUBY" ) .AND. ( d0 .EQS. UName )
 $ THEN testf = P1 + ":[" + d0 + "]"
 $      IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
 $      THEN DJ ruby$base "''P1':[''d0'.''d1'.]" /TRANS=CONCEALED

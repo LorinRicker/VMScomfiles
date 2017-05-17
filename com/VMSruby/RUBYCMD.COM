@@ -44,9 +44,10 @@ $ CmdSet = "RUN      |" -
          + "CMD      |" -
          + "COMMAND  |" -
          + "HELP     "
-$ CALL Parse "''P1'" Parse$Cmd "RUN" "''CmdSet'"
+$ DCL$CALL CmdParse "''P1'" Ruby$Cmd "RUN" "''CmdSet'"
 $ !
-$ IF Parse$Cmd .EQS. "HELP" THEN GOTO Help
+$ IF ( ( Ruby$Cmd .EQS. "CMD" ) .AND. ( F$EDIT(P2,"UPCASE,COLLAPSE") .EQS. "HELP" ) ) -
+  .OR. ( Ruby$Cmd .EQS. "HELP" ) THEN GOTO Help
 $ !
 $ ! ==========
 $ ! The startup command file RUBY$STARTUP.COM invokes RUBY$DEFINE_LOGICALS.COM
@@ -85,7 +86,7 @@ $      ENDIF
 $      Rscript = SLASH + Rdev + Rpath + Rscriptname + Rscripttype
 $      ! ==========
 $      IF ( F$SEARCH( P2 ) .NES. "" )
-$      THEN GOTO 'Parse$Cmd'$
+$      THEN GOTO 'Ruby$Cmd'$
 $ !
 $RUN$:      ! ==========
 $           Args = F$EDIT( "''P3' ''P4' ''P5' ''P6' ''P7' ''P8'","COMPRESS" )
@@ -117,33 +118,8 @@ $ !
 $Done:
 $ EXIT 1  ! 'F$VERIFY(0)'
 $ !
-$ !
 $Ctrl_Y:
 $ RETURN %X2C
-$ !
-$Parse: SUBROUTINE
-$ ! P1: command to parse
-$ ! P2: global symbol to receive answer
-$ ! P3: default command
-$ ! P4: command set ("C1|C2[|Cn...]") -- options must be same-length fields
-$ ! P5: command separator
-$ IF P1 .EQS. "" THEN P1 = P3
-$ IF P2 .EQS. "" THEN P2 = "Parse$Cmd"
-$ IF P5 .EQS. "" THEN P5 = "|"
-$ P4 = F$EDIT(P4,"UPCASE")
-$ S  = F$LOCATE(P5,P4) + 1               !Determine field length
-$ P4 = P5 + P4                           !Add separator to front of list...
-$ T  = P5 + F$EDIT(P1,"COLLAPSE,UPCASE") !...and to target
-$ L  = F$LOCATE( F$EDIT(T,"COLLAPSE,UPCASE"), P4 )      !Test substring
-$ IF ( L .LT. F$LENGTH(P4) ) .AND. ( L-(L/S)*S .EQ. 0 ) !Found?
-$ THEN L = ( ( L + 1 ) / S ) + 1                        !Calculate offset
-$      'P2' == F$EDIT( F$ELEMENT(L,P5,P4), "COLLAPSE" )
-$      EXIT 1
-$ ELSE 'P2' == "$Err$"
-$      wso "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
-$      EXIT 229522  !%DCL-E-IVVERB, unrecognized command verb
-$ ENDIF
-$ ENDSUBROUTINE  ! Parse
 $ !
 $ !
 $Help:
