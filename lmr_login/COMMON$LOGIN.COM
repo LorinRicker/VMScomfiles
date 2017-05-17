@@ -27,7 +27,7 @@ $ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ FS   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY") + F$PARSE(Proc,,,"TYPE","SYNTAX_ONLY")
 $ !
-$ !!! SET TERMINAL /INQUIRE
+$ SET TERMINAL /INQUIRE   ! this reads/sets the page-&-width sizes
 $ TermType = "VT500"
 $ PgLength = F$GETDVI("TT","TT_PAGE")
 $ PgWidth  = F$GETDVI("TT","DEVBUFSIZ")

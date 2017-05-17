@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.05"         ! maintain with edits
+$ dcl$slversion   = "01.00.07"         ! maintain with edits
 $ dcl$sldatestamp = "16-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -209,53 +209,58 @@ $ ! Doc : Create, by discovery, a list (comma-separated string) of disks on this
 $ !       suitable for F$ELEMENT(j,...)-looping through for caller processing.
 $ !  Example:
 $ !     $ DCL$CALL DiscoverDisks "SHDW_MEMBER,FOR,AVL,!MNT"
-$ !  P1 : disk criteria list for inclusion in the result (comma-separated),
+$ !  P1 : Name of the user global symbol to receive the result-list
+$ !  P2 : Disk criteria list for inclusion in the result (comma-separated),
 $ !       with a leading "!" on the criterion name for negation of that one
 $ !       (e.g., "...,!MNT,..." means "not mounted").
 $ !       Criteria include:
-$ !       ALL (allocated), AVL (available), DMT (marked for dismount),
-$ !       EXISTS (device exists), FOD (file-oriented device),
-$ !       FOR (mounted foreign), SHDW_MEMBER (shadow-member device),
-$ !       SWL (software write-locked)
-$ !  P2 : TRUE (default) to filter out LDAxxx: type devices, FALSE to include them
+$ !       ALL (allocated), AVL (available/online), DMT (marked for dismount),
+$ !       EXISTS (device exists), FOD (file-oriented device), FOR (mounted foreign),
+$ !       SHDW_MEMBER (shadow-member device), SWL (software write-locked)
+$ !       Only one of these criteria needs to be met (not all of them) for a disk
+$ !       device to be included in the result list
+$ !  P3 : TRUE (default) to filter out LDAxxx: (logical disk) devices,
+$ !       FALSE to include them
 $ !
 $ SET NOON
-$ IF ( P1 .EQS. "" ) THEN P1 = "SHDW_MEMBER,FOR,AVL,!MNT"
-$ IF ( P2 .EQS. "" ) THEN P2 = "TRUE"
+$ IF ( P2 .EQS. "" ) THEN P2 = "AVL,MNT,SHDW_MEMBER"
+$ IF ( P3 .EQS. "" ) THEN P3 = "TRUE"
 $ DDpayload = ""
 $DCL$DDLoop:
 $ dev = F$DEVICE( "*", "DISK" ) - UNDERSCORE
 $ IF ( dev .EQS. "" ) THEN GOTO DCL$DDexit   ! done...
-$ j = 0
-$ rejected = 0
-$DCL$DD0:
-$ criterion = F$ELEMENT( j, COMMA, P1 )
-$ IF ( criterion .EQS. COMMA ) THEN GOTO DCL$DD1
-$ IF P2 -
+$ IF P3 -
   THEN IF ( F$LOCATE( "LDA", dev ) .LT. F$LENGTH( dev ) ) -
        THEN GOTO DCL$DDLoop  ! skip this disk
+$ j = 0
+$ rejected = 0
+$DCL$Inner:
+$ criterion = F$ELEMENT( j, COMMA, P2 )
+$ IF ( criterion .EQS. COMMA ) THEN GOTO DCL$DDLoop
+$ IF dcl$Verbose THEN wso ">>> j: ""''j'""   dev: ""''dev'""   criterion: ""''criterion'"""
 $ IF ( F$EXTRACT( 0, 1, criterion ) .EQS. BANG )
-$ THEN criterion = criterion - BANG
-$      rejected = rejected .OR. ( .NOT. F$GETDVI( dev, criterion ) )
-$ ELSE rejected = rejected .OR. (       F$GETDVI( dev, criterion ) )
+$ THEN ! Negate this criterion
+$      criterion = criterion - BANG
+$      IF ( .NOT. F$GETDVI( dev, "''criterion'" ) ) THEN GOTO DCL$Accum
+$ ELSE ! Affirm this criterion
+$      IF ( F$GETDVI( dev, "''criterion'" ) ) THEN GOTO DCL$Accum
 $ ENDIF
-$DCL$DD1:
-$ IF rejected
-$ THEN GOTO DCL$DDLoop  ! skip this disk
-$ ELSE ! Accumulate the payload:
-$      DDpayload = DDpayload + COMMA + dev
-$ ENDIF
+$ j = j + 1
+$ GOTO DCL$Inner
+$DCL$Accum:
+$ ! Accumulate the payload:
+$ DDpayload = DDpayload + COMMA + dev
 $ GOTO DCL$DDLoop
 $ !
 $DCL$DDexit:
 $ DDlen = F$LENGTH( DDpayload )
 $ ! Assign payload to the global variable, but strip the leading ","
 $ IF ( DDpayload .NES. "" )
-$ THEN DD$DiscoveredDisks == F$EXTRACT( 1, DDlen, DDpayload )
-$ ELSE DD$DiscoveredDisks == ""
+$ THEN 'P1' == F$EXTRACT( 1, DDlen, DDpayload )
+$ ELSE 'P1' == ""
 $ ENDIF
-$ IF dcl$Verbose THEN wso F$FAO( "%DCL$DISCOVERDISKS-I-ECHO, DD$DiscoveredDisks == ""!AS""", -
-                                  DD$DiscoveredDisks )
+$ IF dcl$Verbose THEN wso F$FAO( "%DCL$DISCOVERDISKS-I-ECHO, ''P1' == ""!AS""", -
+                                  'P1' )
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$DiscoverDisks
 $ ! ==========
