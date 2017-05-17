@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.07"         ! maintain with edits
-$ dcl$sldatestamp = "16-MAY-2017"
+$ dcl$slversion   = "01.00.08"         ! maintain with edits
+$ dcl$sldatestamp = "17-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -214,24 +214,36 @@ $ !  P2 : Disk criteria list for inclusion in the result (comma-separated),
 $ !       with a leading "!" on the criterion name for negation of that one
 $ !       (e.g., "...,!MNT,..." means "not mounted").
 $ !       Criteria include:
-$ !       ALL (allocated), AVL (available/online), DMT (marked for dismount),
-$ !       EXISTS (device exists), FOD (file-oriented device), FOR (mounted foreign),
-$ !       SHDW_MEMBER (shadow-member device), SWL (software write-locked)
+$ !       ALL (allocated?)              AVL (available/online?)       DMT (marked for dismount?),
+$ !       EXISTS (device exists?)       FOD (file-oriented device?)   FOR (mounted foreign?),
+$ !       SHDW_MEMBER (shadow-member?)  SWL (software write-locked?)
 $ !       Only one of these criteria needs to be met (not all of them) for a disk
-$ !       device to be included in the result list
-$ !  P3 : TRUE (default) to filter out LDAxxx: (logical disk) devices,
+$ !       device to be included in the result list.
+$ !  P3 : TRUE (default) to filter out DQxxx: (optical CD/DVD disk) devices,
+$ !       FALSE to include them
+$ !  P4 : TRUE (default) to filter out LDAxxx: (logical disk) devices,
 $ !       FALSE to include them
 $ !
 $ SET NOON
-$ IF ( P2 .EQS. "" ) THEN P2 = "AVL,MNT,SHDW_MEMBER"
+$ IF ( P1 .EQS. "" ) THEN P1 = "DCL$Disks"
+$ IF ( F$TYPE( 'P1' ) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL 'P1'
+$ IF ( P2 .EQS. "" )
+$ THEN P2 = "AVL,MNT,SHDW_MEMBER"
+$ ELSE P2 = F$EDIT( P2, "COLLAPSE,UPCASE" )
+$ ENDIF
 $ IF ( P3 .EQS. "" ) THEN P3 = "TRUE"
+$ IF ( P4 .EQS. "" ) THEN P4 = "TRUE"
 $ DDpayload = ""
 $DCL$DDLoop:
 $ dev = F$DEVICE( "*", "DISK" ) - UNDERSCORE
 $ IF ( dev .EQS. "" ) THEN GOTO DCL$DDexit   ! done...
 $ IF P3 -
+  THEN IF   ( F$LOCATE( "DQA", dev ) .LT. F$LENGTH( dev ) ) -
+       .OR. ( F$LOCATE( "DQB", dev ) .LT. F$LENGTH( dev ) ) -
+       THEN GOTO DCL$DDLoop  ! skip this optical CD/DVD disk
+$ IF P4 -
   THEN IF ( F$LOCATE( "LDA", dev ) .LT. F$LENGTH( dev ) ) -
-       THEN GOTO DCL$DDLoop  ! skip this disk
+       THEN GOTO DCL$DDLoop  ! skip this logical disk
 $ j = 0
 $ rejected = 0
 $DCL$Inner:
