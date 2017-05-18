@@ -1,4 +1,4 @@
-$ ! DISK_INVENTORY.COM --                                          'F$VERIFY(0)'
+$ ! DISKINVENTORY$REPORT.COM --                                    'F$VERIFY(0)'
 $ !
 $ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -14,7 +14,7 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !  Create spreadsheet inventories (CSV) of all disks
 $ !
-$ !  use: @DISK_INVENTORY [/OUTPUT=DI$<ClusterAlias>.csv] [disk[,disk]...] [CLUSTER]
+$ !  use: @DISKINVENTORY$REPORT [/OUTPUT=DI$<ClusterAlias>.csv] «»[disk[,disk]...] [CLUSTER]
 $ !
 $ !       If P1 is a comma-separated list of disk names, then only these devices
 $ !       are checked, otherwise all physical (non-DSA) devices are checked
@@ -179,16 +179,17 @@ $ ENDIF
 $ wso F$FAO( "%!AS-I-DISKS, disks on cluster-node !AS!/  Cluster-node count: !SL!/  Env: !AS", -
              Fac, Node, DI$CluNodeCount, Env )
 $ !
-$ j = 0
 $ alloclass = "$" + F$STRING(F$GETSYI("ALLOCLASS")) + "$"
 $ !
-$L0:
-$ ! Next dev to report comes either from P1 or from wildcard F$DEVICE:
-$ IF P1 .NES. ""
-$ THEN dev = F$ELEMENT(j,comma,P1)
-$        j = j + 1
-$ ELSE dev = F$DEVICE( "*:", "DISK" )
+$ IF ( P1 .NES. "" )
+$ THEN DD$Disks == P1
+$ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
 $ ENDIF
+$ !
+$ j = 0
+$L0:
+$ dev = F$ELEMENT(j,comma,DI$Disks)
+$ j = j + 1
 $ IF ( dev .EQS. comma ) .OR. ( dev .EQS. "" ) THEN GOTO Done
 $ !
 $ undev = dev - "_" - alloclass - "''Node'$" - ":"   !undecorate it...
@@ -210,7 +211,7 @@ $ ENDIF
 $ GOTO L0
 $ !
 $Done:
-$ DCL$CALL DeleteGloSyms "DI$DevCount,DI$CluNodeCount"
+$ DCL$CALL DeleteGloSyms "DI$DevCount,DI$CluNodeCount,DI$Disks"
 $ EXIT 'stat'
 $ !
 $NoSuchSys:
