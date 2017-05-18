@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.00.09"         ! maintain with edits
-$ dcl$sldatestamp = "17-MAY-2017"
+$ dcl$slversion   = "01.01.01"         ! maintain with edits
+$ dcl$sldatestamp = "18-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -28,8 +28,9 @@ $ dcl$Verbose = F$TRNLNM( "TOOLS$DEBUG" )
 $ !
 $ wso        = "WRITE sys$output"
 $ Fac        = "DCL$SUBROUTINE_LIBRARY"
-$ COMMA      = ","
 $ BANG       = "!"
+$ COMMA      = ","
+$ DOLLAR     = "$"
 $ UNDERSCORE = "_"
 $ !
 $ ! ----------------------------------------------------------------------
@@ -222,10 +223,7 @@ $ !       device to be included in the result list.
 $ !       See 'DCL Dictionary', Lexicals, F$GETDVI for the complete list of
 $ !       argument/items for this lexical function -- here using only the
 $ !       "true/false" queries for disks (out of all the items possible).
-$ !  P3 : TRUE (default) to filter out DQxxx: (optical CD/DVD disk) devices,
-$ !       FALSE to include them
-$ !  P4 : TRUE (default) to filter out LDAxxx: (logical disk) devices,
-$ !       FALSE to include them
+$ !  P3 : List of device-types to ignore, default is "DQA,DQB,LDA,DAD,DNFS"
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "DCL$Disks"
@@ -234,22 +232,28 @@ $ IF ( P2 .EQS. "" )
 $ THEN P2 = "AVL,MNT,SHDW_MEMBER"
 $ ELSE P2 = F$EDIT( P2, "COLLAPSE,UPCASE" )
 $ ENDIF
-$ IF ( P3 .EQS. "" ) THEN P3 = "TRUE"
-$ IF ( P4 .EQS. "" ) THEN P4 = "TRUE"
+$ IF ( P3 .EQS. "" )
+$ THEN P3 = "DQA,DQB,LDA,DAD,DNFS"
+$ ELSE P3 = F$EDIT( P3, "COLLAPSE,UPCASE" )
+$ ENDIF
 $ DDpayload = ""
+$ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
+$ !
 $DCL$DDLoop:
 $ dev = F$DEVICE( "*", "DISK" ) - UNDERSCORE
+$ nakeddev = dev - "_" - alloclass - "''Node'$"           ! undecorate it...
+$ nakedlen = F$LENGTH( nakeddev )
 $ IF ( dev .EQS. "" ) THEN GOTO DCL$DDexit   ! done...
-$ IF P3 -
-  THEN IF   ( F$LOCATE( "DQA", dev ) .LT. F$LENGTH( dev ) ) -
-       .OR. ( F$LOCATE( "DQB", dev ) .LT. F$LENGTH( dev ) ) -
-       THEN GOTO DCL$DDLoop  ! skip this optical CD/DVD disk
-$ IF P4 -
-  THEN IF ( F$LOCATE( "LDA", dev ) .LT. F$LENGTH( dev ) ) -
-       THEN GOTO DCL$DDLoop  ! skip this logical disk
+$ i = 0
+$DCL$Inner1:
+$ ignoredev = F$ELEMENT( i, COMMA, P3 )
+$ IF ( ignoredev .EQS. COMMA ) THEN GOTO DCL$InnerCont1
+$ IF ( F$LOCATE( ignoredev, nakeddev ) .LT. nakedlen ) THEN GOTO DCL$DDLoop
+$ i = i + 1
+$ GOTO DCL$Inner1
+$DCL$InnerCont1:
 $ j = 0
-$ rejected = 0
-$DCL$Inner:
+$DCL$Inner2:
 $ criterion = F$ELEMENT( j, COMMA, P2 )
 $ IF ( criterion .EQS. COMMA ) THEN GOTO DCL$DDLoop
 $ IF dcl$Verbose THEN wso ">>> j: ""''j'""   dev: ""''dev'""   criterion: ""''criterion'"""
@@ -261,7 +265,7 @@ $ ELSE ! Affirm this criterion
 $      IF ( F$GETDVI( dev, "''criterion'" ) ) THEN GOTO DCL$Accum
 $ ENDIF
 $ j = j + 1
-$ GOTO DCL$Inner
+$ GOTO DCL$Inner2
 $DCL$Accum:
 $ ! Accumulate the payload:
 $ DDpayload = DDpayload + COMMA + dev
