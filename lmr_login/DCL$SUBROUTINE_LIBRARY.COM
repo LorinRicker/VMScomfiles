@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.01.01"         ! maintain with edits
+$ dcl$slversion   = "01.02.01"         ! maintain with edits
 $ dcl$sldatestamp = "18-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -29,15 +29,19 @@ $ !
 $ wso        = "WRITE sys$output"
 $ Fac        = "DCL$SUBROUTINE_LIBRARY"
 $ BANG       = "!"
+$ COLON      = ":"
 $ COMMA      = ","
 $ DOLLAR     = "$"
+$ SPACE      = " "
 $ UNDERSCORE = "_"
+$ DOCMARKER  = "$ !#! "
+$ DOCMARKlen = F$LENGTH( DOCMARKER )
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
 $ RegisteredRoutines = ",Alias,CmdParse,DeleteGloSyms,DiscoverDisks" -
-                     + ",MakeDir,PureDCL,ToolsDebug,Setup" -
-                     + ",«»" -
+                     + ",MakeDir,PureDCL,ToolsDebug,Setup,Doc" -
+                     + ",ShowRegisteredRoutines,«»" -
                      + COMMA
 $ ! ----------------------------------------------------------------------
 $ ! ==========
@@ -47,32 +51,13 @@ $ ! ==========
 $ !
 $ ! Show/display all Registered Routines --
 $ IF ( p1param .EQS. "SHOW" )
-$ THEN j = 0
-$      count  = 0
-$      indent = 4
-$      wso ""
-$      wso "  ''Fac'"
-$      wso F$FAO( "!#* [4mRegistered Routines[0m", indent )
-$ShowLoop:
-$      rr = F$ELEMENT( j, COMMA, RegisteredRoutines )
-$      IF ( rr .EQS. COMMA )
-$      THEN wso ""
-$           wso F$FAO( "!#* Total of !ZL routine!%S", indent, count )
-$           wso ""
-$           EXIT 1
-$      ENDIF
-$      j = j + 1
-$      IF ( rr .EQS. "" ) .OR. ( rr .EQS. "«»" )
-$      THEN GOTO ShowLoop
-$      ELSE wso F$FAO( "!#* !AS", indent, rr )
-$           count = count + 1
-$      ENDIF
-$      GOTO ShowLoop
-$ ENDIF
-$ !
-$ IF ( F$LOCATE( P1, RegRouUC ) .GE. RRlen )
-$ THEN wso F$FAO( "%!AS-E-NOT_REGISTERED, !AS does not exist", Fac, P1 )
-$      EXIT %X2C  ! abort...
+$ THEN ! set-up for dcl$call DCL$ShowRegisteredRoutines
+$      P5 = P1  ! ...the unregistered routine name
+$      P1 = "ShowRegisteredRoutines"  ! call this routine
+$      P2 = RegisteredRoutines
+$      P3 = RegRouUC
+$      P4 = RRlen
+$      ! ...Fall-thru to call DCL$ShowRegisteredRoutines
 $ ENDIF
 $ !
 $ ! ==========
@@ -88,13 +73,13 @@ $ !
 $ !
 $ ! ==========
 $DCL$Alias:  SUBROUTINE
-$ ! Doc : Conditionally define a global symbol (alias command) P1 for invoking
-$ !       the command file P2 (which must exist).
-$ !  Example:
-$ !     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
-$ ! P1 : command symbol
-$ ! P2 : command file
-$ ! P3 : alternate command string
+$ !#! Doc : Conditionally define a global symbol (alias command) P1 for invoking
+$ !#!       the command file P2 (which must exist).
+$ !#!   Example:
+$ !#!     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
+$ !#!   P1 : command symbol
+$ !#!   P2 : command file
+$ !#!   P3 : alternate command string
 $ !
 $ SET NOON
 $ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
@@ -128,21 +113,22 @@ $ !
 $ !
 $ ! ==========
 $DCL$CmdParse: SUBROUTINE
-$ ! Doc : Attempts to match a command word (P1) against a list of possible command words (P4),
-$ !       where P1 may be a uniquely-recognized abbreviation of any of the possible words;
-$ !       returns result as a user-defined global symbol, or an error condition if no match.
-$ !  Example:
-$ !     $ DCL$CALL CmdParse "''P1'" File$Component "NAME" "NODE|DEV |DIR |NAME|TYPE|VERS|FULL"
-$ !  P1 : command word to parse
-$ !  P2 : global symbol to receive answer (default is Cmd$Answer)
-$ !  P3 : default command
-$ !  P4 : command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
-$ !       alternatively "@symbol" where "symbol" contains command-set (this
-$ !       accommodates very long command-sets, >255 characters)
-$ !  P5 : command separator (default is vert-bar/pipe "|")
-$ !  P6 : FALSE/TRUE flag to either return "" as failed-result (default is FALSE),
-$ !       or to hard-stop-fail (TRUE)
+$ !#! Doc : Attempts to match a command word (P1) against a list of possible command words (P4),
+$ !#!       where P1 may be a uniquely-recognized abbreviation of any of the possible words;
+$ !#!       returns result as a user-defined global symbol, or an error condition if no match.
+$ !#!   Example:
+$ !#!     $ DCL$CALL CmdParse "''P1'" File$Component "NAME" "NODE|DEV |DIR |NAME|TYPE|VERS|FULL"
+$ !#!   P1 : command word to parse
+$ !#!   P2 : global symbol to receive answer (default is Cmd$Answer)
+$ !#!   P3 : default command
+$ !#!   P4 : command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
+$ !#!        alternatively "@symbol" where "symbol" contains command-set (this
+$ !#!        accommodates very long command-sets, >255 characters)
+$ !#!   P5 : command separator (default is vert-bar/pipe "|")
+$ !#!   P6 : FALSE/TRUE flag to either return "" as failed-result (default is FALSE),
+$ !#!        or to hard-stop-fail (TRUE)
 $ !
+$ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = P3
 $ IF ( P2 .EQS. "" ) THEN P2 = "Cmd$Answer"
 $ IF ( P5 .EQS. "" ) THEN P5 = "|"
@@ -176,12 +162,12 @@ $ !
 $ !
 $ ! ==========
 $DCL$DeleteGloSyms:  SUBROUTINE
-$ ! Doc : Deletes global symbols from list P1; usually called by com-file's cleanup,
-$ !       may be called more than once for separate lists.
-$ !  Examples:
-$ !     $ DCL$CALL DeleteGloSyms "Cmd$Answer,Cmd$Answer_Num,Func_Result"
-$ !     $ DCL$CALL DeleteGloSyms "ThisNode,ThisReport,ThisMsg,Count$Dups"
-$ !  P1 : comma-separated list of global symbols to delete
+$ !#! Doc : Deletes global symbols from list P1; usually called by com-file's cleanup,
+$ !#!       may be called more than once for separate lists.
+$ !#!   Examples:
+$ !#!     $ DCL$CALL DeleteGloSyms "Cmd$Answer,Cmd$Answer_Num,Func_Result"
+$ !#!     $ DCL$CALL DeleteGloSyms "ThisNode,ThisReport,ThisMsg,Count$Dups"
+$ !#!   P1 : comma-separated list of global symbols to delete
 $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
@@ -205,25 +191,71 @@ $ ! ==========
 $ !
 $ !
 $ ! ==========
+$DCL$Doc:  SUBROUTINE
+$ !#! Doc : Display programmer API documentation for DCL$Subroutine_Library
+$ !#!   Example:
+$ !#!     $ DCL$CALL Doc
+$ !#!   P1 : (none)
+$ !
+$ SET NOON
+$ indent  = 4
+$ begsubr    = SPACE + "SUBROUTINE"
+$ endsubr    = SPACE + "ENDSUBROUTINE"
+$ breadcrumb = "«" + "»"
+$ OPEN /READ /SHARE /ERROR=OpenError self DCL$SLself
+$DCL$SDLoop:
+$ READ /END_OF_FILE=DCL$SDcont self line
+$ llen = F$LENGTH( line )
+$ IF ( F$LOCATE( endsubr, line ) .LT. llen ) THEN GOTO DCL$SDLoop
+$ IF ( F$LOCATE( breadcrumb, line ) .LT. llen ) THEN GOTO DCL$SDLoop
+$ IF ( F$LOCATE( begsubr, line ) .LT. llen )
+$ THEN ! Display routine name first --
+$      !  Strip colon, spaces and subroutine keyword
+$      line   = line - COLON - begsubr
+$      !  Strip leading "$" and all spaces
+$      rrname = F$EDIT( F$EXTRACT( 1, llen-1, line), "COLLAPSE" )
+$      wso ""
+$      wso F$FAO( "!#* Registered Routine: !AS", indent, rrname )
+$ ELSE IF ( F$LOCATE( DOCMARKER, line ) .EQ. 0 )
+$      THEN ! an internal Documentation Line, print it,
+$           !   but first trim off the DOCMARKER --
+$           line = F$EXTRACT( DOCMARKlen, F$LENGTH(line)-DOCMARKlen, line )
+$           wso F$FAO( "!#* !AS", indent, line )
+$      ! ELSE !...an ordinary line of code/comment, skip it...
+$      ENDIF
+$ ENDIF
+$ GOTO DCL$SDLoop
+$DCL$SDcont:
+$ CLOSE /NOLOG self
+$ EXIT 1
+$OpenError:
+$ wso F$FAO( "%!AS-E-FNF, cannot open self: !AS", -
+             Fac, F$TRNLNM( "DCL$SLself", "LNM$PROCESS" ) )
+$ EXIT %X10018292
+$ ENDSUBROUTINE  ! DCL$Doc
+$ ! ==========
+$ !
+$ !
+$ ! ==========
 $DCL$DiscoverDisks:  SUBROUTINE
-$ ! Doc : Create, by discovery, a list (comma-separated string) of disks on this system,
-$ !       suitable for F$ELEMENT(j,...)-looping through for caller processing.
-$ !  Example:
-$ !     $ DCL$CALL DiscoverDisks DD$Disks "AVL,MNT,SHDW_MEMBER"
-$ !  P1 : Name of the user global symbol to receive the result-list
-$ !  P2 : Disk criteria list for inclusion in the result (comma-separated),
-$ !       with a leading "!" on the criterion name for negation of that one
-$ !       (e.g., "...,!MNT,..." means "not mounted").
-$ !       Criteria include:
-$ !       ALL (allocated?)              AVL (available/online?)       DMT (marked for dismount?),
-$ !       EXISTS (device exists?)       FOD (file-oriented device?)   FOR (mounted foreign?),
-$ !       SHDW_MEMBER (shadow-member?)  SWL (software write-locked?)
-$ !       Only one of these criteria needs to be met (not all of them) for a disk
-$ !       device to be included in the result list.
-$ !       See 'DCL Dictionary', Lexicals, F$GETDVI for the complete list of
-$ !       argument/items for this lexical function -- here using only the
-$ !       "true/false" queries for disks (out of all the items possible).
-$ !  P3 : List of device-types to ignore, default is "DQA,DQB,LDA,DAD,DNFS"
+$ !#! Doc : Create, by discovery, a list (comma-separated string) of disks on this system,
+$ !#!       suitable for F$ELEMENT(j,...)-looping through for caller processing.
+$ !#!   Example:
+$ !#!     $ DCL$CALL DiscoverDisks DD$Disks "AVL,MNT,SHDW_MEMBER"
+$ !#!   P1 : Name of the user global symbol to receive the result-list
+$ !#!   P2 : Disk criteria list for inclusion in the result (comma-separated),
+$ !#!        with a leading "!" on the criterion name for negation of that one
+$ !#!        (e.g., "...,!MNT,..." means "not mounted").
+$ !#!        Criteria include:
+$ !#!        ALL (allocated?)              AVL (available/online?)       DMT (marked for dismount?),
+$ !#!        EXISTS (device exists?)       FOD (file-oriented device?)   FOR (mounted foreign?),
+$ !#!        SHDW_MEMBER (shadow-member?)  SWL (software write-locked?)
+$ !#!        Only one of these criteria needs to be met (not all of them) for a disk
+$ !#!        device to be included in the result list.
+$ !#!        See 'DCL Dictionary', Lexicals, F$GETDVI for the complete list of
+$ !#!        argument/items for this lexical function -- here using only the
+$ !#!        "true/false" queries for disks (out of all the items possible).
+$ !#!   P3 : List of device-types to ignore, default is "DQA,DQB,LDA,DAD,DNFS"
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "DCL$Disks"
@@ -287,18 +319,16 @@ $ !
 $ !
 $ ! ==========
 $DCL$MakeDir:  SUBROUTINE
-$ ! Doc : Make a subdirectory in/at the working directory or a specified
-$ !       directory, if that subdirectory does not already exist; and
-$ !       create a logical name for it.
-$ !  Example:
-$ !     $ DCL$CALL MakeDir TEST mytest sys$login
-$ !  P1 : Name of temporary subdirectory (default is "TEMP")
-$ !  P2 : Logical name for the full path to this subdirectory
-$ !  P3 : Logical name for this fully-specified subdirectory
+$ !#! Doc : Make a subdirectory in/at the working directory or a specified
+$ !#!       directory, if that subdirectory does not already exist; and
+$ !#!       create a logical name for it.
+$ !#!   Example:
+$ !#!     $ DCL$CALL MakeDir TEST mytest sys$login
+$ !#!   P1 : Name of temporary subdirectory (default is "TEMP")
+$ !#!   P2 : Logical name for the full path to this subdirectory
+$ !#!   P3 : Logical name for this fully-specified subdirectory
 $ !
-$ ON CONTROL_Y THEN GOSUB DCL$MTDCtrl_Y
-$ ON ERROR THEN EXIT %X2C  ! abort...
-$ ! 
+$ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "TEMP"
 $ IF ( P3 .NES. "" )
 $ THEN path = F$TRNLNM( P3 ) - "]"
@@ -309,20 +339,17 @@ $ THEN CREATE /DIRECTORY 'logqual' 'path'.'P1']
 $ ENDIF
 $ DEFINE /PROCESS /NOLOG 'P2' 'path'.'P1']
 $ EXIT 1
-$ !
-$DCL$MTDCtrl_Y:
-$ RETURN %X2C  ! abort...
 $ ENDSUBROUTINE  ! DCL$MakeDir
 $ ! ==========
 $ !
 $ !
 $ ! ==========
 $DCL$PureDCL:  SUBROUTINE
-$ ! Doc : Sanity check for a site-specific global symbol which appropriates
-$ !       a DCL command verb, make it go away!...
-$ !  Example:
-$ !     $ DCL$CALL PureDCL
-$ !  P1 : comma-separated list of DCL command verbs (words) to decommission
+$ !#! Doc : Sanity check for a site-specific global symbol which appropriates
+$ !#!       a DCL command verb, make it go away!...
+$ !#!   Example:
+$ !#!     $ DCL$CALL PureDCL
+$ !#!   P1 : comma-separated list of DCL command verbs (words) to decommission
 $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
@@ -347,27 +374,35 @@ $ !
 $ !
 $ ! ==========
 $DCL$Setup:  SUBROUTINE
-$ ! Doc : Sets up all global symbols & logical names for
-$ !       this DCL$SUBROUTINE_LIBRARY
-$ !  Example:
-$ !     $ ! This is the library-initialization, so must use full file-spec:
-$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup
-$ !     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup TRUE
-$ !  P1 : verification (output-trace)
+$ !#! Doc : Sets up all global symbols & logical names for
+$ !#!       this DCL$SUBROUTINE_LIBRARY
+$ !#!   Examples:
+$ !#!     $ !#! This is the library-initialization, so must use full file-spec:
+$ !#!     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup
+$ !#!     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ !#!   P1 : verification (output-trace)
 $ !
+$ SET NOON
 $ proc = F$ENVIRONMENT( "PROCEDURE" )
 $ dd   = F$PARSE( proc, , , "DEVICE" ) + F$PARSE( proc, , , "DIRECTORY" )
 $ fac  = F$PARSE( proc, , , "NAME" )
+$ ext  = F$PARSE( proc, , , "TYPE" )
 $ DEFINE /PROCESS /NOLOG DCL$SLhome 'dd'
+$ DEFINE /PROCESS /NOLOG DCL$SLself 'dd''fac''ext'
 $ DCL$CALL == "@DCL$SLhome:''fac'"
 $ IF ( dcl$Verbose ) .OR. ( P1 )
 $ THEN dashcount = 80
 $      dashes = F$FAO( "!#*-", dashcount )
+$      indent = 2
 $      wso ""
 $      wso dashes
 $      wso F$FAO( "%!AS-I-SETUP, done for !AS...", fac, fac )
-$      SHOW LOGICAL /PROCESS DCL$SLversion
-$      SHOW LOGICAL /PROCESS DCL$SLhome
+$      lnm = "DCL$SLversion"
+$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
+$      lnm = "DCL$SLhome"
+$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
+$      lnm = "DCL$SLself"
+$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
 $      SHOW SYMBOL /GLOBAL DCL$CALL
 $      wso dashes
 $      wso ""
@@ -378,17 +413,58 @@ $ ! ==========
 $ !
 $ !
 $ ! ==========
+$DCL$ShowRegisteredRoutines:  SUBROUTINE
+$ !#! Doc : Show/list the Registered Routines in this DCL$Subroutine_Library
+$ !#!   Example:
+$ !#!     $ DCL$CALL ShowRegisteredRoutines ...
+$ !#!   P1 : RegisteredRoutines
+$ !#!   P2 : RegRouUC
+$ !#!   P3 : RRlen
+$ !#!   P4 : ...the unregistered routine name
+$ !
+$ SET NOON
+$ j = 0
+$ count  = 0
+$ indent = 4
+$ wso ""
+$ wso "  ''Fac'"
+$   wso F$FAO( "!#* [4mRegistered Routines[0m", indent )
+$DCL$ShowLoop:
+$ rr = F$ELEMENT( j, COMMA, P1 )
+$ IF ( rr .EQS. COMMA )
+$ THEN wso ""
+$      wso F$FAO( "!#* Total of !ZL routine!%S", indent, count )
+$      wso ""
+$      EXIT 1
+$ ENDIF
+$ j = j + 1
+$ IF ( rr .NES. "" ) .AND. ( rr .NES. "«»" )
+$ THEN wso F$FAO( "!#* !AS", indent, rr )
+$      count = count + 1
+$ ENDIF
+$ GOTO DCL$ShowLoop
+$ !
+$ IF ( F$LOCATE( P1, P2 ) .GE. P3 )
+$ THEN wso F$FAO( "%!AS-E-NOT_REGISTERED, !AS does not exist", Fac, P4 )
+$      EXIT %X2C  ! abort...
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$ShowRegisteredRoutines
+$ ! ==========
+$ !
+$ !
+$ ! ==========
 $DCL$ToolsDebug:  SUBROUTINE
-$ ! Doc : Turns on-or-off DCL com-file "verbosity" debugging.
-$ !       This subroutine does not fully supercede TOOLS$DEBUG.COM --
-$ !       Note that this implements only a portion of TOOLS$DEBUG.COM,
-$ !       specifically control of logical name TOOLS$DEBUG itself.
-$ !  Example:
-$ !     $ DCL$CALL ToolsDebug ON TRUE
-$ !     $ DCL$CALL ToolsDebug OFF
-$ !  P1 : TRUE/ON/1 enables debugging, FALSE/OFF/0 disables
-$ !  P2 : TRUE/YES/1 enables output verification of Tools$Debug state,
-$ !       FALSE/NO/0 disables same
+$ !#! Doc : Turns on-or-off DCL com-file "verbosity" debugging.
+$ !#!       This subroutine does not fully supercede TOOLS$DEBUG.COM --
+$ !#!       Note that this implements only a portion of TOOLS$DEBUG.COM,
+$ !#!       specifically control of logical name TOOLS$DEBUG itself.
+$ !#!   Example:
+$ !#!     $ DCL$CALL ToolsDebug ON TRUE
+$ !#!     $ DCL$CALL ToolsDebug OFF
+$ !#!   P1 : TRUE/ON/1 enables debugging, FALSE/OFF/0 disables
+$ !#!   P2 : TRUE/YES/1 enables output verification of Tools$Debug state,
+$ !#!        FALSE/NO/0 disables same
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "ON" ) .OR. ( F$EXTRACT(0,1,P1) .EQS. "Y" ) .OR. ( P1 .EQ. 1 )
@@ -416,23 +492,21 @@ $ !
 $ !
 $ ! Prototype:
 $ ! ==========
-$ !! DCL$ $«»:  SUBROUTINE
-$ !! $ ! Doc : «»
-$ !! $ !  Example:
-$ !! $ !     $ DCL$CALL «»
-$ !! $ !  P1 : «»
+$ !! $DCL$«»:  SUBROUTINE
+$ !! $ !#! Doc : «»
+$ !! $ !#!   Example:
+$ !! $ !#!     $ DCL$CALL «»
+$ !! $ !#!   P1 : «»
 $ !! $ !
-$ !! $ ON CONTROL_Y THEN GOSUB DCL$«»Ctrl_Y
-$ !! $ ON ERROR THEN EXIT %X2C  ! abort...
-$ !! $
+$ !! $ SET NOON
+$ !! $ «»
 $ !! $ EXIT 1
-$ !! $ !
-$ !! $DCL$«»Ctrl_Y:
-$ !! $ RETURN %X2C  ! abort...
 $ !! $ ENDSUBROUTINE  ! DCL$«»
-$ ! ==========
-$ !
+$ !! $ ! ==========
+$ !! $ !
+$ !! $ !
 $ !
+$ ! ==========
 $Help:                                                             !'F$VERIFY(0)'
 $ TYPE /PAGE sys$input
 
