@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.03.01"         ! maintain with edits
+$ dcl$slversion   = "01.04.01"         ! maintain with edits
 $ dcl$sldatestamp = "19-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -39,7 +39,8 @@ $ DOCMARKlen = F$LENGTH( DOCMARKER )
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
-$ RegisteredRoutines = ",Alias,CmdParse,DeleteGloSyms,DiscoverDisks" -
+$ RegisteredRoutines = ",Alias,CmdParse,DefineANSIdef,DefineClearscreen" -
+                     + ",DeleteGloSyms,DiscoverDisks" -
                      + ",MakeDir,PureDCL,ToolsDebug,Setup,Doc" -
                      + ",ShowRegisteredRoutines,«»" -
                      + COMMA
@@ -84,6 +85,121 @@ $ CALL DCL$'P1' "''P2'" "''P3'" "''P4'" "''P5'" "''P6'" "''P7'" "''P8'"
 $ ! ==========
 $ stat = $STATUS
 $ EXIT 'stat'  ! 'F$VERIFY(0)'
+$ !
+$ !
+$ ! Prototype:
+$ !
+$ !! $ !
+$ !! $ ! ==========
+$ !! $DCL$«»:  SUBROUTINE
+$ !! $ !#! Doc : «»
+$ !! $ !#!   Example:
+$ !! $ !#!     $ DCL$CALL «»
+$ !! $ !#!   P1 : «»
+$ !! $ !
+$ !! $ SET NOON
+$ !! $ «»
+$ !! $ EXIT 1
+$ !! $ ENDSUBROUTINE  ! DCL$«»
+$ !! $ ! ==========
+$ !! $ !
+$ !
+$ ! ==========
+$DCL$DefineANSIseq:  SUBROUTINE
+$ !#! Doc : Define ANSI terminal color and rendition Escape Sequences
+$ !#!       as DCL global symbols.
+$ !#!   Example:
+$ !#!     $ DCL$CALL DefineANSIseq
+$ !#!   P1 : (none)
+$ !
+$ SET NOON
+$ esc[0,8]== %X1B                   !  27 decimal,  033 octal - ESCape character
+$ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character
+$ !
+$ ! ANSI renditions:
+$         NORM == esc + "[0m"       ! Normal rendition
+$           NC == NORM              ! No Color
+$         BOLD == esc + "[1m"       ! Bold
+$        ULINE == esc + "[4m"       ! Underline
+$    UNDERLINE == ULINE
+$        BLINK == esc + "[5m"       ! "slow", use sparingly, if at all...!
+$        REVRS == esc + "[7m"       ! Reverse or inverse
+$      REVERSE == REVRS
+$       NOECHO == esc + "[8m"       ! no echo
+$      CONCEAL == NOECHO
+$ !
+$ ! Not widely (or ever) supported, here for reference/completeness:
+$ !      FAINT == esc + "[2m"       ! faint (dim))
+$ !     ITALIC == esc + "[3m"       ! italic
+$ ! BLINKRAPID == esc + "[6m"       ! "rapid"
+$ !   CROSSOUT == esc + "[9m"       ! characters "marked out"
+$ !
+$ ! ANSI foreground or "normal intensity" colors (forces normal background)):
+$        BLACK == esc + "[0;30m"    ! normal black     [  0,  0,  0] \
+$          RED == esc + "[0;31m"    ! normal red       [187,  0,  0] |
+$        GREEN == esc + "[0;32m"    ! normal green     [  0,187,  0] | PuTTY
+$        BROWN == esc + "[0;33m"    ! normal yellow    [187,187,  0] | RGB
+$         BLUE == esc + "[0;34m"    ! normal blue      [  0,  0,187] | values
+$       PURPLE == esc + "[0;35m"    ! normal magenta   [187,  0,187] |
+$         CYAN == esc + "[0;36m"    ! normal cyan      [  0,187,187] |
+$    LIGHTGRAY == esc + "[0;37m"    ! normal white     [187,187,187] /
+$ !
+$ ! Note: Specify background color before foreground color --
+$ !       WRITE sys$output BLUE_BG + WHITE + "This is a test!" + NORM
+$ !
+$ ! ANSI background colors:
+$     BLACK_BG == esc + "[0;40m"    ! normal black     [  0,  0,  0] \
+$       RED_BG == esc + "[0;41m"    ! normal red       [187,  0,  0] |
+$     GREEN_BG == esc + "[0;42m"    ! normal green     [  0,187,  0] | PuTTY
+$     BROWN_BG == esc + "[0;43m"    ! normal yellow    [187,187,  0] | RGB
+$      BLUE_BG == esc + "[0;44m"    ! normal blue      [  0,  0,187] | values
+$    PURPLE_BG == esc + "[0;45m"    ! normal magenta   [187,  0,187] |
+$      CYAN_BG == esc + "[0;46m"    ! normal cyan      [  0,187,187] |
+$ LIGHTGRAY_BG == esc + "[0;47m"    ! normal white     [187,187,187] /
+$ !
+$ ! ANSI foreground or "bright intensity" colors (against reverse background)):
+$     DARKGRAY == esc + "[1;30m"    ! bright black     [ 85, 85, 85] \
+$     LIGHTRED == esc + "[1;31m"    ! bright red       [255, 85, 85] |
+$   LIGHTGREEN == esc + "[1;32m"    ! bright green     [ 85,255, 85] | PuTTY
+$       YELLOW == esc + "[1;33m"    ! bright yellow    [255,255, 85] | RGB
+$    LIGHTBLUE == esc + "[1;34m"    ! bright blue      [ 85, 85,255] | values
+$  LIGHTPURPLE == esc + "[1;35m"    ! bright magenta   [255, 85,255] |
+$    LIGHTCYAN == esc + "[1;36m"    ! bright cyan      [ 85,255,255] |
+$        WHITE == esc + "[1;37m"    ! bright white     [255,255,255] /
+$ !
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$DefineANSIseq
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$DefineClearscreen:  SUBROUTINE
+$ !#! Doc : Define ANSI clear-screen escape sequences
+$ !#!       and commands.
+$ !#!   Example:
+$ !#!     $ DCL$CALL DefineClearscreen
+$ !#!   P1 : (none)
+$ !
+$ SET NOON
+$ IF ( F$TYPE( esc ) .NES. "STRING" )
+$ THEN esc[0,8]== %X1B              !  27 decimal,  033 octal - ESCape character
+$      csi[0,8]== %X9B              ! 151 decimal, 0227 octal - CSI character
+$ ENDIF
+$ _bckscrL == esc + "[?5h"      ! set background light
+$ _bckscrD == esc + "[?5l"      ! set background dark
+$ _clrscr  == esc + "[m"  -     ! set rendition normal
+            + esc + "[H"  -     ! cursor to 0,0
+            + esc + "[2J"       ! clear entire screen
+$ !
+$ clr      == "WRITE sys$output _clrscr"
+$ cls      == clr     ! alias
+$ clrd     == "WRITE sys$output _bckscrL,_clrscr"
+$ clsd     == clrd    ! alias
+$ clrl     == "WRITE sys$output _bckscrD,_clrscr"
+$ clsl     == clrl    ! alias
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$DefineClearscreen
+$ ! ==========
 $ !
 $ !
 $ ! ==========
@@ -510,22 +626,6 @@ $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ToolsDebug
 $ ! ==========
 $ !
-$ !
-$ ! Prototype:
-$ ! ==========
-$ !! $DCL$«»:  SUBROUTINE
-$ !! $ !#! Doc : «»
-$ !! $ !#!   Example:
-$ !! $ !#!     $ DCL$CALL «»
-$ !! $ !#!   P1 : «»
-$ !! $ !
-$ !! $ SET NOON
-$ !! $ «»
-$ !! $ EXIT 1
-$ !! $ ENDSUBROUTINE  ! DCL$«»
-$ !! $ ! ==========
-$ !! $ !
-$ !! $ !
 $ !
 $ ! ==========
 $Help:                                                             !'F$VERIFY(0)'
