@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.02.01"         ! maintain with edits
-$ dcl$sldatestamp = "18-MAY-2017"
+$ dcl$slversion   = "01.03.01"         ! maintain with edits
+$ dcl$sldatestamp = "19-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -50,7 +50,7 @@ $ RegRouUC = F$EDIT( RegisteredRoutines, "UPCASE" )
 $ ! ==========
 $ !
 $ ! Show/display all Registered Routines --
-$ IF ( p1param .EQS. "SHOW" )
+$ IF ( p1param .EQS. "SHOW" ) .OR. ( p1param .EQS. "ROUT" )
 $ THEN ! set-up for dcl$call DCL$ShowRegisteredRoutines
 $      P5 = P1  ! ...the unregistered routine name
 $      P1 = "ShowRegisteredRoutines"  ! call this routine
@@ -58,6 +58,21 @@ $      P2 = RegisteredRoutines
 $      P3 = RegRouUC
 $      P4 = RRlen
 $      ! ...Fall-thru to call DCL$ShowRegisteredRoutines
+$ ENDIF
+$ !
+$ ! Honor an obvious synonym for Documentation:
+$ IF ( p1param .EQS. "API" ) THEN P1 = "DOC"
+$ !
+$ ! Used by DCL$Doc (and elsewhere?) --
+$ isANSI = F$GETDVI( "sys$output", "TT_ANSICRT" )
+$ IF ( isANSI )
+$ THEN esc[0,8]= %X1B              ! 27 decimal, 033 octal - ESCape character
+$         NORM = esc + "[0m"       ! Normal rendition
+$         BOLD = esc + "[1m"       ! Bold
+$        ULINE = esc + "[4m"       ! Underline
+$ ELSE    NORM = ""
+$         BOLD = ""
+$        ULINE = ""
 $ ENDIF
 $ !
 $ ! ==========
@@ -198,7 +213,9 @@ $ !#!     $ DCL$CALL Doc
 $ !#!   P1 : (none)
 $ !
 $ SET NOON
-$ indent  = 4
+$ indent = 4
+$ ! These three assignments use string "+" so that
+$ ! they don't match their own search/recognition --
 $ begsubr    = SPACE + "SUBROUTINE"
 $ endsubr    = SPACE + "ENDSUBROUTINE"
 $ breadcrumb = "«" + "»"
@@ -206,6 +223,7 @@ $ OPEN /READ /SHARE /ERROR=OpenError self DCL$SLself
 $DCL$SDLoop:
 $ READ /END_OF_FILE=DCL$SDcont self line
 $ llen = F$LENGTH( line )
+$ IF ( F$EDIT( line, "TRIM" ) .EQS. "" ) THEN GOTO DCL$SDLoop  ! skip any/all blank lines
 $ IF ( F$LOCATE( endsubr, line ) .LT. llen ) THEN GOTO DCL$SDLoop
 $ IF ( F$LOCATE( breadcrumb, line ) .LT. llen ) THEN GOTO DCL$SDLoop
 $ IF ( F$LOCATE( begsubr, line ) .LT. llen )
@@ -213,7 +231,7 @@ $ THEN ! Display routine name first --
 $      !  Strip colon, spaces and subroutine keyword
 $      line   = line - COLON - begsubr
 $      !  Strip leading "$" and all spaces
-$      rrname = F$EDIT( F$EXTRACT( 1, llen-1, line), "COLLAPSE" )
+$      rrname = BOLD + F$EDIT( F$EXTRACT( 1, llen-1, line), "COLLAPSE" ) + NORM
 $      wso ""
 $      wso F$FAO( "!#* Registered Routine: !AS", indent, rrname )
 $ ELSE IF ( F$LOCATE( DOCMARKER, line ) .EQ. 0 )
@@ -226,12 +244,15 @@ $      ENDIF
 $ ENDIF
 $ GOTO DCL$SDLoop
 $DCL$SDcont:
+$ wso ""
+$ wso "[End API/Doc]"
+$ wso ""
 $ CLOSE /NOLOG self
 $ EXIT 1
 $OpenError:
 $ wso F$FAO( "%!AS-E-FNF, cannot open self: !AS", -
              Fac, F$TRNLNM( "DCL$SLself", "LNM$PROCESS" ) )
-$ EXIT %X10018292
+$ EXIT %X10018292  ! FNF
 $ ENDSUBROUTINE  ! DCL$Doc
 $ ! ==========
 $ !
@@ -511,11 +532,32 @@ $Help:                                                             !'F$VERIFY(0)
 $ TYPE /PAGE sys$input
 
   To setup:  $ [1m@dev:[dir.subdir]DCL$SUBROUTINE_LIBRARY SETUP[0m
-  
+
   which defines all necessary symbols and logical names to
   use this DCL Subroutine Library.
-  
-  Use:       $ [1mDCL$CALL [4mRoutineName[0m [ "P1" [ "P2" ] ... [ "P7" ] ]
-  
+
+  use:       $ [1mDCL$CALL [4mRoutineName[0m [ "P1" [ "P2" ] ... [ "P7" ] ]
+   or:       $ [1mDCL$CALL[0m [ [1mHELP[0m | [1mSHOW[0m | [1mROUTINES[0m | [1mDOC[0m | [1mAPI[0m ]
+   or:       $ [1mDCL$CALL /OUTPUT=filespec[0m [ [1mHELP[0m | [1mSHOW[0m | [1mROUTINES[0m | [1mDOC[0m | [1mAPI[0m ]
+
+  where:
+    [1mRoutineName[0m is the name of a callable Registered Routine provided by this
+                DCL$SUBROUTINE_LIBRARY command script.  See $ DCL$CALL SHOW
+                for a list of currently-available routines.
+
+    [1mP1[0m .. [1mP7[0m    are command-line parameter values (usually best double-quoted
+                as shown above, especially if MixedCase &/or contain spaces).
+
+    [1m/OUTPUT=filespec[0m
+                redirects all output to a text file.
+
+    [1mHELP[0m        displays this help text.
+
+    [1mSHOW[0m        displays a list of all currently-available Registered Routines.
+    or [1mROUTINES[0m
+
+    [1mDOC[0m         displays internal help on the purpose, use, parameters and
+    or [1mAPI[0m      examples for each Registered Routine.
+
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
