@@ -161,15 +161,16 @@ $ CALL SearchAt lmr$login:logicals.com   ! now calls common_logicals.com
 $ !
 $ IF isTerm
 $ THEN wso "..."   !type-ahead ok...
+$      ! Dependency: must create ANSI esc-sequences/commands before SYMBOLS.COM...
+$      DCL$CALL DefineANSIseq      ! ANSI esc-sequence renditions & colors
+$      DCL$CALL DefineClearscreen  ! clr/cls commands
+$      CALL SearchAt lmr$login:symbols.com
+$      ! Dependency: ...and set prompt after defining ANSIseq and SYMBOLS.COM...
 $      IF ( F$TYPE( LMR$promptstr ) .EQS. "STRING" )
 $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $ !
-$      !!! CALL SearchAt lmr$login:delsymbols.com NO
-$      ! Dependency: must invoke ansiseq.com before symbols.com...
-$      CALL SearchAt com:ansiseq.com
-$      CALL SearchAt lmr$login:symbols.com
 $      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
 $      CALL SearchAt dcl$init
 $      !!! CALL SearchAt mgr$login
