@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.04.01"         ! maintain with edits
-$ dcl$sldatestamp = "19-MAY-2017"
+$ dcl$slversion   = "01.05.01"         ! maintain with edits
+$ dcl$sldatestamp = "25-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -39,8 +39,8 @@ $ DOCMARKlen = F$LENGTH( DOCMARKER )
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
-$ RegisteredRoutines = ",Alias,CmdParse,DefineANSIdef,DefineClearscreen" -
-                     + ",DeleteGloSyms,DiscoverDisks" -
+$ RegisteredRoutines = ",Alias,CmdParse,CommandLine,DefineANSIdef" -
+                     + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",MakeDir,PureDCL,ToolsDebug,Setup,Doc" -
                      + ",ShowRegisteredRoutines,«»" -
                      + COMMA
@@ -103,6 +103,131 @@ $ !! $ EXIT 1
 $ !! $ ENDSUBROUTINE  ! DCL$«»
 $ !! $ ! ==========
 $ !! $ !
+$ !
+$ ! ==========
+$DCL$Alias:  SUBROUTINE
+$ !#! Doc : Conditionally define a global symbol (alias command) P1 for invoking
+$ !#!       the command file P2 (which must exist).
+$ !#!   Example:
+$ !#!     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
+$ !#!   P1 : command symbol
+$ !#!   P2 : command file
+$ !#!   P3 : alternate command string
+$ !
+$ SET NOON
+$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
+$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
+$ ELSE AbbrSym = P1
+$ ENDIF
+$ FullSym = P1 - "*"
+$ IF ( F$TYPE( 'AbbrSym' ) .NES. "" )  !command symbol already exists?
+$ THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
+$ ENDIF
+$ P2 = F$EDIT(P2,"UPCASE")
+$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
+$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
+$ IF F$SEARCH(P2) .NES. ""
+$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
+$      THEN 'P1' == "$''P2'"
+$      ELSE 'P1' == "@''P2'"
+$      ENDIF
+$      IF dcl$Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
+$ ELSE IF ( P3 .NES. "" )
+$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
+$      ELSE IF LMR$Unavailable .EQS. ""
+$           THEN LMR$Unavailable == FullSym
+$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
+$           ENDIF
+$      ENDIF
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Alias
+$ !
+$ !
+$ ! ==========
+$DCL$CommandLine:  SUBROUTINE
+$ !#! Doc : Set Parse-Style and Case-Lookup for this process.
+$ !#!   Example:
+$ !#!     $ DCL$CALL CommandLine [ keyword1 [ keyword2 ] ]
+$ !#!     $ DCL$CALL CommandLine VMS    ! set TRADITIONAL parse-style and BLIND case-lookup
+$ !#!     $ DCL$CALL CommandLine LINUX  ! set EXTENDED and BLIND
+$ !#!     $ DCL$CALL CommandLine EXTENDED SENSITIVE  ! same as POSIX
+$ !#!   P1 : Keywords for setting these process DCL command parse-style and case-lookups:
+$ !#! &/or : T[RADITIONAL] - Full "normalization" of command, including auto-UPPERcasing
+$ !#!   P2 :    of file specifications (anything not guarded in "double-quote marks").
+$ !#!        E[XTENDED]    - Suppress "normalization" of command; in particular, leaves
+$ !#!           file specifications in the lower/UPPER/Mixed-case as typed/entered.
+$ !#!        B[LIND]       - Perform file lookups in case-insensitive (blind) mode, so
+$ !#!           that "foo" matches "FOO", "foo", "Foo", "FoO", etc.
+$ !#!        S[ENSITIVE]   - Perform file lookups with full case-sensitivity, or exact-
+$ !#!           match, so that "foo" matches/finds only "foo", not "FOO", "Foo", etc.
+$ !#!        D[EFAULT]
+$ !#!        or V[MS]  = TRADITIONAL and BLIND
+$ !#!        L[INUX]   = EXTENDED and BLIND
+$ !#!        P[OSIX]   = EXTENDED and SENSITIVE
+$ !
+$ SET NOON
+$ Q1 = "/PARSE_STYLE="
+$ Q2 = "/CASE_LOOKUP="
+$  j = 1
+$ CmdSet =  "TRADITIONAL|EXTENDED   |BLIND      |SENSITIVE  " -
+         + "|DEFAULT    |VMS        |LINUX      |POSIX      "
+$DCL$CLloop:
+$ GOTO DCL$CLloop
+$ SET PROCESS 'Q1' 'Q2'
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$CommandLine
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$CmdParse: SUBROUTINE
+$ !#! Doc : Attempts to match a command word (P1) against a list of possible command words (P4),
+$ !#!       where P1 may be a uniquely-recognized abbreviation of any of the possible words;
+$ !#!       returns result as a user-defined global symbol, or an error condition if no match.
+$ !#!   Example:
+$ !#!     $ DCL$CALL CmdParse "''P1'" File$Component "NAME" "NODE|DEV |DIR |NAME|TYPE|VERS|FULL"
+$ !#!   P1 : command word to parse
+$ !#!   P2 : global symbol to receive answer (default is Cmd$Answer)
+$ !#!   P3 : default command
+$ !#!   P4 : command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
+$ !#!        alternatively "@symbol" where "symbol" contains command-set (this
+$ !#!        accommodates very long command-sets, >255 characters)
+$ !#!   P5 : command separator (default is vert-bar/pipe "|")
+$ !#!   P6 : FALSE/TRUE flag to either return "" as failed-result (default is FALSE),
+$ !#!        or to hard-stop-fail (TRUE)
+$ !
+$ SET NOON
+$ IF ( P1 .EQS. "" ) THEN P1 = P3
+$ IF ( P2 .EQS. "" ) THEN P2 = "Cmd$Answer"
+$ IF ( P5 .EQS. "" ) THEN P5 = "|"
+$ IF ( P6 .EQS. "" ) THEN P6 = "FALSE"
+$ IF F$EXTRACT(0,1,P4) .EQS. "@"
+$ THEN sym = P4 - "@"
+$      P4 = "''sym'"
+$ ENDIF
+$ P4 = F$EDIT(P4,"UPCASE")
+$ S  = F$LOCATE(P5,P4) + 1               ! Determine field length
+$ P4 = P5 + P4                           ! Add separator to front of list...
+$ T  = P5 + F$EDIT(P1,"COLLAPSE,UPCASE") ! ...and to target
+$ L  = F$LOCATE( F$EDIT(T,"COLLAPSE,UPCASE"), P4 )      ! Test substring
+$ IF ( L .LT. F$LENGTH(P4) ) .AND. ( L-(L/S)*S .EQ. 0 ) ! Found?
+$ THEN L = ( ( L + 1 ) / S ) + 1                        ! Calculate offset
+$      ! Return both the full command and its element #:
+$      'P2'     == F$EDIT( F$ELEMENT(L,P5,P4), "COLLAPSE" )
+$      'P2'_Num == L  ! 1-based: 1=first command, 2=second, ...
+$      EXIT 1
+$ ELSE 'P2'     == ""
+$      'P2'_Num == -1
+$      WRITE sys$output "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
+$      IF P6
+$      THEN EXIT %X00038092  ! %DCL-E-IVVERB, unrecognized command verb (decimal 229522);
+$      ELSE EXIT 1           ! or return "" and -1 to indicate parse-fail
+$      ENDIF
+$ ENDIF
+$ ENDSUBROUTINE  ! DCL$CmdParse
+$ ! ==========
+$ !
 $ !
 $ ! ==========
 $DCL$DefineANSIseq:  SUBROUTINE
@@ -199,95 +324,6 @@ $ clrl     == "WRITE sys$output _bckscrD,_clrscr"
 $ clsl     == clrl    ! alias
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$DefineClearscreen
-$ ! ==========
-$ !
-$ !
-$ ! ==========
-$DCL$Alias:  SUBROUTINE
-$ !#! Doc : Conditionally define a global symbol (alias command) P1 for invoking
-$ !#!       the command file P2 (which must exist).
-$ !#!   Example:
-$ !#!     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
-$ !#!   P1 : command symbol
-$ !#!   P2 : command file
-$ !#!   P3 : alternate command string
-$ !
-$ SET NOON
-$ IF F$LOCATE("*",P1) .LT. F$LENGTH(P1)
-$ THEN AbbrSym = F$ELEMENT(0,"*",P1)
-$ ELSE AbbrSym = P1
-$ ENDIF
-$ FullSym = P1 - "*"
-$ IF ( F$TYPE( 'AbbrSym' ) .NES. "" )  !command symbol already exists?
-$ THEN DELETE /SYMBOL /GLOBAL 'AbbrSym'
-$ ENDIF
-$ P2 = F$EDIT(P2,"UPCASE")
-$ IF F$EXTRACT(0,1,P2) .EQS. "$" THEN P2 = P2 - "$" - ".EXE" + ".EXE"
-$ IF F$EXTRACT(0,1,P2) .EQS. "@" THEN P2 = P2 - "@" - ".COM" + ".COM"
-$ IF F$SEARCH(P2) .NES. ""
-$ THEN IF F$PARSE(P2,,,"TYPE","SYNTAX_ONLY") .EQS. ".EXE"
-$      THEN 'P1' == "$''P2'"
-$      ELSE 'P1' == "@''P2'"
-$      ENDIF
-$      IF dcl$Verbose THEN SHOW SYMBOL /GLOBAL 'FullSym'
-$ ELSE IF ( P3 .NES. "" )
-$      THEN 'P1' == "''P3'"  ! alternate (default DCL) command
-$      ELSE IF LMR$Unavailable .EQS. ""
-$           THEN LMR$Unavailable == FullSym
-$           ELSE LMR$Unavailable == LMR$Unavailable + ", " + FullSym
-$           ENDIF
-$      ENDIF
-$ ENDIF
-$ EXIT 1
-$ ENDSUBROUTINE  ! DCL$Alias
-$ !
-$ !
-$ ! ==========
-$DCL$CmdParse: SUBROUTINE
-$ !#! Doc : Attempts to match a command word (P1) against a list of possible command words (P4),
-$ !#!       where P1 may be a uniquely-recognized abbreviation of any of the possible words;
-$ !#!       returns result as a user-defined global symbol, or an error condition if no match.
-$ !#!   Example:
-$ !#!     $ DCL$CALL CmdParse "''P1'" File$Component "NAME" "NODE|DEV |DIR |NAME|TYPE|VERS|FULL"
-$ !#!   P1 : command word to parse
-$ !#!   P2 : global symbol to receive answer (default is Cmd$Answer)
-$ !#!   P3 : default command
-$ !#!   P4 : command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
-$ !#!        alternatively "@symbol" where "symbol" contains command-set (this
-$ !#!        accommodates very long command-sets, >255 characters)
-$ !#!   P5 : command separator (default is vert-bar/pipe "|")
-$ !#!   P6 : FALSE/TRUE flag to either return "" as failed-result (default is FALSE),
-$ !#!        or to hard-stop-fail (TRUE)
-$ !
-$ SET NOON
-$ IF ( P1 .EQS. "" ) THEN P1 = P3
-$ IF ( P2 .EQS. "" ) THEN P2 = "Cmd$Answer"
-$ IF ( P5 .EQS. "" ) THEN P5 = "|"
-$ IF ( P6 .EQS. "" ) THEN P6 = "FALSE"
-$ IF F$EXTRACT(0,1,P4) .EQS. "@"
-$ THEN sym = P4 - "@"
-$      P4 = "''sym'"
-$ ENDIF
-$ P4 = F$EDIT(P4,"UPCASE")
-$ S  = F$LOCATE(P5,P4) + 1               ! Determine field length
-$ P4 = P5 + P4                           ! Add separator to front of list...
-$ T  = P5 + F$EDIT(P1,"COLLAPSE,UPCASE") ! ...and to target
-$ L  = F$LOCATE( F$EDIT(T,"COLLAPSE,UPCASE"), P4 )      ! Test substring
-$ IF ( L .LT. F$LENGTH(P4) ) .AND. ( L-(L/S)*S .EQ. 0 ) ! Found?
-$ THEN L = ( ( L + 1 ) / S ) + 1                        ! Calculate offset
-$      ! Return both the full command and its element #:
-$      'P2'     == F$EDIT( F$ELEMENT(L,P5,P4), "COLLAPSE" )
-$      'P2'_Num == L  ! 1-based: 1=first command, 2=second, ...
-$      EXIT 1
-$ ELSE 'P2'     == ""
-$      'P2'_Num == -1
-$      WRITE sys$output "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
-$      IF P6
-$      THEN EXIT %X00038092  ! %DCL-E-IVVERB, unrecognized command verb (decimal 229522);
-$      ELSE EXIT 1           ! or return "" and -1 to indicate parse-fail
-$      ENDIF
-$ ENDIF
-$ ENDSUBROUTINE  ! DCL$CmdParse
 $ ! ==========
 $ !
 $ !
