@@ -165,16 +165,65 @@ $ !#!        D[EFAULT]
 $ !#!        or V[MS]  = TRADITIONAL and BLIND
 $ !#!        L[INUX]   = EXTENDED and BLIND
 $ !#!        P[OSIX]   = EXTENDED and SENSITIVE
+$ !#!        SHOW      = same as P3 below
+$ !#!   P3 : SHOW, or any truthy or non-empty-string value will show/echo the set-results.
 $ !
 $ SET NOON
-$ Q1 = "/PARSE_STYLE="
-$ Q2 = "/CASE_LOOKUP="
+$ Q1 = ""
+$ Q2 = ""
 $  j = 1
 $ CmdSet =  "TRADITIONAL|EXTENDED   |BLIND      |SENSITIVE  " -
-         + "|DEFAULT    |VMS        |LINUX      |POSIX      "
+         + "|DEFAULT    |VMS        |LINUX      |POSIX      " -
+         + "|SHOW       "
 $DCL$CLloop:
-$ GOTO DCL$CLloop
+$ IF ( P'j' .NES. "" )
+$ THEN cmd = P'j'
+$      CALL DCL$CmdParse "''cmd'"  Cmd$Answer "VMS" "''CmdSet'"
+$      GOTO DCL$CL_'Cmd$Answer'
+$DCL$CL_TRADITIONAL:
+$      Q1 = "TRADITIONAL"
+$      GOTO DCL$CLcont
+$DCL$CL_EXTENDED:
+$      Q1 = "EXTENDED"
+$      GOTO DCL$CLcont
+$DCL$CL_BLIND:
+$      Q2 = "BLIND"
+$      GOTO DCL$CLcont
+$DCL$CL_SENSITIVE:
+$      Q2 = "SENSITIVE"
+$      GOTO DCL$CLcont
+$DCL$CL_DEFAULT:
+$DCL$CL_VMS:
+$      Q1 = "TRADITIONAL"
+$      Q2 = "BLIND"
+$      GOTO DCL$CLcont
+$DCL$CL_LINUX:
+$      Q1 = "EXTENDED"
+$      Q2 = "BLIND"
+$      GOTO DCL$CLcont
+$DCL$CL_POSIX:
+$      Q1 = "EXTENDED"
+$      Q2 = "SENSITIVE"
+$      GOTO DCL$CLcont
+$DCL$CL_SHOW:
+$      P3 = "SHOW"
+$      GOTO DCL$CLcont
+$DCL$CLcont:
+$      IF ( j .GE. 2 )
+$      THEN GOTO DCL$CLdo
+$      ELSE j = j + 1
+$           GOTO DCL$CLloop
+$      ENDIF
+$ ENDIF
+$DCL$CLdo:
+$ IF ( Q1 .NES. "" ) THEN Q1 = "/PARSE_STYLE=" + Q1
+$ IF ( Q2 .NES. "" ) THEN Q2 = "/CASE_LOOKUP=" + Q2
 $ SET PROCESS 'Q1' 'Q2'
+$ IF ( P3 .NES. "" ) -  ! e.g., SHOW
+  THEN wso F$FAO( "%!AS-S-PROCESS, command-line parsing: !AS, !AS", -
+                  Fac, F$GETJPI("","PARSE_STYLE_PERM"), F$GETJPI("","CASE_LOOKUP_PERM") )
+$Cleanup:
+$ CALL DCL$DeleteGloSyms "Cmd$Answer"
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$CommandLine
 $ ! ==========
