@@ -29,15 +29,16 @@ $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
-$ DI$Disks == ""
-$ wso       = "WRITE sys$output"
-$ Fac       = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
-$ Node      = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
-$ Clu       = F$EXTRACT(0,4,Node)
-$ COMMA     = ","
-$ DOLLAR    = "$"
+$ DI$Disks  == ""
+$ wso        = "WRITE sys$output"
+$ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
+$ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ Clu        = F$EXTRACT(0,4,Node)
+$ COMMA      = ","
+$ DOLLAR     = "$"
+$ UNDERSCORE = "_"
 $ !
-$ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
+$ devfldlen = 16
 $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
@@ -46,25 +47,79 @@ $ THEN DI$Disks == P1
 $ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
 $ ENDIF
 $ !
+$ header = F$FAO( "!#* !AS !AS !18AS !18AS  !7AS  !21AS",  -
+                  devfldlen, "disk", "ODS", "logical", -
+                  "vol-shadow", "cluster", "characteristics" )
+$ headln = F$FAO( "!#*-", F$LENGTH( header ) + 4 )
+$ !
+$ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
+$ wso ""
+$ wso header
+$ wso headln
+$ !
 $ devcnt = 0
 $DI$Loop:
 $ dev = F$ELEMENT( devcnt, COMMA, DI$Disks )
 $ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DI$Done
 $ devcnt = devcnt + 1
 $ !
-$ nakeddev = dev - "_" - alloclass - "''Node'$"           ! undecorate it...
+$ nakeddev = dev - UNDERSCORE - alloclass - "''Node'$"           ! undecorate it...
 $ IF F$GETDVI( dev, "MNT" )
 $ THEN ! Full accounting for a mounted disk:
+$      IF F$GETDVI( dev, "ODS5" )
+$      THEN odslvl = " :5"
+$      ELSE odslvl = "2: "
+$      ENDIF
+$      volnam = F$GETDVI( dev, "VOLNAM" )
+$      devlnm = F$TRNLNM( "DISK$''volnam'", "LNM$SYSTEM" )
+$      IF ( devlnm .NES. "" )
+$      THEN devlnm = "DISK$''volnam'"
+$      ELSE devlnm = volnam
+$      ENDIF
+$      cluster = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
+$      cluslen = F$LENGTH( cluster )
+$      IF ( .NOT. F$GETDVI( dev, "NOHIGHWATER" ) )
+$      THEN char = "high-H2O"
+$      ELSE char = ""
+$      ENDIF
+$      IF ( F$GETDVI( dev, "ERASE_ON_DELETE" ) )
+$      THEN eod = "erase-on-del"
+$           IF ( char .EQS. "" )
+$           THEN char = eod
+$           ELSE char = char + COMMA + eod
+$           ENDIF
+$      ENDIF
+$      shadow = ""
+$      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
+$      THEN shadow = "Master"
+$      ELSE IF ( F$GETDVI( dev, "SHDW_MEMBER" ) )
+$           THEN shadow  = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
+$                cluster = ""
+$                cluslen = 0
+$                char    = ""
+$           ENDIF
+$      ENDIF
 $ ELSE ! The disk is online, but not currently mounted...
 $      IF F$GETDVI( dev, "AVL" )
-$      THEN
-$      ELSE
+$      THEN odslvl  = "online"
+$           devlnm  = ""
+$           shadow  = ""
+$           cluster = ""
+$           cluslen = 0
+$           char    = ""
+$      ELSE !
 $      ENDIF
 $ ENDIF
-$ wso F$FAO( "!3SL. disk: !AS", devcnt, dev )
+$ devl = F$LENGTH( dev )
+$ wso F$FAO( "!3SL.!#* !AS !AS !18AS !18AS  !#* !AS  !20AS", -
+             devcnt, devfldlen-devl, dev, odslvl, devlnm, -
+             shadow, 7-cluslen, cluster, char )
 $ GOTO DI$Loop
 $ !
 $DI$Done:
+$ wso headln
+$ wso ""
+$ !
 $ DCL$CALL DeleteGloSyms "DI$Disks"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
