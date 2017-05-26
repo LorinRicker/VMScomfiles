@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.05.01"         ! maintain with edits
-$ dcl$sldatestamp = "25-MAY-2017"
+$ dcl$slversion   = "01.05.02"         ! maintain with edits
+$ dcl$sldatestamp = "26-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -477,7 +477,7 @@ $ !#!        device to be included in the result list.
 $ !#!        See 'DCL Dictionary', Lexicals, F$GETDVI for the complete list of
 $ !#!        argument/items for this lexical function -- here using only the
 $ !#!        "true/false" queries for disks (out of all the items possible).
-$ !#!   P3 : List of device-types to ignore, default is "DQA,DQB,LDA,DAD,DNFS"
+$ !#!   P3 : List of device-types to ignore, default is "DQA,DQB,DAD,DNFS"
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "DCL$Disks"
@@ -487,7 +487,7 @@ $ THEN P2 = "AVL,MNT,SHDW_MEMBER"
 $ ELSE P2 = F$EDIT( P2, "COLLAPSE,UPCASE" )
 $ ENDIF
 $ IF ( P3 .EQS. "" )
-$ THEN P3 = "DQA,DQB,LDA,DAD,DNFS"
+$ THEN P3 = "DQA,DQB,DAD,DNFS"
 $ ELSE P3 = F$EDIT( P3, "COLLAPSE,UPCASE" )
 $ ENDIF
 $ DDpayload = ""
