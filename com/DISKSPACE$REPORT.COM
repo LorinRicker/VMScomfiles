@@ -12,59 +12,78 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$DiskSpace:  SUBROUTINE
-$ ON CONTROL_Y THEN GOSUB DSCtrl_Y
-$ ON ERROR THEN EXIT %X2C
+$ ! === MAIN ===
+$ !
+$ ON CONTROL_Y THEN GOSUB Ctrl_Y
+$ ON ERROR THEN GOTO Done
+$ !
+$ DS$Disks  == ""
+$ wso        = "WRITE sys$output"
+$ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
+$ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ COMMA      = ","
+$ DOLLAR     = "$"
+$ UNDERSCORE = "_"
 $ !
 $ mask       = %X7FFFFFFF
 $ maskdiv100 = mask / 100
 $ !
-$ wso F$FAO( "Disk Space !#*=", 44 )
-$DSpc0:
-$ dsk = F$DEVICE( , "DISK" )
-$ IF ( dsk .EQS. "" ) THEN GOTO DSpcEnd
-$ IF ( .NOT. F$GETDVI( dsk, "MNT" ) )     -  ! not mounted?
-  .OR. ( F$GETDVI( dsk, "FOR" ) )         -  ! mounted foreign?
-  .OR. ( F$GETDVI( dsk, "SWL" ) )         -  ! software-locked?
-  .OR. ( F$GETDVI( dsk, "SHDW_MEMBER" ) ) -  ! a shadow-set member (not the shadow-set itself)?
-  THEN GOTO DSpc0
-$ voln  = F$GETDVI( dsk, "VOLNAM" )
-$ total = F$GETDVI( dsk, "MAXBLOCK" )
-$ free  = F$GETDVI( dsk, "FREEBLOCKS" )
-$ used  = total - free
-$ dsk   = dsk - "_"  ! strip leading underscore
-$ !
-$DSrange:
-$ IF ( free .LT. 0 ) .OR. ( used .LT. 0 ) .OR. ( total .LT. 0 )
-$ THEN free  = ( free  / 2 ) .AND. mask
-$      used  = ( used  / 2 ) .AND. mask
-$      total = ( total / 2 ) .AND. mask
+$ IF ( P1 .NES. "" )
+$ THEN DS$Disks == P1
+$ ELSE DCL$CALL DiscoverDisks DS$Disks "MNT,!SHDW_MEMBER"
 $ ENDIF
+$ show symbol /global DS$Disks
 $ !
-$ IF ( used .GT. maskdiv100 ) .OR. ( free .GT. maskdiv100 ) .OR. ( total .GT. maskdiv100 )
-$ THEN free  = free  / 10
-$      used  = used  / 10
-$      total = total / 10
-$      GOTO DSrange
-$ ENDIF
+$ devfldlen = 16
+$ headfill  = 14
 $ !
-$ freepct = ( free * 100 ) / total
-$ usedpct = ( used * 100 ) / total
-$ wso F$FAO( "  !20AS!12AS !2SL% free, !2SL% used", dsk, voln, freepct, usedpct )
-$ GOTO DSpc0
+$ header = F$FAO( "!#* !AS !#* !AS !#* !AS",  -
+                  devfldlen*2, "free", devfldlen, "used", devfldlen, "total" )
+$ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill )
 $ !
-$DSpcEnd:
-$ wso F$FAO( "!#*=", 55 )
+$ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
 $ wso ""
-$ EXIT 1
+$ wso header
+$ wso headln
 $ !
-$DSCtrl_Y:
+$ devcnt = 0
+$DS$Loop:
+$ dev = F$ELEMENT( devcnt, COMMA, DS$Disks )
+$ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DS$Done
+$ devcnt = devcnt + 1
+$ !
+$ volname  = F$GETDVI( dev, "VOLNAM" )
+$ totalblks = F$GETDVI( dev, "MAXBLOCK" )
+$ freeblks  = F$GETDVI( dev, "FREEBLOCKS" )
+$ usedblks  = totalblks - freeblks
+$ dev   = dev - "_"  ! strip leading underscore
+$ !
+$DS$range:
+$ IF ( freeblks .LT. 0 ) .OR. ( usedblks .LT. 0 ) .OR. ( totalblks .LT. 0 )
+$ THEN freeblks  = ( freeblks  / 2 ) .AND. mask
+$      usedblks  = ( usedblks  / 2 ) .AND. mask
+$      totalblks = ( totalblks / 2 ) .AND. mask
+$ ENDIF
+$ !
+$ IF ( usedblks .GT. maskdiv100 ) .OR. ( freeblks .GT. maskdiv100 ) .OR. ( totalblks .GT. maskdiv100 )
+$ THEN freeblks  = freeblks  / 10
+$      usedblks  = usedblks  / 10
+$      totalblks = totalblks / 10
+$      GOTO DS$range
+$ ENDIF
+$ !
+$ freepct = ( freeblks * 100 ) / totalblks
+$ usedpct = ( usedblks * 100 ) / totalblks
+$ wso F$FAO( "  !20AS!12AS !3SL% free, !3SL% used", dev, volname, freepct, usedpct )
+$ GOTO DS$Loop
+$ !
+$DS$Done:
+$ wso F$FAO( "!#*-", F$LENGTH( headln ) )
+$ wso ""
+$ !
+$ DCL$CALL DeleteGloSyms "DS$Disks"
+$ EXIT 1    ! 'F$VERIFY(0)'
+$ !
+$Ctrl_Y:
 $ EXIT %X2C
-$ ENDSUBROUTINE  ! DiskSpace
-$ !
-$ !
-$Main:
-$ wso = "WRITE sys$output"
-$ CALL DiskSpace
-$ EXIT 1
 $ !
