@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.05.02"         ! maintain with edits
-$ dcl$sldatestamp = "26-MAY-2017"
+$ dcl$slversion   = "01.06.01"         ! maintain with edits
+$ dcl$sldatestamp = "30-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -514,16 +514,20 @@ $ IF dcl$Verbose THEN wso ">>> j: ""''j'""   dev: ""''dev'""   criterion: ""''cr
 $ IF ( F$EXTRACT( 0, 1, criterion ) .EQS. BANG )
 $ THEN ! Negate this criterion
 $      criterion = criterion - BANG
-$      IF ( .NOT. F$GETDVI( dev, "''criterion'" ) ) THEN GOTO DCL$Accum
+$      IF ( F$GETDVI( dev, criterion ) )
+$      THEN ! remove it if it got added...
+$           target = COMMA + dev
+$           IF ( F$LOCATE( target, DDpayload ) .LT. F$LENGTH( DDpayload ) ) -
+              THEN DDpayload = DDpayload - target
+$           IF ( F$LOCATE( dev, DDpayload ) .LT. F$LENGTH( DDpayload ) ) -
+              THEN DDpayload = DDpayload - dev
+$           GOTO DCL$DDLoop  ! skip it...
+$      ENDIF
 $ ELSE ! Affirm this criterion
-$      IF ( F$GETDVI( dev, "''criterion'" ) ) THEN GOTO DCL$Accum
+$      IF ( F$GETDVI( dev, criterion ) ) THEN DDpayload = DDpayload + COMMA + dev
 $ ENDIF
 $ j = j + 1
 $ GOTO DCL$Inner2
-$DCL$Accum:
-$ ! Accumulate the payload:
-$ DDpayload = DDpayload + COMMA + dev
-$ GOTO DCL$DDLoop
 $ !
 $DCL$DDexit:
 $ DDlen = F$LENGTH( DDpayload )
