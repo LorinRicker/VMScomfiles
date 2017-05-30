@@ -14,7 +14,7 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !  Create spreadsheet inventories (CSV) of all disks
 $ !
-$ !  use: @DISKINVENTORY$REPORT [/OUTPUT=DI$<ClusterAlias>.csv] [disk[,disk]...]
+$ !  use: @DISKINVENTORY$REPORT [disk[,disk]...]
 $ !
 $ !       If P1 is a comma-separated list of disk names, then only these devices
 $ !       are checked, otherwise all physical (non-DSA) devices are checked
@@ -33,12 +33,9 @@ $ DI$Disks  == ""
 $ wso        = "WRITE sys$output"
 $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
 $ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
-$ Clu        = F$EXTRACT(0,4,Node)
 $ COMMA      = ","
 $ DOLLAR     = "$"
 $ UNDERSCORE = "_"
-$ !
-$ devfldlen = 16
 $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
@@ -47,10 +44,13 @@ $ THEN DI$Disks == P1
 $ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
 $ ENDIF
 $ !
-$ header = F$FAO( "!#* !AS !AS !18AS !18AS  !7AS  !21AS",  -
-                  devfldlen, "disk", "ODS", "logical", -
-                  "vol-shadow", "cluster", "characteristics" )
-$ headln = F$FAO( "!#*-", F$LENGTH( header ) + 4 )
+$ devfldlen = 16
+$ headfill  = 22
+$ !
+$ header = F$FAO( "!#* !AS !18AS !18AS  !7AS     !9AS  !21AS",  -
+                  devfldlen+5, "ODS", "logical", "vol-shadow", -
+                  "cluster", "maxfiles", "characteristics" )
+$ headln = F$FAO( "-- Disk Inventory !#*-", F$LENGTH( header ) - headfill )
 $ !
 $ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
 $ wso ""
@@ -76,8 +76,10 @@ $      IF ( devlnm .NES. "" )
 $      THEN devlnm = "DISK$''volnam'"
 $      ELSE devlnm = volnam
 $      ENDIF
-$      cluster = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
-$      cluslen = F$LENGTH( cluster )
+$      cluster  = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
+$      cluslen  = F$LENGTH( cluster )
+$      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
+$      maxflen  = F$LENGTH( maxfiles )
 $      IF ( .NOT. F$GETDVI( dev, "NOHIGHWATER" ) )
 $      THEN char = "high-H2O"
 $      ELSE char = ""
@@ -93,31 +95,35 @@ $      shadow = ""
 $      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
 $      THEN shadow = "Master"
 $      ELSE IF ( F$GETDVI( dev, "SHDW_MEMBER" ) )
-$           THEN shadow  = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
-$                cluster = ""
-$                cluslen = 0
-$                char    = ""
+$           THEN shadow   = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
+$                cluster  = ""
+$                cluslen  = 0
+$                maxfiles = ""
+$                maxflen  = 0
+$                char     = ""
 $           ENDIF
 $      ENDIF
 $ ELSE ! The disk is online, but not currently mounted...
 $      IF F$GETDVI( dev, "AVL" )
-$      THEN odslvl  = "online"
-$           devlnm  = ""
-$           shadow  = ""
-$           cluster = ""
-$           cluslen = 0
-$           char    = ""
+$      THEN odslvl   = "online"
+$           devlnm   = ""
+$           shadow   = ""
+$           cluster  = ""
+$           cluslen  = 0
+$           maxfiles = ""
+$           maxflen  = 0
+$           char     = ""
 $      ELSE !
 $      ENDIF
 $ ENDIF
 $ devl = F$LENGTH( dev )
-$ wso F$FAO( "!3SL.!#* !AS !AS !18AS !18AS  !#* !AS  !20AS", -
-             devcnt, devfldlen-devl, dev, odslvl, devlnm, -
-             shadow, 7-cluslen, cluster, char )
+$ wso F$FAO( "!3SL.!#* !AS !AS !18AS !18AS  !#* !AS !#* !AS  !20AS", -
+             devcnt, devfldlen-devl, dev, odslvl, devlnm, shadow, -
+             7-cluslen, cluster, 12-maxflen, maxfiles, char )
 $ GOTO DI$Loop
 $ !
 $DI$Done:
-$ wso headln
+$ wso F$FAO( "!#*-", F$LENGTH( headln ) )
 $ wso ""
 $ !
 $ DCL$CALL DeleteGloSyms "DI$Disks"
@@ -125,3 +131,4 @@ $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:
 $ RETURN %X2C
+$ !
