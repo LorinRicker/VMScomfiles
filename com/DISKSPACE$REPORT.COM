@@ -32,14 +32,14 @@ $ IF ( P1 .NES. "" )
 $ THEN DS$Disks == P1
 $ ELSE DCL$CALL DiscoverDisks DS$Disks "MNT,!SHDW_MEMBER"
 $ ENDIF
-$ show symbol /global DS$Disks
 $ !
-$ devfldlen = 16
+$ devfldlen = 20
 $ headfill  = 14
 $ !
-$ header = F$FAO( "!#* !AS !#* !AS !#* !AS",  -
-                  devfldlen*2, "free", devfldlen, "used", devfldlen, "total" )
-$ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill )
+$ header = F$FAO( "!#* !AS",  -
+                  devfldlen+headfill, -
+                  "Free             blocks   Used             blocks         Total blocks" )
+$ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill + 2 )
 $ !
 $ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
 $ wso ""
@@ -74,14 +74,27 @@ $ ENDIF
 $ !
 $ freepct = ( freeblks * 100 ) / totalblks
 $ usedpct = ( usedblks * 100 ) / totalblks
-$ wso F$FAO( "  !20AS!12AS !3SL% free, !3SL% used", dev, volname, freepct, usedpct )
+$ !
+$ devlen = F$LENGTH( dev )
+$ fldlen = 18
+$ DCL$CALL Thousands "DS$freeblks"  "''freeblks'"
+$ freelen = F$LENGTH( DS$freeblks )
+$ DCL$CALL Thousands "DS$usedblks"  "''usedblks'"
+$ usedlen = F$LENGTH( DS$usedblks )
+$ DCL$CALL Thousands "DS$totalblks" "''totalblks'"
+$ totalen = F$LENGTH( DS$totalblks )
+$ wso F$FAO( "!#* !AS !12AS !3SL% !#* !AS | !3SL% !#* !AS | !#* !AS |", -
+             devfldlen-devlen, dev, volname, -
+             freepct, fldlen-freelen, DS$freeblks, -
+             usedpct, fldlen-usedlen, DS$usedblks, -
+             fldlen-totalen, DS$totalblks )
 $ GOTO DS$Loop
 $ !
 $DS$Done:
 $ wso F$FAO( "!#*-", F$LENGTH( headln ) )
 $ wso ""
 $ !
-$ DCL$CALL DeleteGloSyms "DS$Disks"
+$ DCL$CALL DeleteGloSyms "DS$Disks,DS$freeblks,DS$usedblks,DS$totalblks"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:
