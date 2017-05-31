@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.07.01"         ! maintain with edits
+$ dcl$slversion   = "01.08.01"         ! maintain with edits
 $ dcl$sldatestamp = "31-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -39,10 +39,12 @@ $ DOCMARKlen = F$LENGTH( DOCMARKER )
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
-$ RegisteredRoutines = ",Alias,CmdParse,CommandLine,DefineANSIdef" -
+$ RegisteredRoutines = COMMA                                            -
+                     +  "Alias,CmdParse,CommandLine,DefineANSIdef"      -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
-                     + ",MakeDir,PureDCL,ToolsDebug,Setup,Doc" -
-                     + ",ShowRegisteredRoutines,«»" -
+                     + ",MakeDir,PureDCL"                               -
+                     + ",ShowRegisteredRoutines,Thousands,ToolsDebug"   -
+                     + ",Setup,Doc"                                     -
                      + COMMA
 $ ! ----------------------------------------------------------------------
 $ ! ==========
@@ -464,7 +466,7 @@ $ !#! Doc : Create, by discovery, a list (comma-separated string) of disks on th
 $ !#!       suitable for F$ELEMENT(j,...)-looping through for caller processing.
 $ !#!   Example:
 $ !#!     $ DCL$CALL DiscoverDisks DD$Disks "AVL,MNT,SHDW_MEMBER"
-$ !#!   P1 : Name of the user global symbol to receive the result-list
+$ !#!   P1 : Name of the user global symbol to receive the result-list, default "DCL$Disks"
 $ !#!   P2 : Disk criteria list for inclusion in the result (comma-separated),
 $ !#!        with a leading "!" on the criterion name for negation of that one
 $ !#!        (e.g., "...,!MNT,..." means "not mounted").
@@ -678,6 +680,67 @@ $      EXIT %X2C  ! abort...
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ShowRegisteredRoutines
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$Thousands:  SUBROUTINE
+$ !#! Doc : Adds "thousands-separators" into numeric strings,
+$ !#!       e.g., "1234567890" becomes "1,234,567,890",
+$ !#!   Example:
+$ !#!     $ DCL$CALL Thousands [ separator-char ] [ group-count ]
+$ !#!   P1 : Name of the user global symbol to receive the result-list, default "DCL$SepString"
+$ !#!   P2 : Value (string) to be separated
+$ !#!   P3 : Separator character, default "," (comma)
+$ !#!   P4 : Number of characters per separated group, default 3
+$ !
+$ SET NOON
+$ IF ( P1 .EQS. "" ) THEN P1 = "DCL$SepString"
+$ IF ( P3 .EQS. "" ) THEN P3 = COMMA
+$ IF ( P4 .EQS. "" ) THEN P4 = 3
+$ P2len = F$LENGTH( P2 )
+$ IF ( P2len .LE. P4 )  ! degenerate case, don't add separators...
+$ THEN concatenated = P2
+$      GOTO DCL$ThDone
+$ ENDIF
+$ ! else...
+$ j = 1
+$DCL$ThLoop:
+$ cut = P2Len - P4
+$ ss'j' = F$EXTRACT( cut, P4, P2 )
+$!! $ IF ( dcl$Verbose ) -
+$!!   THEN wso F$FAO( "J:  ss!SL : !AS  cut:!SL  P2len:!SL", j, ss'j', cut, P2len )
+$ IF ( cut .GT. P4 )
+$ THEN P2 = F$EXTRACT( 0, cut, P2 )
+$      P2len = F$LENGTH( P2 )
+$      j = j + 1
+$      GOTO DCL$ThLoop
+$ ELSE j = j + 1
+$      ss'j' = F$EXTRACT( 0, cut, P2 )
+$!! $      IF ( dcl$Verbose ) -
+$!!        THEN wso F$FAO( "J:  ss!SL : !AS  cut:!SL  P2len:!SL", j, ss'j', cut, P2len )
+$      GOTO DCL$ThCont
+$ ENDIF
+$ !
+$DCL$ThCont:
+$ concatenated = ""
+$ k = j
+$DCL$ThConcat:
+$ IF ( concatenated .NES. "" )
+$ THEN concatenated = concatenated + P3 + ss'k'
+$ ELSE concatenated = ss'k'
+$ ENDIF
+$!! $ IF ( dcl$Verbose ) -
+$!!   THEN wso F$FAO( "K:  ss!SL : !AS  cut:!SL  P2len:!SL", k, ss'k', cut, P2len )
+$ k = k - 1
+$ IF ( k .GT. 0 ) THEN GOTO DCL$ThConcat
+$ !
+$DCL$ThDone:
+$ 'P1' == concatenated
+$ IF ( dcl$Verbose ) THEN SHOW SYMBOL /GLOBAL 'P1'
+$ !
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Thousands
 $ ! ==========
 $ !
 $ !
