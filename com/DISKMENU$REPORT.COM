@@ -56,7 +56,10 @@ $ !
 $DMR$1:
 $DMR$D:
 $ SHOW DEVICE D /MOUNTED
-$ IF justthisone THEN GOTO DMR$Cont
+$ IF justthisone
+$ THEN GOTO DMR$Cont
+$ ELSE wso ""
+$ ENDIF
 $ !
 $DMR$2:
 $DMR$I:
