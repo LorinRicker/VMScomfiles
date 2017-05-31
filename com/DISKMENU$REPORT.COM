@@ -26,16 +26,19 @@ $ DD   = F$PARSEC( Proc, , , "DEVICE" ) + F$PARSE( Proc, , , "DIRECTORY" )
 $ Node = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ !
 $ P1 = F$EDIT( P1, "TRIM,UPCASE" )
+$ justthisone = "TRUE"
+$ typeit      = "TYPE /PAGE"
 $PromptLoop:
 $ IF ( P1 .NES. "" )
 $ THEN choice = F$EXTRACT( 0, 1, P1 )
-$ ELSE TYPE /PAGE sys$input  ! "here-doc" with clearscreen
+$ ELSE typeit sys$input  ! "here-doc" with clearscreen
 
     [4mDisk Information Reports[0m
 
     ([1m1[0m) [1mD[0misks     -- show mounted devices/disks
     ([1m2[0m) [1mI[0mnventory -- display disk inventory & characteristics
     ([1m3[0m) [1mS[0mpace     -- display disk space free, used & total
+    ([1m4[0m) [1mA[0mll       -- All three reports
 
 
 $      READ sys$command P1 /PROMPT="Display [1/D]? " /END_OF_FILE=DMR$Done
@@ -44,22 +47,26 @@ $      IF ( P1 .EQS. "" ) THEN P1 = "Disks"
 $      choice = F$EXTRACT( 0, 1, P1 )
 $ ENDIF
 $ ON WARNING THEN GOTO ChoiceError
-$ GOTO DMR$'choice'
+$ IF ( choice .EQS. "A" ) .OR. ( choice .EQS. "4" )
+$ THEN justthisone = "FALSE"
+$      GOTO DMR$1
+$ ELSE GOTO DMR$'choice'
+$ ENDIF
 $ !
 $DMR$1:
 $DMR$D:
 $ SHOW DEVICE D /MOUNTED
-$ GOTO DMR$Cont
+$ IF justthisone THEN GOTO DMR$Cont
 $ !
 $DMR$2:
 $DMR$I:
 $ @'DD'diskinventory$report
-$ GOTO DMR$Cont
+$ IF justthisone THEN GOTO DMR$Cont
 $ !
 $DMR$3:
 $DMR$S:
 $ @'DD'diskspace$report
-$ GOTO DMR$Cont
+$ IF justthisone THEN GOTO DMR$Cont
 $ !
 $DMR$Cont:
 $ wso ""
@@ -69,6 +76,10 @@ $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $ChoiceError:
 $ wso F$FAO( "%!AS-E-BAD_CHOICE, no such option [4m!AS[0m, reenter...", Fac, choice )
+$ P1 = ""
+$ justthisone = "TRUE"
+$ typeit      = "TYPE"
+$ GOTO PromptLoop
 $ !
 $Ctrl_Y:
 $ RETURN %X2C
