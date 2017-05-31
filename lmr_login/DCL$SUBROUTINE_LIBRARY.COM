@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.06.01"         ! maintain with edits
-$ dcl$sldatestamp = "30-MAY-2017"
+$ dcl$slversion   = "01.07.01"         ! maintain with edits
+$ dcl$sldatestamp = "31-MAY-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -524,7 +524,9 @@ $           IF ( F$LOCATE( dev, DDpayload ) .LT. F$LENGTH( DDpayload ) ) -
 $           GOTO DCL$DDLoop  ! skip it...
 $      ENDIF
 $ ELSE ! Affirm this criterion
-$      IF ( F$GETDVI( dev, criterion ) ) THEN DDpayload = DDpayload + COMMA + dev
+$      IF ( F$GETDVI( dev, criterion ) ) -  ! a required criteria, but not already in list...
+         THEN IF ( F$LOCATE( dev, DDpayload ) .GE. F$LENGTH( DDpayload ) ) -
+           THEN DDpayload = DDpayload + COMMA + dev
 $ ENDIF
 $ j = j + 1
 $ GOTO DCL$Inner2
