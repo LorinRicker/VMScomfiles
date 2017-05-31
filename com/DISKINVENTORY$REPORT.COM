@@ -47,7 +47,7 @@ $ !
 $ devfldlen = 16
 $ headfill  = 22
 $ !
-$ header = F$FAO( "!#* !AS !18AS !18AS  !7AS     !9AS  !21AS",  -
+$ header = F$FAO( "!#* !AS !18AS !18AS  !7AS     !9AS !20AS",  -
                   devfldlen+5, "ODS", "logical", "vol-shadow", -
                   "cluster", "maxfiles", "characteristics" )
 $ headln = F$FAO( "-- Disk Inventory !#*-", F$LENGTH( header ) - headfill )
@@ -81,7 +81,7 @@ $      cluslen  = F$LENGTH( cluster )
 $      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
 $      maxflen  = F$LENGTH( maxfiles )
 $      IF ( .NOT. F$GETDVI( dev, "NOHIGHWATER" ) )
-$      THEN char = "high-H2O"
+$      THEN char = "hi-H2O"
 $      ELSE char = ""
 $      ENDIF
 $      IF ( F$GETDVI( dev, "ERASE_ON_DELETE" ) )
@@ -93,7 +93,7 @@ $           ENDIF
 $      ENDIF
 $      shadow = ""
 $      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
-$      THEN shadow = "Master"
+$      THEN shadow = "VolShadow Master"
 $      ELSE IF ( F$GETDVI( dev, "SHDW_MEMBER" ) )
 $           THEN shadow   = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
 $                cluster  = ""
