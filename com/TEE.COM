@@ -1,7 +1,7 @@
-$ ! TEE.COM -- split input on SYS$PIPE to SYS$OUTPUT               'F$VERIFY(0)'
+$ ! TEE.COM -- split input from SYS$PIPE to SYS$OUTPUT             'F$VERIFY(0)'
 $ !            and another output (file)
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -13,18 +13,23 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !  usage: @TEE log-file
+$ !  Usage: @TEE teefile
+$ !  In pipes:
+$ !    $ PIPE show system | @com:tee logs:capture_sys.lis | search sys$pipe RWAST
+$ !  or:
+$ !    $ PIPE show system | search sys$pipe RWAST | @com:tee logs:capture_RWAST.lis
 $ !
 $ SET NOON
-$ OPEN /WRITE /ERROR=oops teefile 'P1'
-$loop:
-$ READ /END_OF_FILE=done sys$pipe line
-$ write sys$output line
-$ write teefile    line
-$ GOTO loop
-$done:
+$ OPEN /WRITE /ERROR=Oops teefile 'P1'
+$Loop:
+$ READ /END_OF_FILE=Done sys$pipe line
+$ WRITE sys$output line
+$ WRITE teefile    line
+$ GOTO Loop
+$Done:
 $ CLOSE /NOLOG teefile
-$ EXIT %X01
-$oops:
+$ EXIT %X01  !'F$VERIFY(0)'
+$Oops:
 $ WRITE sys$error "%TEE-E-OPENERR, cannot open ''P1'"
-$ EXIT %X2C
+$ EXIT %X2C  !'F$VERIFY(0)'
+$ !
