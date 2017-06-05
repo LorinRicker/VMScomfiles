@@ -256,14 +256,14 @@ $      kitkosh == "ssh 40.129.101.176"
 $ ENDIF
 $ IF ( LNode .EQS. "VMSPR3" )
 $ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
-$      tapesall  == "PIPE MDMS SHOW VOLUME | SORT /KEY=(POS:12,SIZ:10,ASC) /KEY=(POS:1,SIZ:6,ASC)" -
+$      tapesall  == "PIPE MDMS SHOW VOLUME | SORT /KEY=(POS:10,SIZ:10,ASC) /KEY=(POS:1,SIZ:6,ASC)" -
                   + " sys$pipe sys$scratch:all.tapes" -
                   + " ; TYPE /PAGE sys$scratch:all.tapes"
 $      tapesfree == "PIPE MDMS SHOW VOLUME | ''SIN' free " -
-                  + "| SORT /KEY=(POS:26,SIZ=14,DESC) sys$pipe sys$scratch:free.tapes" -
+                  + "| SORT /KEY=(POS:1,SIZ=7,ASC) sys$pipe sys$scratch:free.tapes" -
                   + " ; TYPE /PAGE sys$scratch:free.tapes"
 $      tapesfind == "PIPE MDMS SHOW VOLUME | ''SIN' transit,alloc " -
-                  + "| SORT /KEY=(POS:26,SIZ=14,ASC) sys$pipe sys$scratch:find.tapes" -
+                  + "| SORT /KEY=(POS:1,SIZ=7,ASC) sys$pipe sys$scratch:find.tapes" -
                   + " ; TYPE /PAGE sys$scratch:find.tapes"
 $      IF Verbose THEN SHOW SYMBOL /GLOBAL tapes*
 $ ENDIF
