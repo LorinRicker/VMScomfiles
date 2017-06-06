@@ -186,10 +186,11 @@ $ EXIT 1
 $ !
 $BAC$:
 $ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
-          + ",''LBase'.com]fix$bck.com;,zips.com;,tools$debug.com;"     -
+          + ",fix$bck.com;,zips.com;,tools$debug.com;"                  -
+          + ",disk*$report.com;,cd.com;"                                -
           + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
           + ",dcl$subroutine_library.com;,common_logicals.com;"         -
-          + ",site$root:[utilities]cd.com;,diskspace.com;,makedir.com;" -
+          + ",site$root:[utilities]makedir.com;"                        -
           + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
 $ !!DEFINE /USER_MODE /PROCESS sys$output NLA0:
@@ -203,16 +204,16 @@ $ EXIT 1
 $ !
 $RES$:
 $ ssnam = ssnam + ".BCK"
-$ lgi   = "LOGIN_MINI.COM"   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
+$ lgi   = "LOGIN_MINI.COM" -   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
+$ clgi  = "dcl$subroutine_library.com,common*.com,fixprivs.com,show_cluster$init.ini"
+$ edt   = "*.eve,*.edt"
+$ ini   = "*.ini,"
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
-$ THEN BACKUP /LOG 'ssnam' /SAVE_SET /SELECT='lgi'  sys$login:login.com /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(edtini.edt,eve$init.eve) sys$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET -
-         /SELECT=(dcl$subroutine_library.com, -
-                  common_logicals.com, -
-                  show_cluster$init.ini, -
-                  fixprivs.com) lmr$login:*.* /NEW_VERSION
-$      BACKUP /LOG 'ssnam' /SAVE_SET /SELECT=(*.com) /EXCLUDE=('lgi') com:*.* /NEW_VERSION
+$ THEN bkup = "BACKUP /LOG ''ssnam' /SAVESET"
+$      bkup /SELECT=('lgi')             sys$login:login.com /NEW_VERSION
+$      bkup /SELECT=('edt')                   sys$login:*.* /NEW_VERSION
+$      bkup /SELECT=('clgi')                  lmr$login:*.* /NEW_VERSION
+$      bkup /SELECT=(*.com) /EXCLUDE=('lgi','clgi') com:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF
 $ EXIT 1

@@ -59,9 +59,11 @@ $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PNam
 $ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
-$ DCL$CALL Alias "dwho"       "@cmd:dclwho" "SHOW USERS"
-$ DCL$CALL Alias "disks*pace" "@com:diskspace" "SHOW DEVICE D /MOUNTED"
-$ DCL$CALL Alias "boottime"   "@cmd:boottime.com"
+$ DCL$CALL Alias "dwho"           "@cmd:dclwho" "SHOW USERS"
+$ DCL$CALL Alias "disks*pace"     "@com:diskspace$report" "SHOW DEVICE D /MOUNTED"
+$ DCL$CALL Alias "diski*nventory" "@com:diskinventory$report"
+$ DCL$CALL Alias "diskm*enu"      "@com:diskmenu$report"
+$ DCL$CALL Alias "boottime"       "@cmd:boottime.com"
 $ break*in    == "SHOW INTRUSION /TYPE=ALL"
 $ delbr*eakin == "DELETE /INTRUSION_RECORD"
 $ !
