@@ -56,27 +56,34 @@ $ volname  = F$GETDVI( dev, "VOLNAM" )
 $ totalblks = F$GETDVI( dev, "MAXBLOCK" )
 $ freeblks  = F$GETDVI( dev, "FREEBLOCKS" )
 $ usedblks  = totalblks - freeblks
+$ !
+$ ! Use these temp-variables for scaling down into DCL's 32-bit integer range:
+$ totaltmp  = totalblks
+$ freetmp   = freeblks
+$ usedtmp   = usedblks
+$ !
 $ dev   = dev - "_"  ! strip leading underscore
 $ !
 $DS$range:
-$ IF ( freeblks .LT. 0 ) .OR. ( usedblks .LT. 0 ) .OR. ( totalblks .LT. 0 )
-$ THEN freeblks  = ( freeblks  / 2 ) .AND. mask
-$      usedblks  = ( usedblks  / 2 ) .AND. mask
-$      totalblks = ( totalblks / 2 ) .AND. mask
+$ IF ( freetmp .LT. 0 ) .OR. ( usedtmp .LT. 0 ) .OR. ( totaltmp .LT. 0 )
+$ THEN freetmp  = ( freetmp  / 2 ) .AND. mask
+$      usedtmp  = ( usedtmp  / 2 ) .AND. mask
+$      totaltmp = ( totaltmp / 2 ) .AND. mask
 $ ENDIF
 $ !
-$ IF ( usedblks .GT. maskdiv100 ) .OR. ( freeblks .GT. maskdiv100 ) .OR. ( totalblks .GT. maskdiv100 )
-$ THEN freeblks  = freeblks  / 10
-$      usedblks  = usedblks  / 10
-$      totalblks = totalblks / 10
+$ IF ( usedtmp .GT. maskdiv100 ) .OR. ( freetmp .GT. maskdiv100 ) .OR. ( totaltmp .GT. maskdiv100 )
+$ THEN freetmp  = freetmp  / 10
+$      usedtmp  = usedtmp  / 10
+$      totaltmp = totaltmp / 10
 $      GOTO DS$range
 $ ENDIF
 $ !
-$ freepct = ( freeblks * 100 ) / totalblks
-$ usedpct = ( usedblks * 100 ) / totalblks
+$ freepct = ( freetmp * 100 ) / totaltmp
+$ usedpct = ( usedtmp * 100 ) / totaltmp
 $ !
 $ devlen = F$LENGTH( dev )
 $ fldlen = 18
+$ ! Display the actual sizes, not the rescale temps:
 $ DCL$CALL Thousands "DS$freeblks"  "''freeblks'"
 $ freelen = F$LENGTH( DS$freeblks )
 $ DCL$CALL Thousands "DS$usedblks"  "''usedblks'"
