@@ -41,7 +41,7 @@ $ header = F$FAO( "!#* !AS",  -
                   "Free blocks             Used blocks       Total blocks" )
 $ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill + 12 )
 $ !
-$ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
+$ wso F$FAO( "%!AS-I-SPACE, Disk Space on !AS", Fac, Node )
 $ wso ""
 $ wso header
 $ wso headln
