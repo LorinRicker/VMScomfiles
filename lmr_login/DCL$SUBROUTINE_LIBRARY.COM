@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.08.01"         ! maintain with edits
-$ dcl$sldatestamp = "31-MAY-2017"
+$ dcl$slversion   = "01.09.01"         ! maintain with edits
+$ dcl$sldatestamp = "07-JUN-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -171,6 +171,10 @@ $ !#!        SHOW      = same as P3 below
 $ !#!   P3 : SHOW, or any truthy or non-empty-string value will show/echo the set-results.
 $ !
 $ SET NOON
+$ IF ( P1 .EQS. "" )  ! no parameters at all means SHOW...
+$ THEN P3 = "SHOW"
+$      GOTO DCL$CLshow
+$ ENDIF
 $ Q1 = ""
 $ Q2 = ""
 $  j = 1
@@ -221,8 +225,15 @@ $DCL$CLdo:
 $ IF ( Q1 .NES. "" ) THEN Q1 = "/PARSE_STYLE=" + Q1
 $ IF ( Q2 .NES. "" ) THEN Q2 = "/CASE_LOOKUP=" + Q2
 $ SET PROCESS 'Q1' 'Q2'
+$DCL$CLshow:
+$ IF ( P1 .EQS. "" )
+$ THEN wso "  usage: DCL$CALL CommandLine [ P1 ] [ P2 ] [ SHOW ]"
+$      wso "  where: P1 - VMS | LINUX | POSIX"
+$      WSO "                | TRADITIONAL | EXTENDED"
+$      wso "         P2 - BLIND | SENSITIVE"
+$ ENDIF
 $ IF ( P3 .NES. "" ) -  ! e.g., SHOW
-  THEN wso F$FAO( "%!AS-S-PROCESS, command-line parsing: !AS, !AS", -
+  THEN wso F$FAO( "%!AS-S-PROCESS, current command-line parsing: !AS, !AS", -
                   Fac, F$GETJPI("","PARSE_STYLE_PERM"), F$GETJPI("","CASE_LOOKUP_PERM") )
 $Cleanup:
 $ CALL DCL$DeleteGloSyms "Cmd$Answer"
