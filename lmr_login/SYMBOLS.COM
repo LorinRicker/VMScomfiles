@@ -61,6 +61,7 @@ $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
 $ DCL$CALL Alias "dwho"           "@cmd:dclwho" "SHOW USERS"
 $ DCL$CALL Alias "disks*pace"     "@com:diskspace$report" "SHOW DEVICE D /MOUNTED"
+$ DCL$CALL Alias "diskl*imits"    "@com:disklimits$report"
 $ DCL$CALL Alias "diski*nventory" "@com:diskinventory$report"
 $ DCL$CALL Alias "diskm*enu"      "@com:diskmenu$report"
 $ DCL$CALL Alias "boottime"       "@cmd:boottime.com"
