@@ -24,10 +24,21 @@ $ !
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB CtrlY
 $ !
-$ Verbose == F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
-$ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ !
+$ 'Fac'_version == Fac + " v2.0 (07-Jun-2017)"
+$ !
+$ ! ----------------------------------------------------------------------
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ ENDIF
+$ ! ----------------------------------------------------------------------
+$ !
+$ Verbose == F$TRNLNM("TOOLS$Debug")     !generic Tools debug flag
+$ IF Verbose THEN SHOW SYMBOL /GLOBAL 'Fac'*
+$ !
+$ showCL = ""
 $ !
 $ RubyExt = "rb"
 $ !
@@ -39,6 +50,7 @@ $ COLON    = ":"
 $ LBRACKET = "["
 $ RBRACKET = "]"
 $ SPLAT    = "*"
+$ UPARROW  = "^"
 $ !
 $ CmdSet = "RUN      |" -
          + "CMD      |" -
@@ -61,6 +73,9 @@ $ ! plus the foreign command symbol 'RubyX' used herein:
 $ !    RubyX == "$ruby$root:[bin]ruby"
 $ ! ==========
 $ !
+$ IF Verbose THEN showCL = "SHOW"
+$ DCL$CALL CommandLine LINUX "" 'showCL'
+$ !
 $ IF ( F$TYPE(RubyX) .EQS. "STRING" )
 $ THEN CONTINUE   ! 'F$VERIFY(0)'
 $      ! ==========
@@ -73,7 +88,12 @@ $      Rpath = SLASH
 $L0:
 $      elem = F$ELEMENT(i,DOT,Rdir)
 $      IF ( elem .EQS. DOT ) THEN GOTO L0cont
-$      IF ( elem .NES. ""  ) THEN Rpath = Rpath + elem + SLASH
+$      IF ( F$LOCATE( UPARROW, elem ) .EQ. F$LENGTH( elem )-1 )
+$      THEN ! convert escaped dots "^." in dir-names to literal dots ".",
+$           !    e.g.: "2^.2^.0" -> "2.2.0"
+$           Rpath = Rpath + elem + DOT - UPARROW
+$      ELSE IF ( elem .NES. ""  ) THEN Rpath = Rpath + elem + SLASH
+$      ENDIF
 $      i = i + 1
 $      GOTO L0
 $L0cont:
@@ -84,6 +104,14 @@ $      THEN Rscripttype = Rscripttype + RubyExt
 $           P2          = P2 + DOT + RubyExt
 $      ENDIF
 $      Rscript = SLASH + Rdev + Rpath + Rscriptname + Rscripttype
+$      Rscript = F$EDIT( Rscript, "LOWERCASE" )
+$      IF Verbose
+$      THEN wso "        Rdev: ""''Rdev'"""
+$           wso "       Rpath: ""''Rpath'"""
+$           wso " Rscriptname: ""''Rscriptname'"""
+$           wso " Rscripttype: ""''Rscripttype'"""
+$           wso "     Rscript: ""''Rscript'"""
+$      ENDIF
 $      ! ==========
 $      IF ( F$SEARCH( P2 ) .NES. "" )
 $      THEN GOTO 'Ruby$Cmd'$
@@ -93,23 +121,20 @@ $           Args = F$EDIT( "''P3' ''P4' ''P5' ''P6' ''P7' ''P8'","COMPRESS" )
 $           IF Verbose
 $           THEN wso "$ DEFINE /USER_MODE sys$input sys$command"
 $                wso "$ RubyX ''Rscript' ''Args'"
-$           ELSE DEFINE /USER_MODE sys$input sys$command
-$                RubyX 'Rscript' 'Args'
 $           ENDIF
+$           DEFINE /USER_MODE sys$input sys$command
+$           RubyX 'Rscript' 'Args'
 $           GOTO Done
 $ !
 $CMD$:
 $COMMAND$:  ! ==========
 $           ! Define a global command symbol for this Ruby script:
-$           IF Verbose
-$           THEN wso "$ ''P3' == ""''RubyX' ''Rscript'"""
-$           ELSE 'P3' == "''RubyX' ''Rscript'"
-$           ENDIF
+$           'P3' == "''RubyX' ''Rscript'"
 $           symname = P3 - SPLAT
 $           IF "''P4'" THEN IF ( F$TYPE('symname') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'symname'
 $           GOTO Done
 $ !
-$      ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''P2'"""
+$      ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''Rscript'"""
 $           GOTO Done
 $      ENDIF
 $ ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"

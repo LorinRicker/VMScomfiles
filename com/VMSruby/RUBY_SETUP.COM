@@ -21,6 +21,7 @@ $ !
 $ UName = F$EDIT( F$GETJPI("","USERNAME"), "TRIM,UPCASE" )
 $ Proc  = F$ENVIRONMENT("PROCEDURE")
 $ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ node  = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
 $ !
 $ wso = "WRITE sys$output"
 $ !
@@ -51,12 +52,12 @@ $           CALL VolCheck "''vol'" "''rdir'"
 $      ENDIF
 $      IF RubyVolumeODS5
 $      THEN SET PROCESS /PARSE_STYLE=EXTENDED
-$           wso "%''Fac'-I-DCLPARSE, parse style set to extended..."
+$           wso "%''Fac'-I-DCLPARSE, parse style set to EXTENDED..."
 $      ENDIF
 $ !
-$ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not installed..."
-$      READ sys$command answer /END_OF_FILE=Done -
-         /PROMPT="Start Ruby for VMS (Y/n)? "
+$ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not yet started..."
+$      READ sys$command answer /END_OF_FILE=Finish -
+         /PROMPT="Start Ruby for VMS on ''node' (Y/n)? "
 $      IF ( F$EDIT( F$EXTRACT(0,1,answer),"UPCASE,TRIM") .NES. "N" )
 $      THEN IF ( F$SEARCH( RubyStartup ) .NES. "" )
 $           THEN prv = F$SETPRV("SYSPRV,SYSNAM,CMKRNL")
@@ -68,7 +69,7 @@ $      GOTO ReCheck
 $      ENDIF
 $ ENDIF
 $ !
-$Done:
+$Finish:
 $ IF F$TYPE(ruby) .EQS. "STRING"
 $ THEN IF Verbose
 $      THEN SHOW LOGICAL /SYSTEM Ruby*
@@ -77,11 +78,18 @@ $           wso ""
 $           SHOW SYMBOL /GLOBAL *Ruby*
 $           wso ""
 $      ENDIF
+$ !
+$ !    Create command aliases for interactive Ruby tools pry and irb:
+$      IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
+$      !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
+$ !
 $      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
 $      RubyX -v   ! show version
 $ ENDIF
 $ EXIT 1     ! 'F$VERIFY(0)'
 $ !
+$ !
+$ ! =================
 $VolCheck: SUBROUTINE
 $ ! P1 = volume to check
 $ ! P2 = Personal Ruby subdirectory
