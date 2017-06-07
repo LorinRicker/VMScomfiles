@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.10-01 (21-Feb-2017)"
+$ VA$ProcVersion = "V2.11-02 (07-Jun-2017)"
 $ VA$Copyright   = "Copyright © 2014-2017"
 $ !
 $ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,10 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  07-JUN-2017 : Regularize the SHOW MEMORY command-group for CLUSTER and QUICK
+$ !                reports.  Also add improve disk-space reporting, incorporate
+$ !                DISK(MENU,INVENTORY,SPACE)$REPORT.COM group via new DiskReports
+$ !                subroutine. Also add new DISKLIMITS$REPORT.COM to the collection.
 $ !  21-FEB-2017 : Use non-searc-list logical CMD rather than COM.
 $ !  20-FEB-2017 : Add RESET_ERRORCOUNT.(COM,TMP) to VMS$AUDIT.(BCK,ZIP) archives.
 $ !  10-FEB-2017 : Add USERS_INACTIVE.(COM,CONFIG) and USERS_PASSWORDS.(COM,CONFIG)
@@ -216,6 +220,20 @@ $ !  28-May-2014 : Proof-of-concept; core functions working
 $ ! ========================
 $ !
 $ !
+$ !
+$DiskReports:  SUBROUTINE
+$ SET NOON
+$ f = "''DD'diskmenu$report.com"
+$ IF ( F$SEARCH( f ) .NES. "" )
+$ THEN CALL AuditStep "@''f' ALL"
+$ ELSE CALL AuditStep "SHOW DEVICE D /MOUNTED"
+$      f = "''DD'diskspace$report.com"
+$      IF ( F$SEARCH( f ) .NES. "" )
+$      THEN CALL AuditStep "@''f'"
+$      ENDIF
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DiskReports
 $ !
 $AnalyzeAudit:  SUBROUTINE
 $ ! P1 = Security Audit Journal filespec (discovered by FindSAJournal)
@@ -614,9 +632,9 @@ DO SHOW NETWORK
 
 DO SHOW ERROR
 
+DO SHOW MEMORY /PHYSICAL
 DO SHOW MEMORY /FILES
-DO SHOW MEMORY /PHYSICAL /CACHE
-DO SHOW MEMORY /SLOTS /POOL
+DO SHOW MEMORY /CACHE
 
 DO SHOW INTRUSION
 
@@ -638,9 +656,9 @@ DO PIPE SHOW NETWORK -
 DO PIPE SHOW ERROR -
    ; WRITE sys$output F$FAO("============!/")
 
+DO SHOW MEMORY /PHYSICAL
 DO SHOW MEMORY /FILES
-DO SHOW MEMORY /PHYSICAL /CACHE
-DO PIPE SHOW MEMORY /SLOTS /POOL -
+DO PIPE SHOW MEMORY /CACHE -
    ; WRITE sys$output F$FAO("============!/")
 
 DO PIPE SHOW INTRUSION -
@@ -658,8 +676,7 @@ $ THEN CALL AuditStep "V$BatQStalled" "NOPAGE" "''V$BatQStalled'"
 $      CALL AuditStep "V$DevQStalled" "NOPAGE" "''V$DevQStalled'"
 $ ENDIF
 $ !
-$ CALL AuditStep "@''DD'DISKSPACE$REPORT"
-$ CALL AuditStep "SHOW DEVICE D /MOUNTED"
+$ CALL DiskReports
 $ !
 $ CALL TimeStamp ""   ! global VA$TimeStamp
 $ CALL ReportFooter "''Fac'" "''Node'" "''VA$TimeStamp'" "''P1'"
@@ -742,6 +759,9 @@ $ V$BckList  = "''Fac'.com;" -
              + ",''Fac'_boot_options.answers;" -
              + ",''Fac'_*.tpu;" -
              + ",file$find.com;" -
+             + ",diskmenu$report.com;" -
+             + ",diskinventory$report.com;" -
+             + ",disklimits$report.com;" -
              + ",diskspace$report.com;" -
              + ",que$stalled.com;" -
              + ",uaf$detailed_analysis.com;" -
@@ -756,6 +776,9 @@ $ V$ZipList  = "''Fac'.com" -
              + " ''Fac'_boot_options.answers" -
              + " ''Fac'_*.tpu" -
              + " file$find.com" -
+             + " diskmenu$report.com" -
+             + " diskinventory$report.com" -
+             + " disklimits$report.com" -
              + " diskspace$report.com" -
              + " que$stalled.com" -
              + " uaf$detailed_analysis.com" -
@@ -993,7 +1016,7 @@ $ ELSE wserr F$FAO( "%!AS-W-OLDVMS, PIPE unavailable (pre-v!AS)", Fac, "7.1" )
 $      wserr "-W-NOTRUN, cannot execute V${Bat,Dev}QStalled commands"
 $ ENDIF
 $ !
-$ CALL AuditStep "@''DD'DISKSPACE$REPORT"
+$ CALL DiskReports
 $ !
 $ CALL AuditStep "SHOW ERROR"
 $ CALL AuditStep "V$DIR SYS$ERRORLOG:ERRLOG.SYS,SYS$ERRORLOG:ERRLOG.OLD*" -
