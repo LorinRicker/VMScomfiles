@@ -33,13 +33,13 @@ $ THEN DS$Disks == P1
 $ ELSE DCL$CALL DiscoverDisks DS$Disks "MNT,!SHDW_MEMBER"
 $ ENDIF
 $ !
-$ devfldlen = 20
-$ headfill  = 14
+$ devfldlen = 16
+$ headfill  = 24
 $ !
 $ header = F$FAO( "!#* !AS",  -
                   devfldlen+headfill, -
-                  "Free             blocks   Used             blocks         Total blocks" )
-$ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill + 2 )
+                  "Free blocks             Used blocks       Total blocks" )
+$ headln = F$FAO( "-- Disk Space !#*-", F$LENGTH( header ) - headfill + 12 )
 $ !
 $ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
 $ wso ""
@@ -82,7 +82,7 @@ $ freepct = ( freetmp * 100 ) / totaltmp
 $ usedpct = ( usedtmp * 100 ) / totaltmp
 $ !
 $ devlen = F$LENGTH( dev )
-$ fldlen = 18
+$ fldlen = 16
 $ ! Display the actual sizes, not the rescale temps:
 $ DCL$CALL Thousands "DS$freeblks"  "''freeblks'"
 $ freelen = F$LENGTH( DS$freeblks )
@@ -90,10 +90,10 @@ $ DCL$CALL Thousands "DS$usedblks"  "''usedblks'"
 $ usedlen = F$LENGTH( DS$usedblks )
 $ DCL$CALL Thousands "DS$totalblks" "''totalblks'"
 $ totalen = F$LENGTH( DS$totalblks )
-$ wso F$FAO( "!#* !AS !12AS !3SL% !#* !AS | !3SL% !#* !AS | !#* !AS |", -
+$ wso F$FAO( "!#* !AS !12AS !#* !AS !3SL% | !#* !AS !3SL% | !#* !AS |", -
              devfldlen-devlen, dev, volname, -
-             freepct, fldlen-freelen, DS$freeblks, -
-             usedpct, fldlen-usedlen, DS$usedblks, -
+             fldlen-freelen, DS$freeblks, freepct, -
+             fldlen-usedlen, DS$usedblks, usedpct, -
              fldlen-totalen, DS$totalblks )
 $ GOTO DS$Loop
 $ !
