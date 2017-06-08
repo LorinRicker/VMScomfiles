@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.09.01"         ! maintain with edits
-$ dcl$sldatestamp = "07-JUN-2017"
+$ dcl$slversion   = "01.09.04"         ! maintain with edits
+$ dcl$sldatestamp = "08-JUN-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -703,7 +703,7 @@ $ !#!     $ DCL$CALL Thousands [ separator-char ] [ group-count ]
 $ !#!   P1 : Name of the user global symbol to receive the result-list, default "DCL$SepString"
 $ !#!   P2 : Value (string) to be separated
 $ !#!   P3 : Separator character, default "," (comma)
-$ !#!   P4 : Number of characters per separated group, default 3
+$ !#!   P4 : Stride, number of characters per separated group, default 3
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "DCL$SepString"
@@ -758,7 +758,7 @@ $ !
 $ ! ==========
 $DCL$ToolsDebug:  SUBROUTINE
 $ !#! Doc : Turns on-or-off DCL com-file "verbosity" debugging.
-$ !#!       This subroutine does not fully supercede TOOLS$DEBUG.COM --
+$ !#!       This subroutine does not fully supersede TOOLS$DEBUG.COM --
 $ !#!       Note that this implements only a portion of TOOLS$DEBUG.COM,
 $ !#!       specifically control of logical name TOOLS$DEBUG itself.
 $ !#!   Example:
@@ -776,7 +776,7 @@ $ ENDIF
 $ IF ( P2 .EQS. "" ) THEN P2 = 0
 $ IF P1
 $ THEN DEFINE /NOLOG /PROCESS TOOLS$Debug 'P1'
-$      SET PREFIX "(!5%T) "     !augments SET VERIFY/F$VERIFY() display
+$      SET PREFIX "(!8%T) "     !augments SET VERIFY/F$VERIFY() display - "(HH:MM:SS) "
 $      IF P2
 $      THEN SHOW LOGICAL /PROCESS /FULL TOOLS$Debug
 $           wso "%TOOLS$DEBUG-I-ON, /PROCESS logical TOOLS$DEBUG is now ON"
