@@ -29,6 +29,9 @@ $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
+$ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
+$ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
+$ !
 $ DL$Disks  == ""
 $ wso        = "WRITE sys$output"
 $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
@@ -72,15 +75,20 @@ $      volnam = F$GETDVI( dev, "VOLNAM" )
 $      cluster  = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
 $      cluslen  = F$LENGTH( cluster )
 $      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
-$      expsize  = F$STRING( F$GETDVI( dev, "EXPSIZE" ) )
 $      maxblks  = F$STRING( F$GETDVI( dev, "MAXBLOCK" ) )
-$      volsize  = F$STRING( F$GETDVI( dev, "VOLSIZE" ) )
+$      IF minVMS73
+$      THEN ! these $GETDVI item-codes weren't available pre-V7.3:
+$           expsize  = F$STRING( F$GETDVI( dev, "EXPSIZE" ) )
+$           volsize  = F$STRING( F$GETDVI( dev, "VOLSIZE" ) )
+$      ELSE expsize  = "n/a"
+$           volsize  = "n/a"
+$      ENDIF
 $ ELSE ! The disk is online, but not currently mounted...
 $      IF F$GETDVI( dev, "AVL" )
 $      THEN cluster  = ""
 $           maxfiles = ""
-$           expsize  = ""
 $           maxblks  = ""
+$           expsize  = ""
 $           volsize  = ""
 $      ELSE !
 $      ENDIF

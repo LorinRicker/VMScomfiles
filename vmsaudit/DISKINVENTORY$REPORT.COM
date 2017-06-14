@@ -29,6 +29,9 @@ $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
+$ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
+$ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
+$ !
 $ DI$Disks  == ""
 $ wso        = "WRITE sys$output"
 $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
@@ -66,10 +69,6 @@ $ !
 $ nakeddev = dev - UNDERSCORE - alloclass - "''Node'$"           ! undecorate it...
 $ IF F$GETDVI( dev, "MNT" )
 $ THEN ! Full accounting for a mounted disk:
-$      IF F$GETDVI( dev, "ODS5" )
-$      THEN odslvl = " :5"
-$      ELSE odslvl = "2: "
-$      ENDIF
 $      volnam = F$GETDVI( dev, "VOLNAM" )
 $      devlnm = F$TRNLNM( "DISK$''volnam'", "LNM$SYSTEM" )
 $      IF ( devlnm .NES. "" )
@@ -80,15 +79,23 @@ $      cluster  = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
 $      cluslen  = F$LENGTH( cluster )
 $      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
 $      maxflen  = F$LENGTH( maxfiles )
-$      IF ( .NOT. F$GETDVI( dev, "NOHIGHWATER" ) )
-$      THEN char = "hi-H2O"
-$      ELSE char = ""
-$      ENDIF
-$      IF ( F$GETDVI( dev, "ERASE_ON_DELETE" ) )
-$      THEN eod = "erase-on-del"
-$           IF ( char .EQS. "" )
-$           THEN char = eod
-$           ELSE char = char + COMMA + eod
+$      odslvl = "2:-"
+$      char = ""
+$      IF minVMS73
+$      THEN ! these $GETDVI item-codes weren't available pre-V7.3:
+$           IF F$GETDVI( dev, "ODS5" )
+$           THEN odslvl = " :5"
+$           ELSE odslvl = "2: "
+$           ENDIF
+$           IF ( .NOT. F$GETDVI( dev, "NOHIGHWATER" ) )
+$           THEN char = "hi-H2O"
+$           ENDIF
+$           IF ( F$GETDVI( dev, "ERASE_ON_DELETE" ) )
+$           THEN eod = "erase-on-del"
+$                IF ( char .EQS. "" )
+$                THEN char = eod
+$                ELSE char = char + COMMA + eod
+$                ENDIF
 $           ENDIF
 $      ENDIF
 $      shadow = ""
