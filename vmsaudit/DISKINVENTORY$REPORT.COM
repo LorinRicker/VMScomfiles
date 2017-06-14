@@ -52,7 +52,7 @@ $ header = F$FAO( "!#* !AS !18AS !18AS  !7AS     !9AS !20AS",  -
                   "cluster", "maxfiles", "characteristics" )
 $ headln = F$FAO( "-- Disk Inventory !#*-", F$LENGTH( header ) - headfill )
 $ !
-$ wso F$FAO( "%!AS-I-DISKS, disks on !AS", Fac, Node )
+$ wso F$FAO( "%!AS-I-INVENTORY, Disk Inventory on !AS", Fac, Node )
 $ wso ""
 $ wso header
 $ wso headln
@@ -116,17 +116,22 @@ $           char     = ""
 $      ELSE !
 $      ENDIF
 $ ENDIF
+$ !
+$ DCL$CALL Thousands DI$maxfiles "''maxfiles'"
+$ maxflen  = F$LENGTH( DI$maxfiles )
 $ devl = F$LENGTH( dev )
 $ wso F$FAO( "!3SL.!#* !AS !AS !18AS !18AS  !#* !AS !#* !AS  !20AS", -
-             devcnt, devfldlen-devl, dev, odslvl, devlnm, shadow, -
-             7-cluslen, cluster, 12-maxflen, maxfiles, char )
+             devcnt, devfldlen-devl, dev, -
+             odslvl, devlnm, shadow,      -
+             7-cluslen, cluster,          -
+             12-maxflen, DI$maxfiles, char )
 $ GOTO DI$Loop
 $ !
 $DI$Done:
 $ wso F$FAO( "!#*-", F$LENGTH( headln ) )
 $ wso ""
 $ !
-$ DCL$CALL DeleteGloSyms "DI$Disks"
+$ DCL$CALL DeleteGloSyms "DI$Disks,DI$maxfiles"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:

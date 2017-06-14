@@ -37,17 +37,18 @@ $ ELSE typeit sys$input  ! "here-doc" with clearscreen
 
     ([1m1[0m) [1mD[0misks     -- show mounted devices/disks
     ([1m2[0m) [1mI[0mnventory -- display disk inventory & characteristics
-    ([1m3[0m) [1mS[0mpace     -- display disk space free, used & total
-    ([1m4[0m) [1mA[0mll       -- All three reports
+    ([1m3[0m) [1mL[0mimits    -- display disk size limits
+    ([1m4[0m) [1mS[0mpace     -- display disk space free, used & total
+    ([1m5[0m) [1mA[0mll       -- All three reports
 
 
-$      READ sys$command P1 /PROMPT="Display [1/D]? " /END_OF_FILE=DMR$Done
+$      READ sys$command P1 /PROMPT="Display [4/S]? " /END_OF_FILE=DMR$Done
 $      P1 = F$EDIT( P1, "TRIM,UPCASE" )
-$      IF ( P1 .EQS. "" ) THEN P1 = "Disks"
+$      IF ( P1 .EQS. "" ) THEN P1 = "Space"
 $      choice = F$EXTRACT( 0, 1, P1 )
 $ ENDIF
 $ ON WARNING THEN GOTO ChoiceError
-$ IF ( choice .EQS. "A" ) .OR. ( choice .EQS. "4" )
+$ IF ( choice .EQS. "A" ) .OR. ( choice .EQS. "5" )
 $ THEN justthisone = "FALSE"
 $      GOTO DMR$1
 $ ELSE GOTO DMR$'choice'
@@ -67,6 +68,11 @@ $ @'DD'diskinventory$report
 $ IF justthisone THEN GOTO DMR$Cont
 $ !
 $DMR$3:
+$DMR$L:
+$ @'DD'disklimits$report
+$ IF justthisone THEN GOTO DMR$Cont
+$ !
+$DMR$4:
 $DMR$S:
 $ @'DD'diskspace$report
 $ IF justthisone THEN GOTO DMR$Cont
