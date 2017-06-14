@@ -141,8 +141,9 @@ $ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
 $ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
 $ reLog*in == "@SYS$LOGIN:LOGIN''LFull' RELOGIN"
 $ !
-$ qidle        == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
-$ qstal*led    == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
+$ qfind     == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE"
+$ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE idle,started"
+$ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE stopped,stalled,paused "
 $ !
 $ ping     == "$SYS$SYSTEM:TCPIP$PING"
 $ sysman   == "MCR SYSMAN"

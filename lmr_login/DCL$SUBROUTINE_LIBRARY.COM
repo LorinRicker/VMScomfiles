@@ -1,6 +1,6 @@
 $ ! DCL$SUBROUTINE_LIBRARY.COM --                                  'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2012-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.09.04"         ! maintain with edits
-$ dcl$sldatestamp = "08-JUN-2017"
+$ dcl$slversion   = "01.10.01"         ! maintain with edits
+$ dcl$sldatestamp = "14-JUN-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -43,8 +43,8 @@ $ RegisteredRoutines = COMMA                                            -
                      +  "Alias,CmdParse,CommandLine,DefineANSIdef"      -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",MakeDir,PureDCL"                               -
-                     + ",ShowRegisteredRoutines,Thousands,ToolsDebug"   -
-                     + ",Setup,Doc"                                     -
+                     + ",Thousands,ToolsDebug"                          -
+                     + ",Setup,Doc,ShowRegisteredRoutines"              -
                      + COMMA
 $ ! ----------------------------------------------------------------------
 $ ! ==========
@@ -249,13 +249,13 @@ $ !#!       where P1 may be a uniquely-recognized abbreviation of any of the pos
 $ !#!       returns result as a user-defined global symbol, or an error condition if no match.
 $ !#!   Example:
 $ !#!     $ DCL$CALL CmdParse "''P1'" File$Component "NAME" "NODE|DEV |DIR |NAME|TYPE|VERS|FULL"
-$ !#!   P1 : command word to parse
-$ !#!   P2 : global symbol to receive answer (default is Cmd$Answer)
-$ !#!   P3 : default command
-$ !#!   P4 : command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
+$ !#!   P1 : (the user's) Command word to parse
+$ !#!   P2 : Name of global symbol to receive answer (default is Cmd$Answer)
+$ !#!   P3 : Default command (used if P1 is "")
+$ !#!   P4 : Command-set ("C1|C2[|Cn...]") -- options must be same-length fields;
 $ !#!        alternatively "@symbol" where "symbol" contains command-set (this
 $ !#!        accommodates very long command-sets, >255 characters)
-$ !#!   P5 : command separator (default is vert-bar/pipe "|")
+$ !#!   P5 : Command separator (default is vert-bar/pipe "|")
 $ !#!   P6 : FALSE/TRUE flag to either return "" as failed-result (default is FALSE),
 $ !#!        or to hard-stop-fail (TRUE)
 $ !
@@ -396,7 +396,7 @@ $ !#!       may be called more than once for separate lists.
 $ !#!   Examples:
 $ !#!     $ DCL$CALL DeleteGloSyms "Cmd$Answer,Cmd$Answer_Num,Func_Result"
 $ !#!     $ DCL$CALL DeleteGloSyms "ThisNode,ThisReport,ThisMsg,Count$Dups"
-$ !#!   P1 : comma-separated list of global symbols to delete
+$ !#!   P1 : Global symbols to delete, as a comma-separated list
 $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
@@ -590,7 +590,7 @@ $ !#! Doc : Sanity check for a site-specific global symbol which appropriates
 $ !#!       a DCL command verb, make it go away!...
 $ !#!   Example:
 $ !#!     $ DCL$CALL PureDCL
-$ !#!   P1 : comma-separated list of DCL command verbs (words) to decommission
+$ !#!   P1 : DCL command verbs (words) to decommission, as a comma-separated list
 $ !
 $ SET NOON
 $ dfn = "DEFINE /NOLOG /USER_MODE"
@@ -621,7 +621,7 @@ $ !#!   Examples:
 $ !#!     $ !#! This is the library-initialization, so must use full file-spec:
 $ !#!     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup
 $ !#!     $ @dev:[dir]DCL$SUBROUTINE_LIBRARY Setup TRUE
-$ !#!   P1 : verification (output-trace)
+$ !#!   P1 : Verification (output-trace)
 $ !
 $ SET NOON
 $ proc = F$ENVIRONMENT( "PROCEDURE" )
@@ -661,7 +661,7 @@ $ !#!     $ DCL$CALL ShowRegisteredRoutines ...
 $ !#!   P1 : RegisteredRoutines
 $ !#!   P2 : RegRouUC
 $ !#!   P3 : RRlen
-$ !#!   P4 : ...the unregistered routine name
+$ !#!   P4 : Unregistered routine name
 $ !
 $ SET NOON
 $ j = 0
