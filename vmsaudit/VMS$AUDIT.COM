@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.11-02 (07-Jun-2017)"
+$ VA$ProcVersion = "V2.12-01 (14-Jun-2017)"
 $ VA$Copyright   = "Copyright © 2014-2017"
 $ !
 $ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -28,6 +28,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  14-JUN-2017 : Create CONTEXT.COM, mostly to define VMS$AUDITCONFIG job logical
+$ !                name; include CONTEXT.COM in archives collection.  Also, ditch
+$ !                including [.DFU]-kit from the VMS$AUDIT archives.
 $ !  07-JUN-2017 : Regularize the SHOW MEMORY command-group for CLUSTER and QUICK
 $ !                reports.  Also add improve disk-space reporting, incorporate
 $ !                DISK(MENU,INVENTORY,SPACE)$REPORT.COM group via new DiskReports
@@ -755,38 +758,30 @@ $ V$DevQStalled  = "PIPE SHOW QUEUE /DEVICE /ALL | SEARCH sys$pipe stopped,stall
 $ !
 $ V$BckSSN   = Fac
 $ V$BckList  = "''Fac'.com;" -
+             + ",context.com;" -
              + ",''Fac'_template.config;" -
              + ",''Fac'_boot_options.answers;" -
              + ",''Fac'_*.tpu;" -
              + ",file$find.com;" -
-             + ",diskmenu$report.com;" -
-             + ",diskinventory$report.com;" -
-             + ",disklimits$report.com;" -
-             + ",diskspace$report.com;" -
+             + ",disk*$report.com;" -
              + ",que$stalled.com;" -
-             + ",uaf$detailed_analysis.com;" -
-             + ",uaf$quick_analysis.com;" -
+             + ",uaf$*_analysis.com;" -
              + ",parsec_autogen.com;" -
              + ",cmd:USERS_*.CO*;" -         ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
-             + ",cmd:RESET_ERRORCOUNT.*;" -  ! RESET_ERRORCOUNT.(COM,TMP)
-             + ",[.DFU]*.*;"
+             + ",cmd:RESET_ERRORCOUNT.*;"    ! RESET_ERRORCOUNT.(COM,TMP)
 $ V$ZipArc   = "''Fac'.zip"
 $ V$ZipList  = "''Fac'.com" -
+             + " context.com" -
              + " ''Fac'_template.config" -
              + " ''Fac'_boot_options.answers" -
              + " ''Fac'_*.tpu" -
              + " file$find.com" -
-             + " diskmenu$report.com" -
-             + " diskinventory$report.com" -
-             + " disklimits$report.com" -
-             + " diskspace$report.com" -
+             + " disk*$report.com" -
              + " que$stalled.com" -
-             + " uaf$detailed_analysis.com" -
-             + " uaf$quick_analysis.com" -
+             + " uaf$*_analysis.com" -
              + " parsec_autogen.com" -
              + " cmd:USERS_*.CO*" -         ! USERS_(INACTIVE,PASSWORDS).(COM,CONFIG)
-             + " cmd:RESET_ERRORCOUNT.*" -  ! RESET_ERRORCOUNT.(COM,TMP)
-             + " [.DFU]*.*"
+             + " cmd:RESET_ERRORCOUNT.*"    ! RESET_ERRORCOUNT.(COM,TMP)
 $ !
 $ ! Calculate the first of last month (approx):
 $ ago = "-30-"
