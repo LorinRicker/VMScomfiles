@@ -207,7 +207,7 @@ $ EXIT 1
 $ !
 $RES$:
 $ ssnam = ssnam + ".BCK"
-$ lgi   = "LOGIN_MINI.COM" -   ! F$ENV("PROCEDURE") might now be LOGIN.COM...
+$ lgi   = "LOGIN_MINI.COM"     ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ clgi  = "dcl$subroutine_library.com,common*.com,fixprivs.com,show_cluster$init.ini"
 $ edt   = "*.eve,*.edt"
 $ ini   = "*.ini,"
