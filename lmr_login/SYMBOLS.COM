@@ -18,6 +18,8 @@ $MAIN:
 $ SET NOON
 $ Verbose = F$TRNLNM("TOOLS$Debug")
 $ !
+$ LMR$Unavailable == ""
+$ !
 $ ! ----------------------------------------------------------------------
 $ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RELOGIN, RE-whatever
 $ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
@@ -57,6 +59,8 @@ $ !
 $ IF ( F$TYPE(LMR_Name) .EQS. "" ) THEN LMR_Name = UName
 $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PName)
 $ !
+$ ! ================================================================
+$ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
 $ DCL$CALL Alias "dwho"           "@cmd:dclwho" "SHOW USERS"
@@ -75,13 +79,13 @@ $      ELSE auth*orize == "PIPE cd sys$system ; MCR AUTHORIZE"
 $      ENDIF
 $ ENDIF
 $ !
-$ IF F$TYPE(sysgen) .EQS. "" THEN sysgen == "$SYS$SYSTEM:SYSGEN"
-$ IF F$TYPE(sysman) .EQS. "" THEN sysman == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
 $ IF F$TYPE(lancp)  .EQS. "" THEN lancp  == "$SYS$SYSTEM:LANCP"
 $ IF F$TYPE(ncp)    .EQS. "" THEN ncp    == "$SYS$SYSTEM:NCP"
 $ IF F$TYPE(ncl)    .EQS. "" THEN ncl    == "$SYS$SYSTEM:NCL"
+$ IF F$TYPE(ping)   .EQS. "" THEN ping   == "$SYS$SYSTEM:TCPIP$PING"
+$ IF F$TYPE(sysgen) .EQS. "" THEN sysgen == "$SYS$SYSTEM:SYSGEN"
+$ IF F$TYPE(sysman) .EQS. "" THEN sysman == "$SYS$SYSTEM:SYSMAN SET ENV/CLU"
 $ !
-$ DCL$CALL Alias "lo*gout"      "@lmr$login:logout.com"
 $ DCL$CALL Alias "priv*ilege"   "@com:privilege.com" "SET PROCESS /PRIVILEGE="
 $ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
 $ THEN pow*er == "''privilege' ONE$SHOT"
@@ -92,6 +96,9 @@ $ DCL$CALL Alias "spy"          "@com:showproc.com"
 $!! $ DCL$CALL Alias "loop*iso"     "@com:loop$iso"
 $!! $ DCL$CALL Alias "mcd"          "@com:cdrom"
 $ !
+$ ! ================================================================
+$ !
+$ ! Search & conditionally build zip/unzip symbols:
 $ IF F$SEARCH("com:zips.com") .NES. "" THEN @com:zips  ! zip,gzip,unzip, etc.
 $ !
 $ ! DCL:
@@ -126,34 +133,34 @@ $ !
 $ ! Useful with PIPEs
 $ DCL$CALL Alias "tee" "@com:tee"
 $ !
-$ ai           == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
 $ cftp         == "COPY /FTP /LOG"
-$ chksum       == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
-$ dsk*s        == "SHOW DEVICE /MOUNTED D"
 $ glo*bal      == "SHOW SYMBOL /GLOBAL"
-$ lnm          == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
 $ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
+$ !
+$ ! Logicals:
+$ lnm          == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
+$!! $ DCL$CALL Alias "mkdir" "@com:makedir"
+$!! $ ml*ogical == mkdir + " *"
 $ !
 $ LFull = ""
 $ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
 $ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
 $ reLog*in == "@SYS$LOGIN:LOGIN''LFull' RELOGIN"
+$ DCL$CALL Alias "lo*gout" "@lmr$login:logout.com"  "LOGOUT /FULL"
 $ !
 $ qfind     == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE"
 $ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE idle,started"
 $ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' /HIGHLIGHT=UNDERLINE stopped,stalled,paused "
 $ !
-$ ping     == "$SYS$SYSTEM:TCPIP$PING"
-$ sysman   == "MCR SYSMAN"
-$ sysgen   == "MCR SYSGEN"
-$ !
 $ clu = ""
 $ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
 $ clupt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
 $ upt*ime   == "PIPE uptm$ = F$DELTA_TIME( F$GETSYI(""BOOTTIME""), F$TIME(), ""ASCTIM"" ) ; WRITE sys$output uptm$"
+$ DCL$CALL Alias "boot*time" "@com:bootttime.com"
 $ !
+$ ai        == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
 $ err*orlog == "ANALYZE /ERROR "
 $ IF ( VMSArchitecture .NES. "VAX" )
 $ THEN IF ( VMSVersion .GES. "V7.3" )
@@ -172,13 +179,15 @@ $      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
 $ ENDIF
 $ !
 $ IF F$SEARCH("com:where.com") .NES. ""
-$ THEN DCL$CALL Alias "where" "@com:where.com" "SHOW DEFAULT"
-$ ELSE CZ == ""
-$      where == "WRITE sys$output F$FAO(""!AS!AS !6* (prev: !AS)"""   -
-              +                         ",F$TRNLNM(""SYS$NODE"")"     -
-              +                         ",F$ENVIRONMENT(""DEFAULT"")" -
-              +                         ",CZ)"
+$ THEN DCL$CALL Alias "where" "@com:where.com"
+$ ELSE CZ    == ""
+$      where == wso + "F$FAO(""!AS!AS !6* (prev: !AS)"""   -
+              +              ",F$TRNLNM(""SYS$NODE"")"     -
+              +              ",F$ENVIRONMENT(""DEFAULT"")" -
+              +              ",CZ)"
 $ ENDIF
+$ !
+$ ! ================================================================
 $ !
 $ IF F$SEARCH( "com:file$setup.com" ) .NES. ""      !the FILE$* group
 $ THEN @com:file$setup 'P1'
@@ -193,13 +202,14 @@ $      IF F$TYPE(freplace) .EQS. "STRING" -
        THEN frep*lace == freplace - ".COM" - " FINDREPLACE" + " FINDREPLACE"
 $      DCL$CALL Alias "chop"         "$com:chop"
 $      DCL$CALL Alias "clean*up"     "@com:file$cleanup"
-$      DCL$CALL Alias "csum"         "@com:file$checksum"
+$      chksum == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
+$      DCL$CALL Alias "csum"         "@com:file$checksum"  "''chksum'"
 $      DCL$CALL Alias "fat*tributes" "@com:file$attributes"
-$      DCL$CALL Alias "fc*ompare"    "@com:file$compare"
+$      DCL$CALL Alias "fc*ompare"    "@com:file$compare"   "DIFFERENCES /PARALLEL"
 $      DCL$CALL Alias "fcou*nt"      "$com:filecount"
 $      DCL$CALL Alias "fix"          "@com:file$edit"
 $      DCL$CALL Alias "fli*st"       "@com:file$preplist"
-$      DCL$CALL Alias "mov*e"        "@com:file$move"
+$      DCL$CALL Alias "mov*e"        "@com:file$move"      "RENAME /LOG"
 $      DCL$CALL Alias "prot*ect"     "@com:file$protect"
 $      DCL$CALL Alias "slice"        "$com:slice"
 $      DCL$CALL Alias "sscon*vert"   "@com:file$ssconvert"
@@ -215,30 +225,6 @@ $ DCL$CALL Alias "md*ir"     "@com:makedir"
 $ ml*ogical == mdir + " *"
 $ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
 $ !
-$ ! Dungeon:
-$ IF F$TYPE(Dungeon) .NES. "STRING"
-$ THEN IF F$TRNLNM("dungeon$login") .NES. "" THEN @dungeon$login
-$ ENDIF
-$ !
-$ ! GNU:
-$ IF ( F$TYPE(gawk) .NES. "STRING" ) .OR. ( F$TYPE(grep) .NES. "STRING" )
-$ THEN IF F$TRNLNM("GNU$login") .NES. "" THEN @GNU$login
-$ ENDIF
-$ !
-$ ! Kermit:
-$ IF F$TYPE(Kermit) .NES. "STRING"
-$ THEN IF F$TRNLNM("kermit$login") .NES. "" THEN @kermit$login
-$ ENDIF
-$ !
-$ ! Netscape Navigator:
-$ IF F$TYPE(Navigator) .NES. "STRING"
-$ THEN IF F$TRNLNM("netscape$login") .NES. "" THEN @netscape$login
-$ ENDIF
-$ !
-$ ! Smart SetHost:
-$ F = "site$utils:smart$sethost.com"
-$ IF F$SEARCH(F) .NES. "" THEN @'F' $LOGIN
-$ !
 $ ! Tools:
 $ DCL$CALL Alias "cap*ture"    "@com:capture.com"     !capture SYS$OUTPUT to file
 $ DCL$CALL Alias "day*s"       "$site$utils:dc$datecalc"
@@ -252,6 +238,35 @@ $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
 $ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES. "" ) -
   THEN @site$utils:rapt_tools
+$ !
+$ ! ================================================================
+$ !
+$ ! GNU:
+$ IF ( F$TYPE(gawk) .NES. "STRING" ) .OR. ( F$TYPE(grep) .NES. "STRING" )
+$ THEN IF F$TRNLNM("GNU$login") .NES. "" THEN @GNU$login
+$ ENDIF
+$ !
+$ ! Kermit:
+$ IF F$TYPE(Kermit) .NES. "STRING"
+$ THEN IF F$TRNLNM("kermit$login") .NES. "" THEN @kermit$login
+$ ENDIF
+$ !
+$ !! $ ! Netscape Navigator:
+$ !! $ IF F$TYPE(Navigator) .NES. "STRING"
+$ !! $ THEN IF F$TRNLNM("netscape$login") .NES. "" THEN @netscape$login
+$ !! $ ENDIF
+$ !! $ !
+$ !
+$ !! $ ! Smart SetHost:
+$ !! $ F = "site$utils:smart$sethost.com"
+$ !! $ IF F$SEARCH(F) .NES. "" THEN @'F' $LOGIN
+$ !
+$ !! $ ! Dungeon:
+$ !! $ IF F$TYPE(Dungeon) .NES. "STRING"
+$ !! $ THEN IF F$TRNLNM("dungeon$login") .NES. "" THEN @dungeon$login
+$ !! $ ENDIF
+$ !
+$ ! ================================================================
 $ !
 $ ! PARSEC --
 $ IF ( LNode .EQS. "CLASS8" )
@@ -277,9 +292,11 @@ $      mklic*ensepg == "@user_disk:[williams]pg_license"
 $      IF Verbose THEN SHOW SYMBOL /GLOBAL mklic*
 $ ENDIF
 $ !
+$ ! ================================================================
+$ !
 $Done:
-$ IF F$TYPE(LMR$Unavailable) .NES. ""
-$ THEN IF LMR$Unavailable .NES. ""
+$ IF ( F$TYPE(LMR$Unavailable) .NES. "" )
+$ THEN IF ( LMR$Unavailable .NES. "" )
 $      THEN WRITE sys$output ""
 $           WRITE sys$output "%SYMBOLS-W-UNAVAIL_COM, these DCL command symbols are unavailable:"
 $           SHOW SYMBOL /GLOBAL LMR$Unavailable

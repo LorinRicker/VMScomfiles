@@ -155,7 +155,6 @@ $ GOTO 'LGI$Mode'
 $ ! ----------------------------------------------------------------------
 $ !
 $INTERACTIVE:
-$ LMR$Unavailable == ""
 $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com   ! now calls common_logicals.com
 $ !

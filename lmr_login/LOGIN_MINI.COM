@@ -19,17 +19,6 @@ $ ON CONTROL THEN GOSUB Ctrl_Y
 $ SET CONTROL=(T,Y)
 $ SET PROTECTION=(S:RWED,O:RWED,G,W) /DEFAULT
 $ !
-$ ! ----------------------------------------------------------------------
-$ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
-$ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
-$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( ReLogin )
-$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup FALSE
-$ ENDIF
-$ ! ----------------------------------------------------------------------
-$ !
-$ DCL$CALL PureDCL "APPEND,BACKUP,DIFFERENCE,DUMP,SEARCH,TYPE"
-$ DCL$CALL PureDCL "EDIT,COPY,DELETE,DIRECTORY,PURGE,RENAME"
-$ !
 $ lgi   = F$ENVIRONMENT("PROCEDURE")
 $ lgi   = F$PARSE(lgi) - F$PARSE(lgi,,,"VERSION","SYNTAX_ONLY")
 $ ssnam = "LMR$LOGIN:LOGIN_MINI"  ! hardwired name: LOGIN_MINI.COM gets renamed LOGIN.COM
@@ -42,6 +31,18 @@ $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ @'LBase'.LOGIN]COMMON_LOGICALS COM "LOGIN|lmr$login"
+$ !
+$ ! ----------------------------------------------------------------------
+$ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
+$ ! By convention/intent, DCL$SUBROUTINE_LIBRARY is here:
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" ) .OR. ( ReLogin )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup FALSE
+$ ENDIF
+$ ! ----------------------------------------------------------------------
+$ !
+$ DCL$CALL PureDCL "APPEND,BACKUP,DIFFERENCE,DUMP,SEARCH,TYPE"
+$ DCL$CALL PureDCL "EDIT,COPY,DELETE,DIRECTORY,PURGE,RENAME"
+$ !
 $ IF ( F$TRNLNM("site$utils") .EQS. "" ) THEN DEFINE site$utils com
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
@@ -68,115 +69,22 @@ $ SET TERMINAL /INQUIRE
 $ SET TERMINAL /INSERT /PAGE=48 /WIDTH=132 /DEVICE=VT300 -
     /BROADCAST /TYPE_AHEAD /ALTYPEAHD /APPLICATION_KEYPAD
 $ !
-$ LNode = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
-$ LMR$promptstr == "''LNode'$ "       ! Normal prompt
-$ LMR$promptprv == "[1m''LNode'[0m$ "  !Prilegediv prompt
-$ SET PROMPT="''LMR$promptstr'"       !   COM:PRIVILEGE.COM uses both prompt-strings
-$ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
-$ VMSArchitecture = F$EDIT( F$GETSYI("ARCH_NAME"), "TRIM" )
-$ VMSVersion      = F$EDIT( F$GETSYI("VERSION"), "TRIM" )
-$ !
-$ ! Nice-to-have abbreviations for the command line:
-$ WSO == "WRITE sys$output"
-$ SIN == "SEARCH sys$pipe"
+$ ! Dependency: must create ANSI esc-sequences/commands before SYMBOLS.COM...
+$ DCL$CALL DefineANSIseq      ! ANSI esc-sequence renditions & colors
+$ DCL$CALL DefineClearscreen  ! clr/cls commands
+$ @lmr$login:symbols
+$ ! Dependency: ...and set prompt after defining ANSIseq and SYMBOLS.COM...
+$ IF ( F$TYPE( LMR$promptstr ) .EQS. "STRING" )
+$ THEN SET PROMPT="''LMR$promptstr'"
+$ ELSE SET PROMPT="''LNode'$ "
+$ ENDIF
 $ !
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
 $ DEFINE mfd sys$disk:[000000]
 $ DEFINE X   sys$scratch:X.tmp
 $ DEFINE Z   sys$scratch:Z.tmp
-$ !
-$ esc[0,32]= %X1B
-$ esc[0,1]:= 'esc'
-$ ! --------------------------------
-$ ! Define screen-clearing commands:
-$ _bckscrL == esc + "[?5h"      ! set background light
-$ _bckscrD == esc + "[?5l"      ! set background dark
-$ _clrscr  == esc + "[m"  -     ! set rendition normal
-            + esc + "[H"  -     ! cursor to 0,0
-            + esc + "[2J"       ! clear entire screen
-$ !
-$ clr      == "WRITE sys$output _clrscr"
-$ cls      == "WRITE sys$output _clrscr"
-$ clrd     == "WRITE sys$output _bckscrL,_clrscr"
-$ clsd     == "WRITE sys$output _bckscrL,_clrscr"
-$ clrl     == "WRITE sys$output _bckscrD,_clrscr"
-$ clsl     == "WRITE sys$output _bckscrD,_clrscr"
-$ ! --------------------------------
-$ !
-$ LMR$UNAVAILABLE == ""
-$ DCL$CALL Alias "cd"             "@com:cd"        "SET DEFAULT"
-$ DCL$CALL Alias "disks*pace"     "@com:diskspace$report" "SHOW DEVICE D /MOUNTED"
-$ DCL$CALL Alias "diskl*imits"    "@com:disklimits$report"
-$ DCL$CALL Alias "diski*nventory" "@com:diskinventory$report"
-$ DCL$CALL Alias "diskm*enu"      "@com:diskmenu$report"
-$ DCL$CALL Alias "tool*sdebug"    "@com:tools$debug"
-$ DCL$CALL Alias "where"          "@com:where"     "SHOW DEFAULT"
-$ DCL$CALL Alias "who"            "@com:DCLwho"    "SHOW USERS"
-$ DCL$CALL Alias "priv*ilege"     "@com:privilege" "SET PROCESS /PRIVILEGE="
-$ IF ( F$EXTRACT(0,1,privilege) .EQS. "@" )
-$ THEN pow*er == "''privilege' ONE$SHOT"
-$      sudo   == "''privilege' SUDO"
-$ ENDIF
-$ !
-$ ai       == "ANALYZE /IMAGE /SELECT=(ARCH,IMAGE_TYPE,IDENT=IMAGE,NAME)"
-$ cftp     == "COPY /FTP /LOG"
-$ chksum   == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
-$ dsk*s    == "SHOW DEVICE /MOUNTED D"
-$ dir      == "DIRECTORY /ACL /SIZE /DATE /PROTECTION /WIDTH=(FILENAME=24,SIZE=10)"
-$ where    == "SHOW DEFAULT"
-$ glo*bal  == "SHOW SYMBOL /GLOBAL"
-$ lnm      == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV"
-$ ftpcl8   == "ftp class8.parsec.com"
-$ !
-$ LFull = ""
-$ IF ( F$SEARCH( "sys$login:login_mini.com" ) .NES. "" ) THEN LFull = "_MINI"
-$ IF ( F$SEARCH( "sys$login:login_full.com" ) .NES. "" ) THEN LFull = "_FULL"
-$ reLog*in == "@SYS$LOGIN:LOGIN''LFull'"
-$ !
-$ ssys*tem == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
-$ submit   == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
-$ !
-$ qidle     == "PIPE SHOW QUEUE /ALL | ''SIN' idle,started /HIGHLIGHT=UNDERLINE"
-$ qstal*led == "PIPE SHOW QUEUE /ALL | ''SIN' stopped,stalled,paused /HIGHLIGHT=UNDERLINE"
-$ !
-$ ping     == "$SYS$SYSTEM:TCPIP$PING"
-$ sysman   == "MCR SYSMAN"
-$ sysgen   == "MCR SYSGEN"
-$ !
-$ IF F$TYPE(authorize) .EQS. ""
-$ THEN IF F$TRNLNM( "sysuaf", "lnm$system" ) .NES. ""
-$      THEN auth*orize == "$SYS$SYSTEM:AUTHORIZE"
-$      ELSE auth*orize == "PIPE cd sys$system ; MCR AUTHORIZE"
-$      ENDIF
-$ ENDIF
-$ !
-$ clu = ""
-$ IF F$GETSYI("CLUSTER_MEMBER") THEN clu = "/CLUSTER"
-$ clupt*ime == "PIPE SHOW SYSTEM ''clu'/NOPROCESS /FULL | SEARCH /HIGHLIGHT=UNDERLINE /WINDOW=(1,2) sys$pipe uptime"
-$ upt*ime   == "PIPE uptm$ = F$DELTA_TIME( F$GETSYI(""BOOTTIME""), F$TIME(), ""ASCTIM"" ) ; WRITE sys$output uptm$"
-$ boot*time == "@com:bootttime.com"
-$ !
-$ err*orlog == "ANALYZE /ERROR "
-$ IF ( VMSArchitecture .NES. "VAX" )
-$ THEN IF ( VMSVersion .GES. "V7.3" )
-$      THEN err*orlog == "ANALYZE /ERROR /ELV TRANSLATE "   ! for Alpha/Itanium VMS >= v7.3
-$      ENDIF
-$ ENDIF
-$ !
-$ sclu*ster == "SHOW CLUSTER /CONTINUOUS"
-$ IF F$SEARCH("lmr$login:show_cluster$init.ini") .NES. ""
-$ THEN DEFINE /PROCESS /SUPERVISOR /NOLOG show_cluster$init lmr$login:show_cluster$init.ini
-$ ENDIF
-$ !
-$ ! Search & conditionally build zip/unzip symbols:
-$ IF ( F$SEARCH("com:zips.com") .NES. "" ) THEN @com:zips
-$ !
-$ ! Logicals:
-$ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
-$!! $ DCL$CALL Alias "mkdir" "@com:makedir"
-$!! $ ml*ogical == mkdir + " *"
 $ !
 $ EXIT 1
 $ !
@@ -188,11 +96,12 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.com]privilege.com;,where.com;,boottime.com;"      -
-          + ",fix$bck.com;,zips.com;,tools$debug.com;"                  -
-          + ",disk*$report.com;,cd.com;"                                -
-          + ",''LBase'.login]show_cluster$init.ini;,fixprivs.com;"      -
-          + ",dcl$subroutine_library.com;,common_logicals.com;"         -
+$ comlist = "''LBase'.login]symbols.com;"                               -
+          +    ",dcl$subroutine_library.com;,common_logicals.com;"      -
+          +    ",show_cluster$init.ini;,fixprivs.com;"                  -
+          + ",''LBase'.com]privilege.com;,cd.com;,where.com;"           -
+          +    ",boottime.com;,fix$bck.com;,zips.com;,tools$debug.com;" -
+          +    ",disk*$report.com;"                                     -
           + ",site$root:[utilities]makedir.com;"                        -
           + ",mgr$root:[commands]DCLwho.com;"                           -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
