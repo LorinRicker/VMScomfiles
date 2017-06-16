@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.10.01"         ! maintain with edits
-$ dcl$sldatestamp = "14-JUN-2017"
+$ dcl$slversion   = "01.11.02"         ! maintain with edits
+$ dcl$sldatestamp = "16-JUN-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -21,7 +21,8 @@ $ THEN DEFINE /PROCESS /NOLOG DCL$SLversion "v''dcl$slversion' (''dcl$sldatestam
 $ ENDIF
 $ !
 $ ! Need some help?
-$ p1param = F$EXTRACT( 0, 4, F$EDIT(P1,"UPCASE,TRIM") ) - "-" - "-"  ! strip any leading - or --
+$ p1param = F$EDIT( P1, "UPCASE,TRIM" ) - "-" - "-"  ! strip any leading - or --
+$ p1param = F$EXTRACT( 0, 4, p1param )
 $ IF ( p1param .EQS. "HELP" ) .OR. ( P1 .EQS. "?" ) THEN GOTO Help
 $ !
 $ dcl$Verbose = F$TRNLNM( "TOOLS$DEBUG" )
@@ -34,6 +35,7 @@ $ COMMA      = ","
 $ DOLLAR     = "$"
 $ SPACE      = " "
 $ UNDERSCORE = "_"
+$ BREADCRUMB = "«" + "»"
 $ DOCMARKER  = "$ !#! "
 $ DOCMARKlen = F$LENGTH( DOCMARKER )
 $ !
@@ -43,23 +45,30 @@ $ RegisteredRoutines = COMMA                                            -
                      +  "Alias,CmdParse,CommandLine,DefineANSIdef"      -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",MakeDir,PureDCL"                               -
-                     + ",Thousands,ToolsDebug"                          -
-                     + ",Setup,Doc,ShowRegisteredRoutines"              -
+                     + ",Thousands,ToolsDebug"
+$ ! and with this group always last:
+$ RegisteredRoutines = RegisteredRoutines                               -
+                     + ",Setup,Doc,ShowRegisteredRoutines,Version"      -
                      + COMMA
 $ ! ----------------------------------------------------------------------
 $ ! ==========
-$ RRlen    = F$LENGTH( RegisteredRoutines )
-$ RegRouUC = F$EDIT( RegisteredRoutines, "UPCASE" )
+$ IF DCL$Verbose
+$ THEN wso F$FAO( "%!AS-I-RRLEN, RegisteredRoutine length = !SL", -
+                  Fac, F$LENGTH( RegisteredRoutines ) )
+$ ENDIF
 $ ! ==========
+$ !
+$ ! Display library version:
+$ IF ( p1param .EQS. "VERS" )
+$ THEN CALL DCL$Version
+$      EXIT 1  ! 'F$VERIFY(0)'
+$ ENDIF
 $ !
 $ ! Show/display all Registered Routines --
 $ IF ( p1param .EQS. "SHOW" ) .OR. ( p1param .EQS. "ROUT" )
 $ THEN ! set-up for dcl$call DCL$ShowRegisteredRoutines
-$      P5 = P1  ! ...the unregistered routine name
 $      P1 = "ShowRegisteredRoutines"  ! call this routine
 $      P2 = RegisteredRoutines
-$      P3 = RegRouUC
-$      P4 = RRlen
 $      ! ...Fall-thru to call DCL$ShowRegisteredRoutines
 $ ENDIF
 $ !
@@ -83,12 +92,14 @@ $ ! Dispatch:  P1 = Subroutine to call; P2..P8 are com-line parameters to pass -
 $ !            Note that internal subroutine names are prefixed by "DCL$" to
 $ !            limit conficts with external, non-library routines...
 $ ! ==========
+$ IF DCL$Verbose THEN ver = F$VERIFY(1)
 $ CALL DCL$'P1' "''P2'" "''P3'" "''P4'" "''P5'" "''P6'" "''P7'" "''P8'"
 $ ! ==========
 $ stat = $STATUS
 $ EXIT 'stat'  ! 'F$VERIFY(0)'
 $ !
 $ !
+$ ! ================================================================================
 $ ! Prototype:
 $ !
 $ !! $ !
@@ -432,14 +443,13 @@ $ ! These three assignments use string "+" so that
 $ ! they don't match their own search/recognition --
 $ begsubr    = SPACE + "SUBROUTINE"
 $ endsubr    = SPACE + "ENDSUBROUTINE"
-$ breadcrumb = "«" + "»"
 $ OPEN /READ /SHARE /ERROR=OpenError self DCL$SLself
 $DCL$SDLoop:
 $ READ /END_OF_FILE=DCL$SDcont self line
 $ llen = F$LENGTH( line )
 $ IF ( F$EDIT( line, "TRIM" ) .EQS. "" ) THEN GOTO DCL$SDLoop  ! skip any/all blank lines
 $ IF ( F$LOCATE( endsubr, line ) .LT. llen ) THEN GOTO DCL$SDLoop
-$ IF ( F$LOCATE( breadcrumb, line ) .LT. llen ) THEN GOTO DCL$SDLoop
+$ IF ( F$LOCATE( BREADCRUMB, line ) .LT. llen ) THEN GOTO DCL$SDLoop
 $ IF ( F$LOCATE( begsubr, line ) .LT. llen )
 $ THEN ! Display routine name first --
 $      !  Strip colon, spaces and subroutine keyword
@@ -631,25 +641,36 @@ $ ext  = F$PARSE( proc, , , "TYPE" )
 $ DEFINE /PROCESS /NOLOG DCL$SLhome 'dd'
 $ DEFINE /PROCESS /NOLOG DCL$SLself 'dd''fac''ext'
 $ DCL$CALL == "@DCL$SLhome:''fac'"
-$ IF ( dcl$Verbose ) .OR. ( P1 )
-$ THEN dashcount = 80
-$      dashes = F$FAO( "!#*-", dashcount )
-$      indent = 2
-$      wso ""
-$      wso dashes
-$      wso F$FAO( "%!AS-I-SETUP, done for !AS...", fac, fac )
-$      lnm = "DCL$SLversion"
-$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
-$      lnm = "DCL$SLhome"
-$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
-$      lnm = "DCL$SLself"
-$      wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
-$      SHOW SYMBOL /GLOBAL DCL$CALL
-$      wso dashes
-$      wso ""
-$ ENDIF
+$ IF ( dcl$Verbose ) .OR. ( P1 ) THEN CALL DCL$Version
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$Setup
+$ ! ==========
+$ !
+$ ! ==========
+$DCL$Version:  SUBROUTINE
+$ !#! Doc : Display this DCL$SUBROUTINE_LIBRARY's version info
+$ !#!   Example:
+$ !#!     $ DCL$CALL Version
+$ !#!   P1 : (none)
+$ !
+$ SET NOON
+$ dashcount = 80
+$ dashes = F$FAO( "!#*-", dashcount )
+$ indent = 2
+$ wso ""
+$ wso dashes
+$ wso F$FAO( "%!AS-I-SETUP, done for !AS...", fac, fac )
+$ lnm = "DCL$SLversion"
+$ wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
+$ lnm = "DCL$SLhome"
+$ wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
+$ lnm = "DCL$SLself"
+$ wso F$FAO( "!#* ""!AS"" = ""!AS""", indent, lnm, F$TRNLNM(lnm,"LNM$PROCESS") )
+$ SHOW SYMBOL /GLOBAL DCL$CALL
+$ wso dashes
+$ wso ""
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Version
 $ ! ==========
 $ !
 $ !
@@ -659,9 +680,6 @@ $ !#! Doc : Show/list the Registered Routines in this DCL$Subroutine_Library
 $ !#!   Example:
 $ !#!     $ DCL$CALL ShowRegisteredRoutines ...
 $ !#!   P1 : RegisteredRoutines
-$ !#!   P2 : RegRouUC
-$ !#!   P3 : RRlen
-$ !#!   P4 : Unregistered routine name
 $ !
 $ SET NOON
 $ j = 0
@@ -679,16 +697,12 @@ $      wso ""
 $      EXIT 1
 $ ENDIF
 $ j = j + 1
-$ IF ( rr .NES. "" ) .AND. ( rr .NES. "«»" )
+$ IF ( rr .NES. "" ) .AND. ( rr .NES. BREADCRUMB )
 $ THEN wso F$FAO( "!#* !AS", indent, rr )
 $      count = count + 1
 $ ENDIF
 $ GOTO DCL$ShowLoop
 $ !
-$ IF ( F$LOCATE( P1, P2 ) .GE. P3 )
-$ THEN wso F$FAO( "%!AS-E-NOT_REGISTERED, !AS does not exist", Fac, P4 )
-$      EXIT %X2C  ! abort...
-$ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ShowRegisteredRoutines
 $ ! ==========
