@@ -59,6 +59,19 @@ $ !
 $ IF ( F$TYPE(LMR_Name) .EQS. "" ) THEN LMR_Name = UName
 $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PName)
 $ !
+$ ! == Ruby ========================================================
+$ !
+$ ! Personal Ruby tools/scripts:
+$ mkrubycmd ruby$mine:process.rb                  proc*ess     TRUE
+$ mkrubycmd ruby$mine:bignum.rb                   big*num      TRUE
+$ bn == bignum
+$ mkrubycmd ruby$mine:tonerow.rb                  tone*row     TRUE
+$ mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords TRUE
+$ !
+$ ! Create command aliases for interactive Ruby tools pry and irb:
+$ IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
+$ !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
+$ !
 $ ! ================================================================
 $ !
 $ ! System Manager:

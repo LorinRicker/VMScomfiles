@@ -12,83 +12,6 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ RubyStartup  == "sys$startup:ruby$startup.com"
-$ RubyShutdown == "sys$startup:ruby$shutdown.com"
-$ !
-$ ! No Ruby-startup comfile?  Don't even bother continuing:
-$ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
-$ !
-$ UName = F$EDIT( F$GETJPI("","USERNAME"), "TRIM,UPCASE" )
-$ Proc  = F$ENVIRONMENT("PROCEDURE")
-$ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
-$ node  = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
-$ !
-$ wso = "WRITE sys$output"
-$ !
-$ Verbose = F$TRNLNM("TOOLS$Debug")
-$ !
-$ RubyVolumeOkay == 0  ! initial assumptions
-$ RubyVolumeODS5 == 0
-$ !
-$ReCheck:
-$ IF ( F$TRNLNM("ruby$root") .NES. "" )
-$ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
-$      RubyX == "$ruby$root:[bin]ruby"
-$ !
-$      f = "com:rubycmd"
-$      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
-$      THEN rubyc*md   == "@''f' CMD"  ! rubycmd and mkrubycmd are synonyms
-$           mkrub*ycmd == "@''f' CMD"
-$           ruby       == "@''f' RUN"
-$      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
-$      ENDIF
-$ !
-$      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
-$      rdir = "[''UName'.RUBY]"
-$      CALL VolCheck "''vol'" "''rdir'"
-$      IF .NOT. RubyVolumeOkay
-$      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
-$           CALL VolCheck "''vol'" "''rdir'"
-$      ENDIF
-$      IF RubyVolumeODS5
-$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
-$           wso "%''Fac'-I-DCLPARSE, parse style set to EXTENDED..."
-$      ENDIF
-$ !
-$ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not yet started..."
-$      READ sys$command answer /END_OF_FILE=Finish -
-         /PROMPT="Start Ruby for VMS on ''node' (Y/n)? "
-$      IF ( F$EDIT( F$EXTRACT(0,1,answer),"UPCASE,TRIM") .NES. "N" )
-$      THEN IF ( F$SEARCH( RubyStartup ) .NES. "" )
-$           THEN prv = F$SETPRV("SYSPRV,SYSNAM,CMKRNL")
-$                @'RubyStartup'
-$                prv = F$SETPRV(prv)
-$           ENDIF
-$      WAIT 00:00:01
-$      GOTO ReCheck
-$      ENDIF
-$ ENDIF
-$ !
-$Finish:
-$ IF F$TYPE(ruby) .EQS. "STRING"
-$ THEN IF Verbose
-$      THEN SHOW LOGICAL /SYSTEM Ruby*
-$           SHOW LOGICAL /JOB    Ruby*
-$           wso ""
-$           SHOW SYMBOL /GLOBAL *Ruby*
-$           wso ""
-$      ENDIF
-$ !
-$ !    Create command aliases for interactive Ruby tools pry and irb:
-$      IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
-$      !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
-$ !
-$      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
-$      RubyX -v   ! show version
-$ ENDIF
-$ EXIT 1     ! 'F$VERIFY(0)'
-$ !
-$ !
 $ ! =================
 $VolCheck: SUBROUTINE
 $ ! P1 = volume to check
@@ -125,3 +48,79 @@ $ ELSE RubyVolumeODS5 == "TRUE"
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! VolCheck
+$ !
+$ !
+$ ! =================
+$Main:
+$ RubyStartup  == "sys$startup:ruby$startup.com"
+$ RubyShutdown == "sys$startup:ruby$shutdown.com"
+$ !
+$ ! No Ruby-startup comfile?  Don't even bother continuing:
+$ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
+$ !
+$ UName = F$EDIT( F$GETJPI("","USERNAME"), "TRIM,UPCASE" )
+$ Proc  = F$ENVIRONMENT("PROCEDURE")
+$ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ node  = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
+$ !
+$ wso = "WRITE sys$output"
+$ !
+$ Verbose = F$TRNLNM("TOOLS$Debug")
+$ !
+$ RubyVolumeOkay == 0  ! initial assumptions
+$ RubyVolumeODS5 == 0
+$ !
+$ReCheck:
+$ IF ( F$TRNLNM("ruby$root") .NES. "" )
+$ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
+$      RubyX == "$ruby$root:[bin]ruby"
+$ !
+$      f = "COM:RUBYCMD"
+$      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
+$      THEN rubyc*md   == "@''f' CMD"  ! rubycmd and mkrubycmd are synonyms
+$           mkrub*ycmd == "@''f' CMD"
+$           ruby       == "@''f' RUN"
+$      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
+$      ENDIF
+$ !
+$      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
+$      rdir = "[''UName'.RUBY]"
+$      CALL VolCheck "''vol'" "''rdir'"
+$      IF .NOT. RubyVolumeOkay
+$      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
+$           CALL VolCheck "''vol'" "''rdir'"
+$      ENDIF
+$      IF RubyVolumeODS5
+$      THEN SET PROCESS /PARSE_STYLE=EXTENDED
+$           wso "%''Fac'-I-DCLPARSE, parse style set to EXTENDED..."
+$      ENDIF
+$ !
+$ ELSE wso "%''Fac'-E-NoRuby, Ruby for VMS not yet started..."
+$      READ sys$command answer /END_OF_FILE=Finish -
+         /PROMPT="Start Ruby for VMS on ''node' (Y/n)? "
+$      IF ( F$EDIT( F$EXTRACT(0,1,answer),"UPCASE,TRIM") .NES. "N" )
+$      THEN IF ( F$SEARCH( RubyStartup ) .NES. "" )
+$           THEN prv = F$SETPRV("SYSPRV,SYSNAM,CMKRNL")
+$                @'RubyStartup'
+$                prv = F$SETPRV(prv)
+$           ENDIF
+$      WAIT 00:00:01
+$      GOTO ReCheck
+$      ENDIF
+$ ENDIF
+$ !
+$Finish:
+$ IF ( F$TYPE(ruby) .EQS. "STRING" )
+$ THEN IF Verbose
+$      THEN SHOW LOGICAL /SYSTEM Ruby*
+$           SHOW LOGICAL /JOB    Ruby*
+$           wso ""
+$           SHOW SYMBOL /GLOBAL *Ruby*
+$           wso ""
+$      ENDIF
+$ !
+$      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
+$      RubyX -v   ! show version
+$ ENDIF
+$ EXIT 1     ! 'F$VERIFY(0)'
+$ !

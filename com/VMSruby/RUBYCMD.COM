@@ -27,7 +27,7 @@ $ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
-$ 'Fac'_version == Fac + " v2.0 (07-Jun-2017)"
+$ 'Fac'_version == Fac + " v2.1 (16-Jun-2017)"
 $ !
 $ ! ----------------------------------------------------------------------
 $ IF ( F$TYPE( DCL$CALL ) .EQS. "" )
@@ -131,7 +131,11 @@ $COMMAND$:  ! ==========
 $           ! Define a global command symbol for this Ruby script:
 $           'P3' == "''RubyX' ''Rscript'"
 $           symname = P3 - SPLAT
-$           IF "''P4'" THEN IF ( F$TYPE('symname') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'symname'
+$           IF ( "''P4'" ) .OR. ( Verbose )
+$           THEN wso F$FAO( "%!AS-I-SYMBOL, !AS == ""!AS !AS""", -
+                            Fac, P3, RubyX, Rscript )
+$                IF ( F$TYPE('symname') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'symname'
+$           ENDIF
 $           GOTO Done
 $ !
 $      ELSE wserr "%''Fac'-E-FNF, cannot find Ruby script ""''Rscript'"""
@@ -141,6 +145,7 @@ $ ELSE wserr "%''Fac'-E-NO_RUBY, Ruby is not installed or set-up on this system"
 $ ENDIF
 $ !
 $Done:
+$ DCL$CALL DeleteGloSyms "Ruby$Cmd,Ruby$Cmd_NUM"
 $ EXIT 1  ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:
