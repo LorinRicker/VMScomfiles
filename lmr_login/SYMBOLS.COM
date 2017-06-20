@@ -60,6 +60,17 @@ $ IF ( F$TYPE(LMR_Name) .EQS. "" ) THEN LMR_Name = UName
 $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PName)
 $ !
 $ ! == Ruby ========================================================
+$ IF ( F$TRNLNM("ruby$root") .NES. "" )
+$ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
+$      RubyX == "$ruby$root:[bin]ruby"
+$      f = "COM:RUBYCMD"
+$      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
+$      THEN rubyc*md   == "@''f' CMD"  ! rubycmd and mkrubycmd are synonyms
+$           mkrub*ycmd == "@''f' CMD"
+$           ruby       == "@''f' RUN"
+$      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
+$      ENDIF
+$ ENDIF
 $ !
 $ ! Personal Ruby tools/scripts:
 $ mkrubycmd ruby$mine:process.rb                  proc*ess     TRUE
