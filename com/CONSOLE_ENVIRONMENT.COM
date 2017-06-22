@@ -1,6 +1,6 @@
 $ ! CONSOLE_ENVIRONMENT.COM --                                     'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -71,6 +71,12 @@ $ !
 $ wso  = "WRITE sys$output"
 $ Fac  = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
 $ Node = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
+$ !
+$ IF ( F$GETSYI("ARCH_NAME") .NES. "Alpha" ) .AND. ( F$GETSYI("ARCH_TYPE") .NE. 2 )
+$ THEN wso F$FAO( "%!AS-E-WRONG_ARCH, wrong architecture for these functions;", Fac )
+$      wso F$FAO( "%!AS-W-NOTALPHA, lexical F$GETENV() is Alpha-only", Fac)
+$      EXIT %X2C
+$ ENDIF
 $ !
 $ LblWidth = 21
 $ SpcWidth = LblWidth + 2
