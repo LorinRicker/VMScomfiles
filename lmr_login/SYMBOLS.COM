@@ -62,6 +62,10 @@ $ !
 $ ! == Ruby ========================================================
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
 $ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
+$      f = "COM:RUBY_SETUP"
+$      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
+$      THEN @'f'
+$      ENDIF
 $      RubyX == "$ruby$root:[bin]ruby"
 $      f = "COM:RUBYCMD"
 $      IF ( F$SEARCH( "''f'.COM" ) .NES. "" )
@@ -70,18 +74,18 @@ $           mkrub*ycmd == "@''f' CMD"
 $           ruby       == "@''f' RUN"
 $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
 $      ENDIF
+$ !
+$      ! Personal Ruby tools/scripts:
+$      mkrubycmd ruby$mine:process.rb                  proc*ess     TRUE
+$      mkrubycmd ruby$mine:bignum.rb                   big*num      TRUE
+$      bn == bignum
+$      mkrubycmd ruby$mine:tonerow.rb                  tone*row     TRUE
+$      mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords TRUE
+$ !
+$      ! Create command aliases for interactive Ruby tools pry and irb:
+$      IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
+$      !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
 $ ENDIF
-$ !
-$ ! Personal Ruby tools/scripts:
-$ mkrubycmd ruby$mine:process.rb                  proc*ess     TRUE
-$ mkrubycmd ruby$mine:bignum.rb                   big*num      TRUE
-$ bn == bignum
-$ mkrubycmd ruby$mine:tonerow.rb                  tone*row     TRUE
-$ mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords TRUE
-$ !
-$ ! Create command aliases for interactive Ruby tools pry and irb:
-$ IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
-$ !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
 $ !
 $ ! ================================================================
 $ !
