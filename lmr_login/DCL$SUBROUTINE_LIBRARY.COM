@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.11.02"         ! maintain with edits
-$ dcl$sldatestamp = "16-JUN-2017"
+$ dcl$slversion   = "01.12.02"         ! maintain with edits
+$ dcl$sldatestamp = "23-JUN-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -44,7 +44,7 @@ $ ! Update this list as new subroutines are added -- keep this sorted:
 $ RegisteredRoutines = COMMA                                            -
                      +  "Alias,CmdParse,CommandLine,DefineANSIdef"      -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
-                     + ",MakeDir,PureDCL"                               -
+                     + ",LogRollover,MakeDir,PureDCL"                   -
                      + ",Thousands,ToolsDebug"
 $ ! and with this group always last:
 $ RegisteredRoutines = RegisteredRoutines                               -
@@ -312,7 +312,6 @@ $ !#!   P1 : (none)
 $ !
 $ SET NOON
 $ esc[0,8]== %X1B                   !  27 decimal,  033 octal - ESCape character
-$ csi[0,8]== %X9B                   ! 151 decimal, 0227 octal - CSI character
 $ !
 $ ! ANSI renditions:
 $         NORM == esc + "[0m"       ! Normal rendition
@@ -381,7 +380,6 @@ $ !
 $ SET NOON
 $ IF ( F$TYPE( esc ) .NES. "STRING" )
 $ THEN esc[0,8]== %X1B              !  27 decimal,  033 octal - ESCape character
-$      csi[0,8]== %X9B              ! 151 decimal, 0227 octal - CSI character
 $ ENDIF
 $ _bckscrL == esc + "[?5h"      ! set background light
 $ _bckscrD == esc + "[?5l"      ! set background dark
@@ -565,6 +563,45 @@ $ IF dcl$Verbose THEN wso F$FAO( "%DCL$DISCOVERDISKS-I-ECHO, ''P1' == ""!AS""", 
                                   'P1' )
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$DiscoverDisks
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$LogRollover:  SUBROUTINE
+$ !#! Doc : Roll-over (refresh) a VMS log or journal file
+$ !#!   Example:
+$ !#!     $ DCL$CALL LogRollover «»
+$ !#!   P1 : Which log- or journal-file to turn over:
+$ !#!          "OPERATOR  |SECURITY  |ERRORLOG  |ACCOUNTING"
+$ !
+$ SET NOON
+$ «»
+$DCL$LROperator:
+$ LRprv = F$SETPRV( "OPER,SYSPRV" )
+$ REPLY /ENABLE=CENTRAL
+$ REPLY /LOG                 ! close old OPERATOR.LOG, open new one...
+$ REPLY /DISABLE=CENTRAL
+$ ! cleanup?
+$ GOTO DCL$LRDone
+$DCL$LRSecurity:
+$ LRprv = F$SETPRV( "SYSPRV,SECURITY" )
+$ SET AUDIT /SERVER=NEW_LOG  ! close old SECURITY.AUDIT$JOURNAL, open a new one...
+$ ! cleanup?
+$ GOTO DCL$LRDone
+$DCL$LRErrorlog:
+$ LRprv = F$SETPRV( "SYSPRV" )
+$ RENAME /LOG SYS$ERRORLOG:ERRLOG.SYS SYS$ERRORLOG:*.SYS_OLD
+$ ! cleanup?
+$ GOTO DCL$LRDone
+$DCL$LRAccounting:
+$ LRprv = F$SETPRV( "OPER,SYSPRV" )
+$ SET ACCOUNTING /NEW_FILE /LOG  ! close old ACCOUNTNG.DAT, open a new one...
+$ ! cleanup?
+$ GOTO DCL$LRDone
+$DCL$LRDone:
+$ IF ( F$TYPE( LRprv ) .NES. "" ) THEN LRprv = F$SETPRV( LRprv )
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$LogRollover
 $ ! ==========
 $ !
 $ !
