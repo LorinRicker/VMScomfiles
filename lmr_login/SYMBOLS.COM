@@ -230,7 +230,6 @@ $      IF F$TYPE(freplace) .EQS. "STRING" -
        THEN frep*lace == freplace - ".COM" - " FINDREPLACE" + " FINDREPLACE"
 $      DCL$CALL Alias "chop"         "$com:chop"
 $      DCL$CALL Alias "clean*up"     "@com:file$cleanup"
-$      chksum == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $      DCL$CALL Alias "csum"         "@com:file$checksum"  "''chksum'"
 $      DCL$CALL Alias "fat*tributes" "@com:file$attributes"
 $      DCL$CALL Alias "fc*ompare"    "@com:file$compare"   "DIFFERENCES /PARALLEL"
@@ -247,6 +246,7 @@ $      DCL$CALL Alias "untang*le"    "@com:file$untangle"
 $      DCL$CALL Alias "xf*er"        "@com:file$xfer"
 $      DCL$CALL Alias "xftp"         "@com:file$ftp"
 $ ENDIF
+$ chksum == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ !
 $ ! Logicals:
 $ DCL$CALL Alias "md*ir"     "@com:makedir"
