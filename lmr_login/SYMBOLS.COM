@@ -76,11 +76,12 @@ $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.CO
 $      ENDIF
 $ !
 $      ! Personal Ruby tools/scripts:
-$      mkrubycmd ruby$mine:process.rb                  proc*ess     TRUE
-$      mkrubycmd ruby$mine:bignum.rb                   big*num      TRUE
-$      bn == bignum
-$      mkrubycmd ruby$mine:tonerow.rb                  tone*row     TRUE
-$      mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords TRUE
+$      mkrubycmd ruby$mine:process.rb                  proc*ess
+$      mkrubycmd ruby$mine:eva.rb                      eva
+$      bignum = eva
+$      mkrubycmd ruby$mine:msgd.rb                     msgd
+$      mkrubycmd ruby$mine:tonerow.rb                  tone*row
+$      mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords
 $ !
 $      ! Create command aliases for interactive Ruby tools pry and irb:
 $      IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
