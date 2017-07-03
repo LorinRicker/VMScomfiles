@@ -62,6 +62,9 @@ $      DEFINE var 'LBase'.vmsaudits.reports'Rooted'
 $      ! Logical VMS$AUDITCONFIG required by VMS$AUDIT.COM;40(+)
 $      DEFINE vms$auditconfig v$audit:vms$audit_lricker.config
 $ ENDIF
+$ IF ( F$SEARCH("SYS$LOGIN:TPG.DIR") .NES. "" )
+$ THEN DEFINE pgrpt 'LBase.tpg.reports'Rooted'
+$ ENDIF
 $ !
 $ DEFINE DCL$Path []       !current directory only...
 $ !
