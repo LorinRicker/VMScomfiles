@@ -1,6 +1,6 @@
 $ ! LOGOUT.COM -- logout with cleanups...
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -26,7 +26,7 @@ $ UTIL_PURGE   = %X08038353
 $ !
 $ Base = F$EDIT(F$TRNLNM("sys$login"),"UPCASE") - "]"
 $ SubProcess   = ( F$GETJPI("","PID") .NES. F$GETJPI("","MASTER_PID") )
-$ WrongScratch = ( F$EDIT(F$TRNLNM("sys$scratch"),"UPCASE") .NES. "''Base'.SCRATCH]" )
+$ WrongScratch = ( F$EDIT(F$TRNLNM("sys$scratch"),"UPCASE") .NES. "''Base'.SYS$SCRATCH]" )
 $ NoDelScratch = ( P1 .EQS. "K" ) .OR. ( P1 .EQS. "N" )
 $ !
 $ Verbose = F$TRNLNM("Tools$Debug")
@@ -37,8 +37,8 @@ $ wso ""
 $ wso "%LOGOUT-I, cleanup..."
 $ DEFINE /NOLOG sys$error  nla0:
 $ DEFINE /NOLOG sys$output nla0:
-$ DELETE /NOCONFIRM /NOLOG sys$login:netserver.log;*
-$ PURGE /NOLOG sys$login:*.log /KEEP=3
+$ PURGE /NOLOG sys$login:TCPIP*.log,NET*.log /KEEP=2
+$ !!DELETE /NOCONFIRM /NOLOG sys$login:netserver.log;*
 $ DELETE /NOCONFIRM /NOLOG sys$scratch:*.*;* /EXCLUDE=(*.tjl,*.tpu$*)
 $ DEASSIGN sys$error
 $ DEASSIGN sys$output
@@ -71,8 +71,8 @@ $ wso ""
 $ IF P1 .EQS. "S" THEN EXIT
 $ !
 $ IF F$GETDVI("TT","TT_DIALUP")
-$ THEN LOGOUT = "LOGOUT /FULL /HANGUP"  !Modem? yes, guarantee disconnection
-$ ELSE LOGOUT = "LOGOUT /BRIEF"         !no, simple logout
+$ THEN LOGOUT = "LOGOUT /FULL /HANGUP"  ! Modem? yes, guarantee disconnection
+$ ELSE LOGOUT = "LOGOUT /BRIEF"         ! no, simple logout
 $ ENDIF
 $ !
 $ IF Verbose
