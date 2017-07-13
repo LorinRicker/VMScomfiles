@@ -30,7 +30,7 @@ $ ON CONTROL THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO Done
 $ !
 $ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
-$ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
+$ minVMS80 = ( VMS$ver .GES. "V8.0" ) 
 $ !
 $ DI$Disks  == ""
 $ wso        = "WRITE sys$output"
@@ -81,8 +81,8 @@ $      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
 $      maxflen  = F$LENGTH( maxfiles )
 $      odslvl = "2:-"
 $      char = ""
-$      IF minVMS73
-$      THEN ! these $GETDVI item-codes weren't available pre-V7.3:
+$      IF minVMS80
+$      THEN ! these $GETDVI item-codes weren't available pre-V8.x:
 $           IF F$GETDVI( dev, "ODS5" )
 $           THEN odslvl = " :5"
 $           ELSE odslvl = "2: "
