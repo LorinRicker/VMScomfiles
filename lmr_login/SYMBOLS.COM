@@ -76,16 +76,17 @@ $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.CO
 $      ENDIF
 $ !
 $      ! Personal Ruby tools/scripts:
-$      mkrubycmd ruby$mine:process.rb                  proc*ess
-$      mkrubycmd ruby$mine:eva.rb                      eva
+$      rubycmd ruby$mine:process.rb                  proc*ess
+$      rubycmd ruby$mine:eva.rb                      eva
 $      bignum = eva
-$      mkrubycmd ruby$mine:msgd.rb                     msgd
-$      mkrubycmd ruby$mine:tonerow.rb                  tone*row
-$      mkrubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords
+$      rubycmd ruby$mine:fspec.rb                    fspec
+$      rubycmd ruby$mine:msgd.rb                     msgd
+$      rubycmd ruby$mine:tonerow.rb                  tone*row
+$      rubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords
 $ !
 $      ! Create command aliases for interactive Ruby tools pry and irb:
-$      IF ( F$TYPE( pry ) .EQS. "" ) THEN mkrubycmd ruby$root:[bin]pry.rb PRY TRUE
-$      !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN mkrubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
+$      IF ( F$TYPE( pry ) .EQS. "" ) THEN rubycmd ruby$root:[bin]pry.rb PRY TRUE
+$      !!«» IF ( F$TYPE( irb ) .EQS. "" ) THEN rubycmd ruby$root:[lib.ruby.2^.2^.0]irb.rb IRB TRUE
 $ ENDIF
 $ !
 $ ! ================================================================
@@ -299,8 +300,14 @@ $ ! ================================================================
 $ !
 $ ! PARSEC --
 $ IF ( LNode .EQS. "CLASS8" )
-$ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', alias ""kitkosh"""
-$      kitkosh == "ssh 40.129.101.176"
+$ THEN ! setup some SSH/remote system accesses:
+$      alikotip == "10.217.204.1"                                  ! static, not DHCP
+$      alikot   == "ssh lorin@''alikotip'"
+$      wso "%SYMBOLS-I-''LNode', SSH alias ""alikot"" (IP: ''alikotip')"
+$      !! IF Verbose THEN wso "%SYMBOLS-I-''LNode', SSH alias ""alikot"" (IP: ''alikotip')"
+$      koship   == "40.129.101.176"
+$      kitkosh  == "ssh ''koship'"
+$      IF Verbose THEN wso "%SYMBOLS-I-''LNode', SSH alias ""kitkosh"" (IP: ''koship')"
 $ ENDIF
 $ IF ( LNode .EQS. "VMSPR3" )
 $ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', tapes* command aliases --"
