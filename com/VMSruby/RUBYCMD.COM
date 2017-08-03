@@ -27,7 +27,7 @@ $ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ Fac  = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ !
-$ 'Fac'_version == Fac + " v2.1 (16-Jun-2017)"
+$ 'Fac'_version == Fac + " v2.2 (03-Aug-2017)"
 $ !
 $ ! ----------------------------------------------------------------------
 $ IF ( F$TYPE( DCL$CALL ) .EQS. "" )
@@ -129,11 +129,13 @@ $ !
 $CMD$:
 $COMMAND$:  ! ==========
 $           ! Define a global command symbol for this Ruby script:
-$           'P3' == "''RubyX' ''Rscript'"
+$           Args = F$EDIT( "''P4' ''P5' ''P6' ''P7' ''P8'","COMPRESS" )
+$           comline = F$EDIT( "''RubyX' ''Rscript' ''Args'", "COMPRESS,TRIM")
+$           'P3' == comline
 $           symname = P3 - SPLAT
-$           IF ( "''P4'" ) .OR. ( Verbose )
-$           THEN wso F$FAO( "%!AS-I-SYMBOL, !AS == ""!AS !AS""", -
-                            Fac, P3, RubyX, Rscript )
+$           IF ( Verbose )
+$           THEN wso F$FAO( "%!AS-I-SYMBOL, !AS == ""!AS !AS !AS""", -
+                            Fac, P3, RubyX, Rscript, Args )
 $                IF ( F$TYPE('symname') .EQS. "STRING" ) THEN SHOW SYMBOL /GLOBAL 'symname'
 $           ENDIF
 $           GOTO Done

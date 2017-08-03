@@ -76,13 +76,19 @@ $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.CO
 $      ENDIF
 $ !
 $      ! Personal Ruby tools/scripts:
-$      rubycmd ruby$mine:process.rb                  proc*ess
-$      rubycmd ruby$mine:eva.rb                      eva
-$      bignum = eva
-$      rubycmd ruby$mine:fspec.rb                    fspec
-$      rubycmd ruby$mine:msgd.rb                     msgd
-$      rubycmd ruby$mine:tonerow.rb                  tone*row
-$      rubycmd ruby$mine:how-many-chords-on-piano.rb pianoch*ords
+$ !    ----P1-  -P2---------------------------------- -P3------- -P4------- -P5------- -P6-------
+$      rubycmd  ruby$mine:process.rb                  proc*ess
+$      rubycmd  ruby$mine:process.rb                  killmy     "--kill"
+$      rubycmd  ruby$mine:eva.rb                      eva
+$      rubycmd  ruby$mine:fspec.rb                    fspec
+$      rubycmd  ruby$mine:msgd.rb                     msgd
+$      rubycmd  ruby$mine:tonerow.rb                  tone*row
+$      rubycmd  ruby$mine:how-many-chords-on-piano.rb pianoch*ords
+$ !    ----P1-  -P2---------------------------------- -P3------- -P4------- -P5------- -P6-------
+$ !
+$      ! Aliases (synonyms for above command symbols):
+$      bignum == eva
+$      killer == process + " --kill"
 $ !
 $      ! Create command aliases for interactive Ruby tools pry and irb:
 $      IF ( F$TYPE( pry ) .EQS. "" ) THEN rubycmd ruby$root:[bin]pry.rb PRY TRUE
