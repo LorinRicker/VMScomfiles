@@ -27,7 +27,7 @@ $ !
 $ ! === MAIN ===
 $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
-$ ON ERROR THEN GOTO Done
+$ ON ERROR THEN GOTO DI$Done
 $ !
 $ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ minVMS80 = ( VMS$ver .GES. "V8.0" ) 
@@ -43,7 +43,11 @@ $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
 $ IF ( P1 .NES. "" )
-$ THEN DI$Disks == P1
+$ THEN IF ( F$GETDVI( P1, "EXISTS" ) )
+$      THEN DI$Disks == P1
+$      ELSE wso F$FAO( "%!AS-F-NOSUCHDEV, no such device '!AS'", Fac, P1 )
+$           EXIT 1  ! 'F$VERIFY(0)'
+$      ENDIF
 $ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
 $ ENDIF
 $ !
@@ -120,7 +124,6 @@ $           cluslen  = 0
 $           maxfiles = ""
 $           maxflen  = 0
 $           char     = ""
-$      ELSE !
 $      ENDIF
 $ ENDIF
 $ !

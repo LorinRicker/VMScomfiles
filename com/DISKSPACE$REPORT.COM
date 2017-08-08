@@ -15,7 +15,7 @@ $ !
 $ ! === MAIN ===
 $ !
 $ ON CONTROL_Y THEN GOSUB Ctrl_Y
-$ ON ERROR THEN GOTO Done
+$ ON ERROR THEN GOTO DS$Done
 $ !
 $ DS$Disks  == ""
 $ wso        = "WRITE sys$output"
@@ -29,8 +29,12 @@ $ mask       = %X7FFFFFFF
 $ maskdiv100 = mask / 100
 $ !
 $ IF ( P1 .NES. "" )
-$ THEN DS$Disks == P1
-$ ELSE DCL$CALL DiscoverDisks DS$Disks "MNT,!SHDW_MEMBER"
+$ THEN IF ( F$GETDVI( P1, "EXISTS" ) )
+$      THEN DS$Disks == P1
+$      ELSE wso F$FAO( "%!AS-F-NOSUCHDEV, no such device '!AS'", Fac, P1 )
+$           EXIT 1  ! 'F$VERIFY(0)'
+$      ENDIF
+$ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
 $ ENDIF
 $ !
 $ devfldlen = 16
