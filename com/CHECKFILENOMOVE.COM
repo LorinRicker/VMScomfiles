@@ -1,6 +1,6 @@
 $ ! CHECKFILENOMOVE.COM --
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -69,7 +69,7 @@ $ !
 $ IF P1 .EQS. "ALL"
 $ THEN all = 1
 $      P1 = "SYS$SYSDEVICE"
-$ ELSE P1 = P2 - "/"
+$ ELSE P2 = F$EDIT( P2, "UPCASE,TRIM" ) - "/"
 $      all = P2 .EQS. "ALL"
 $ ENDIF
 $ !
@@ -110,6 +110,8 @@ $ CALL MoveAttr "<SYS*.SYSEXE>*.PAR;0"                          "''P1'" "''all'"
 $ CALL MoveAttr "<VMS$COMMON.SYSEXE>*.PAR;0"                    "''P1'" "''all'"
 $ CALL MoveAttr "<SYS*.SYSEXE>APB.EXE;0"                        "''P1'" "''all'"
 $ CALL MoveAttr "<VMS$COMMON.SYSEXE>APB.EXE;0"                  "''P1'" "''all'"
+$ CALL MoveAttr "<SYS*.SYSEXE>IPB.EXE;0"                        "''P1'" "''all'"
+$ CALL MoveAttr "<VMS$COMMON.SYSEXE>IPB.EXE;0"                  "''P1'" "''all'"
 $ CALL MoveAttr "<SYS*.SYSLDR>SYS$EFI.SYS;0"                    "''P1'" "''all'"
 $ CALL MoveAttr "<VMS$COMMON.SYSLDR>SYS$EFI.SYS;0"              "''P1'" "''all'"
 $ CALL MoveAttr "<SYS*.SYSMSG>SYSMSG.EXE;0"                     "''P1'" "''all'"
