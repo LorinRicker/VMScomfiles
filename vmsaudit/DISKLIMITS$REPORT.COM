@@ -32,7 +32,7 @@ $ !
 $ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
 $ !
-$ DL$Disks  == ""
+$ DD$Disks  == ""
 $ wso        = "WRITE sys$output"
 $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
 $ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
@@ -43,13 +43,31 @@ $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
 $ IF ( P1 .NES. "" )
-$ THEN IF ( F$GETDVI( P1, "EXISTS" ) )
-$      THEN DL$Disks == P1
-$      ELSE wso F$FAO( "%!AS-F-NOSUCHDEV, no such device '!AS'", Fac, P1 )
+$ THEN j = 2
+$PLoop1:
+$      IF ( P'j' .NES. "" )
+$      THEN P1 = P1 + COMMA + P'j'
+$           j = j + 1
+$           IF ( j .LE. 8 ) THEN GOTO PLoop1
+$      ENDIF
+$PCont1:
+$      j = 0
+$PLoop2:
+$      dv = F$ELEMENT( j, COMMA, P1 )
+$      IF ( dv .EQS. COMMA ) THEN GOTO PCont2
+$      IF ( F$GETDVI( dv, "EXISTS" ) )
+$      THEN IF ( DD$Disks .NES. "" )
+$           THEN DD$Disks == DD$Disks + COMMA + dv
+$           ELSE DD$Disks == dv
+$           ENDIF
+$      ELSE wso F$FAO( "%!AS-E-NOSUCHDEV, no such device '!AS'", Fac, dv )
 $           EXIT 1  ! 'F$VERIFY(0)'
 $      ENDIF
-$ ELSE DCL$CALL DiscoverDisks DI$Disks "MNT,SHDW_MEMBER"
+$      j = j + 1
+$      GOTO PLoop2
+$ ELSE DCL$CALL DiscoverDisks DD$Disks "MNT,!SHDW_MEMBER"
 $ ENDIF
+$PCont2:
 $ !
 $ devfldlen = 16
 $ headfill  = 14
@@ -68,7 +86,7 @@ $ wso headln
 $ !
 $ devcnt = 0
 $DL$Loop:
-$ dev = F$ELEMENT( devcnt, COMMA, DL$Disks )
+$ dev = F$ELEMENT( devcnt, COMMA, DD$Disks )
 $ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DL$Done
 $ devcnt = devcnt + 1
 $ !
@@ -120,7 +138,7 @@ $DL$Done:
 $ wso F$FAO( "!#*-", F$LENGTH( headln ) )
 $ wso ""
 $ !
-$ DCL$CALL DeleteGloSyms "DL$Disks,DL$expsize,DL$maxfiles,DL$volsize,DL$maxblks"
+$ DCL$CALL DeleteGloSyms "DD$Disks,DL$expsize,DL$maxfiles,DL$volsize,DL$maxblks"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:

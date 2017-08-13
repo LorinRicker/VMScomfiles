@@ -80,7 +80,7 @@ $ !
 $DMR$Cont:
 $ wso ""
 $DMR$Done:
-$ DCL$CALL DeleteGloSyms "DI$Disks"
+$ DCL$CALL DeleteGloSyms "DD$Disks"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !
 $ChoiceError:
