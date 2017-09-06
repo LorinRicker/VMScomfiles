@@ -30,7 +30,8 @@ $ SET NOON
 $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
-$ @'LBase'.LOGIN]COMMON_LOGICALS COM "LOGIN|lmr$login"
+$ DEFINE filetools 'Lbase'.COM.FILETOOLS]
+$ @'LBase'.LOGIN]COMMON_LOGICALS "COM||,filetools" "LOGIN|lmr$login"
 $ !
 $ ! ----------------------------------------------------------------------
 $ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
@@ -101,9 +102,8 @@ $ comlist = "''LBase'.login]symbols.com;"                               -
           +    ",show_cluster$init.ini;,fixprivs.com;"                  -
           + ",''LBase'.com]privilege.com;,cd.com;,where.com;"           -
           +    ",boottime.com;,fix$bck.com;,zips.com;,tools$debug.com;" -
-          +    ",disk*$report.com;"                                     -
-          + ",site$root:[utilities]makedir.com;"                        -
-          + ",mgr$root:[commands]DCLwho.com;"                           -
+          +    ",dclwho.com;,makedir.com;"                              -
+          + ",''LBase'.com.filetools]*.com;,*.tpu;"                     -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
 $ !!DEFINE /USER_MODE /PROCESS sys$output NLA0:
 $ !!DEFINE /USER_MODE /PROCESS sys$error  NLA0:
@@ -118,14 +118,16 @@ $RES$:
 $ ssnam = ssnam + ".BCK"
 $ lgi   = "LOGIN_MINI.COM"     ! F$ENV("PROCEDURE") might now be LOGIN.COM...
 $ clgi  = "dcl$subroutine_library.com,common*.com,fixprivs.com,show_cluster$init.ini"
+$ ftools = "file$*.*,disk*$*.com"
 $ edt   = "*.eve,*.edt"
 $ ini   = "*.ini,"
 $ IF ( F$SEARCH("''ssnam'") .NES. "" )
 $ THEN bkup = "BACKUP /LOG ''ssnam' /SAVESET"
-$      bkup /SELECT=('lgi')             sys$login:login.com /NEW_VERSION
-$      bkup /SELECT=('edt')                   sys$login:*.* /NEW_VERSION
-$      bkup /SELECT=('clgi')                  lmr$login:*.* /NEW_VERSION
-$      bkup /SELECT=(*.com) /EXCLUDE=('lgi','clgi') com:*.* /NEW_VERSION
+$      bkup /SELECT=('lgi')    sys$login:login.com /NEW_VERSION
+$      bkup /SELECT=('edt')    sys$login:*.* /NEW_VERSION
+$      bkup /SELECT=('clgi')   lmr$login:*.* /NEW_VERSION
+$      bkup /SELECT=(*.com)    com:*.*       /NEW_VERSION /EXCLUDE=('lgi','clgi','ftools')
+$      bkup /SELECT=('ftools') filetools:*.* /NEW_VERSION
 $ ELSE WRITE sys$error "%LOGIN_MINI-E-FNF, cannot find file ''ssnam'"
 $ ENDIF
 $ EXIT 1

@@ -53,8 +53,10 @@ $ !
 $ DEFINE root         'Lbase']
 $ DEFINE base         'Lbase''Rooted'
 $ !
+$ DEFINE filetools 'Lbase'.COM.FILETOOLS]
+$ DEFINE vmsruby   'Lbase'.COM.VMSRUBY]
 $ @lmr$login:common_logicals -
-      "com||,''Lbase'.COM.FILETOOLS],''Lbase'.COM.VMSRUBY],site$utils" -
+      "com||,filetools,vmsruby,site$utils" -
       "com|cmd" lib logs sys$scratch
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
