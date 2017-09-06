@@ -1,7 +1,7 @@
 $ ! FILE$EDIT.COM -- Shell for TPU plug-in scripts
 $ !                                                                'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -13,6 +13,9 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ ! v1.12 - Tweak to CheckFile - RAT:FTN or PRN is also a    09/06/2017
+$ !         text-file to normalize. Also improve TEXT normalization
+$ !         handling & reporting.
 $ ! v1.11 - Tweak to CheckFile - RAT:"" (none) is also a     07/08/2003
 $ !         text-file to normalize.
 $ ! v1.10 - Added new LOCKWORKS plug-in to convert source    06/12/2002
@@ -26,8 +29,8 @@ $ !         Also renamed NORMALTEXT to just plain TEXT.
 $ !  v1.5 - Support new STRIPCRLF plug-in.                   07/25/2000
 $ !  v1.4 - Support new FINDREPLACE plug-in.                   12/04/98
 $ !         Also added new CALL_USER callout routines for F$TRNLNM,
-$ !         P$SETSYMBOL and F$GETSYMBOL for all plugins (replacing old use
-$ !         of FILE_PARSE with new F$TranslateLNM shell).
+$ !         P$SETSYMBOL and F$GETSYMBOL for all plugins (replacing
+$ !         old use of FILE_PARSE with new F$TranslateLNM shell).
 $ !         Added optional FILE$POSTPROCESS command file invocation.
 $ !         Support for new NULL (non)plug-in, which bypasses straight
 $ !         to optional FILE$POSTPROCESS.
@@ -223,12 +226,15 @@ $ ! P1: filespec
 $ Org           = F$FILE_ATTRIBUTES(P1,"ORG")
 $ Rat           = F$FILE_ATTRIBUTES(P1,"RAT")
 $ FED$Rfm      == F$FILE_ATTRIBUTES(P1,"RFM")
-$ FED$TextFile ==      ( Org .EQS. "SEQ" )             -  !only process VMS
-                 .AND. (( Rat .EQS. "CR" )             -  ! files which are
-                          .OR. ( Rat .EQS. "" ))       -  ! ORG:SEQ,
-                 .AND. (( FED$Rfm .EQS. "VAR" )        -  ! RAT:{CR or none}
-                          .OR. ( FED$Rfm .EQS. "STM" ) -  ! and RFM:{stream,
-                          .OR. ( FED$Rfm .EQS. "STMLF" )) !  streamLF or VAR}
+$ FED$TextFile ==      ( Org .EQS. "SEQ" )             -  ! Only process VMS files
+                 .AND. (( Rat .EQS. "CR" )             -  !   which are
+                          .OR. ( Rat .EQS. "FTN" )     -  !   ORG:SEQ,
+                          .OR. ( Rat .EQS. "PRN" )     -  !   RAT:{CR, FTN, PRN or none}
+                          .OR. ( Rat .EQS. "" ))       -  !   and RFM:{stream,
+                 .AND. (( FED$Rfm .EQS. "VAR" )        -  !     streamLF, streamCR,
+                          .OR. ( FED$Rfm .EQS. "VFC" ) -  !     VFC or VAR}
+                          .OR. ( FED$Rfm .EQS. "STM" ) -
+                          .OR. ( FED$Rfm .EQS. "STMLF" ))
 $ IF FED$TextFile
 $ THEN FED$Normal ==       ( FED$Rfm .EQS. "VAR" ) -
                      .AND. ( Org .EQS. "SEQ" ) -
@@ -386,10 +392,13 @@ $      ENDIF
 $      GOTO TPU_PlugIn
 $ !
 $TEXT:     !Nothing else to do...
-$      IF FED$TextFile .AND. ( .NOT. FED$Normal )  !Stream, Stream_LF, etc.?
-$      THEN wso "%FILE$EDIT-I-CONVERT, ''FED$Rfm' file ''FN' is being normalized"
-$           CALL NormalizeFile 'P2'
-$           FED$FCount == FED$FCount + 1     !count each file...
+$      IF FED$Normal
+$      THEN wso "%FILE$EDIT-I-NORMAL, file ''FN' is already a normal VMS text file"
+$      ELSE IF FED$TextFile    !Stream, Stream_LF, etc.?
+$           THEN wso "%FILE$EDIT-I-CONVERT, ''FED$Rfm' file ''FN' is being normalized"
+$                CALL NormalizeFile 'P2'
+$                FED$FCount == FED$FCount + 1     !count each file...
+$           ENDIF
 $      ENDIF
 $      GOTO TPDone
 $ !
