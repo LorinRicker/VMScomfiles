@@ -52,8 +52,10 @@ $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ DEFINE root         'Lbase']
 $ DEFINE base         'Lbase''Rooted'
-$ @lmr$login:common_logicals "com||,''Lbase'.COM.VMSRUBY],site$utils" -
-                             "com|cmd" lib logs sys$scratch
+$ !
+$ @lmr$login:common_logicals -
+      "com||,''Lbase'.COM.FILETOOLS],''Lbase'.COM.VMSRUBY],site$utils" -
+      "com|cmd" lib logs sys$scratch
 $ !
 $ ! Convenience logicals for VMS$AUDIT --
 $ IF ( F$SEARCH("SYS$LOGIN:VMSAUDITS.DIR") .NES. "" )
