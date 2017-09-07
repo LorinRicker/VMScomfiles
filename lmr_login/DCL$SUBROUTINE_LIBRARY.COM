@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.12.02"         ! maintain with edits
-$ dcl$sldatestamp = "23-JUN-2017"
+$ dcl$slversion   = "01.13.01"         ! maintain with edits
+$ dcl$sldatestamp = "07-SEP-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -32,7 +32,10 @@ $ Fac        = "DCL$SUBROUTINE_LIBRARY"
 $ BANG       = "!"
 $ COLON      = ":"
 $ COMMA      = ","
+$ DASH       = "-"
 $ DOLLAR     = "$"
+$ DQUOTE     = """"
+$ PLUS       = "+"
 $ SPACE      = " "
 $ UNDERSCORE = "_"
 $ BREADCRUMB = "«" + "»"
@@ -42,7 +45,8 @@ $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
 $ RegisteredRoutines = COMMA                                            -
-                     +  "Alias,CmdParse,CommandLine,DefineANSIdef"      -
+                     +  "Alias,BatchAfterDate"                          -
+                     +  ",CmdParse,CommandLine,DefineANSIdef"           -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",LogRollover,MakeDir,PureDCL"                   -
                      + ",Thousands,ToolsDebug"
@@ -123,7 +127,7 @@ $ !#! Doc : Conditionally define a global symbol (alias command) P1 for invoking
 $ !#!       the command file P2 (which must exist).
 $ !#!   Example:
 $ !#!     $ DCL$CALL Alias "dwho" "@cmd:dclwho" "SHOW USERS"
-$ !#!   P1 : command symbol
+$ !#!   P1 : global command symbol for return value
 $ !#!   P2 : command file
 $ !#!   P3 : alternate command string
 $ !
@@ -155,6 +159,98 @@ $      ENDIF
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$Alias
+$ !
+$ !
+$ ! ==========
+$DCL$BatchAfterDate:  SUBROUTINE
+$ !#! Doc : Determine a "next-submit date", particularly for batch jobs
+$ !#!       SUBMITted with /AFTER="''BATCH$SubmitAfter'" (but can also
+$ !#!       be used with PRINT jobs, etc.)
+$ !#!   Example:
+$ !#!     $ DCL$CALL BatchAfterDate "BATCH$SubmitAfter" "30" "05:00" "SUNDAY:2"
+$ !#!       ...would generate a date for "next month, the 2nd-Sunday-thereof, at 5am"
+$ !#!   P1 : global command symbol for return value, default is BATCH$SubmitAfter
+$ !#!   P2 : days-ago, controls daily/weekly or monthly scheduling:
+$ !          if <28, daily/weekly schedule, else (>=28) monthly (default)
+$ !#!   P3 : hour-to-run (default "00:00")
+$ !#!   P4 : weekday to run: "SUNDAY" or "SUNDAY:1" for "1st-Sunday-of-Month",
+$ !          "TUESDAY:3" for "3rd-Tuesday-of-Month", no default
+$ !
+$ ON CONTROL_Y THEN GOSUB BADCtrl_Y
+$ ON ERROR THEN EXIT %X2C
+$ !
+$ IF ( P1 .EQS. "" ) THEN P1 = "BATCH$SubmitAfter"
+$ IF ( P2 .EQS. "" ) THEN P2 = "30"
+$ IF ( P3 .EQS. "" ) THEN P3 = "00:00"
+$ 'P1' == ""
+$ shortmonth = 28  ! magic number
+$ !
+$ IF ( F$INTEGER( P2 ) .LT. shortmonth )
+$ THEN ! doing Daily or Weekly scheduling...
+$      NextBatchRun = "TODAY+" + P2 + "-" + P3 + ":00.00"
+         ! "+1-xx:xx" = "TOMORROW" -- for test/eval
+         ! "+7-xx:xx" = "Weekly/next week" -- for production
+         ! VMS help: Whenever a plus sign (+) precedes the delta time,
+         !           enclose the entire time spec in quotation marks.
+$      GOTO AfterQual
+$ ELSE ! doing Monthly reporting...
+$      now = F$TIME()
+$      nowday = F$CVTIME(now,"COMPARISON","DAY")
+$      IF ( F$INTEGER(nowday) .LT. 16 )
+$      THEN forward  = "32"
+$           backward = "16"
+$      ELSE forward  = "16"
+$           backward = "32"
+$      ENDIF
+$      prevdate      = F$CVTIME("TODAY-''backward'-00:00","ABSOLUTE","DATE")
+$      prevmonth     = F$CVTIME(prevdate,"ABSOLUTE","MONTH")
+$      prevyear      = F$CVTIME(prevdate,"ABSOLUTE","YEAR")
+$      nextdate      = F$CVTIME("TODAY+''forward'-00:00","ABSOLUTE","DATE")
+$      nextmonth     = F$CVTIME(nextdate,"ABSOLUTE","MONTH")
+$      nextyear      = F$CVTIME(nextdate,"ABSOLUTE","YEAR")
+$      thedate       = 1
+$      ReportDate    = F$STRING( thedate ) + DASH + prevmonth + DASH + prevyear
+$      NextBatchDate = F$STRING( thedate ) + DASH + nextmonth + DASH + nextyear
+$      NextBatchHour = P3 + ":00.00"
+$      IF ( P4 .EQS. "" )
+$      THEN ! Just set up default 1st-of-month...
+$           NextBatchRun = NextBatchDate + PLUS + NextBatchHour
+$      ELSE ! Figure out "Nth-*day-of-month" -- e.g., "SUNDAY:1" or "SUNDAY"
+$           TargetDay = F$EDIT( F$ELEMENT( 0, COLON, P4 ), "TRIM,UPCASE" )
+$           Nth = F$ELEMENT( 1, COLON, P4 )  ! ":N" may be missing...
+$           IF ( Nth .EQS. COLON ) THEN Nth = "1"
+$           Nth = F$INTEGER( Nth )
+$           j   = 1
+$FindingNth:
+$           thisday = F$EDIT( F$CVTIME( NextBatchDate, , "WEEKDAY" ), "TRIM,UPCASE" )
+$           IF ( thisday .EQS. TargetDay )
+$           THEN IF ( j .EQ. Nth )
+$                THEN ! Success: found the right Nth-Day-of-Month...
+$                     NextBatchRun = NextBatchDate + PLUS + NextBatchHour
+$                     GOTO AfterQual
+$                ELSE j = j + 1
+$                     GOTO TryNextDate
+$                ENDIF
+$           ELSE GOTO TryNextDate
+$           ENDIF
+$TryNextDate:
+$           thedate = thedate + 1
+$           IF ( thedate .LE. shortmonth )  ! sanity check...
+$           THEN NextBatchDate = F$STRING( thedate ) + DASH + nextmonth + DASH + nextyear
+$                GOTO FindingNth
+$           ELSE wso F$FAO( "%!AS-F-CANNOT_HAPPEN, Find-Nth runaway-loop in batch report scheduling", Fac )
+$                EXIT %X2C  ! ...abort!
+$           ENDIF
+$      ENDIF
+$ ENDIF
+$AfterQual:
+$ 'P1' == "/AFTER=" + DQUOTE + NextBatchRun + DQUOTE
+$ IF dcl$Verbose THEN SHOW SYMBOL /GLOBAL 'P1'
+$ EXIT 1
+$ !
+$BADCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! DCL$BatchAfterDate
 $ !
 $ !
 $ ! ==========
