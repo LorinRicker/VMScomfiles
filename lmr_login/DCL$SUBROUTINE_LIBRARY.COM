@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.13.01"         ! maintain with edits
+$ dcl$slversion   = "01.13.02"         ! maintain with edits
 $ dcl$sldatestamp = "07-SEP-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -169,12 +169,13 @@ $ !#!       be used with PRINT jobs, etc.)
 $ !#!   Example:
 $ !#!     $ DCL$CALL BatchAfterDate "BATCH$SubmitAfter" "30" "05:00" "SUNDAY:2"
 $ !#!       ...would generate a date for "next month, the 2nd-Sunday-thereof, at 5am"
-$ !#!   P1 : global command symbol for return value, default is BATCH$SubmitAfter
+$ !#!   P1 : global command symbol for return datetime value, default is BATCH$SubmitAfter
 $ !#!   P2 : days-ago, controls daily/weekly or monthly scheduling:
-$ !          if <28, daily/weekly schedule, else (>=28) monthly (default)
+$ !#!         if <28, daily/weekly schedule, else (>=28) monthly (default)
 $ !#!   P3 : hour-to-run (default "00:00")
 $ !#!   P4 : weekday to run: "SUNDAY" or "SUNDAY:1" for "1st-Sunday-of-Month",
-$ !          "TUESDAY:3" for "3rd-Tuesday-of-Month", no default
+$ !#!        "TUESDAY:3" for "3rd-Tuesday-of-Month" (no default, date will be
+$ !#!        1st-of-month)
 $ !
 $ ON CONTROL_Y THEN GOSUB BADCtrl_Y
 $ ON ERROR THEN EXIT %X2C
@@ -244,7 +245,7 @@ $           ENDIF
 $      ENDIF
 $ ENDIF
 $AfterQual:
-$ 'P1' == "/AFTER=" + DQUOTE + NextBatchRun + DQUOTE
+$ 'P1' == NextBatchRun
 $ IF dcl$Verbose THEN SHOW SYMBOL /GLOBAL 'P1'
 $ EXIT 1
 $ !
