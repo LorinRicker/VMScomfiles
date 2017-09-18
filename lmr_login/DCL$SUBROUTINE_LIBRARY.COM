@@ -12,8 +12,8 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.13.02"         ! maintain with edits
-$ dcl$sldatestamp = "07-SEP-2017"
+$ dcl$slversion   = "01.14.01"         ! maintain with edits
+$ dcl$sldatestamp = "17-SEP-2017"
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -35,6 +35,7 @@ $ COMMA      = ","
 $ DASH       = "-"
 $ DOLLAR     = "$"
 $ DQUOTE     = """"
+$ MINUS      = DASH
 $ PLUS       = "+"
 $ SPACE      = " "
 $ UNDERSCORE = "_"
@@ -46,10 +47,10 @@ $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
 $ RegisteredRoutines = COMMA                                            -
                      +  "Alias,BatchAfterDate"                          -
-                     +  ",CmdParse,CommandLine,DefineANSIdef"           -
+                     + ",CmdParse,CommandLine,DefineANSIdef"            -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",LogRollover,MakeDir,PureDCL"                   -
-                     + ",Thousands,ToolsDebug"
+                     + ",Thousands,ToolsDebug,UnThousands"
 $ ! and with this group always last:
 $ RegisteredRoutines = RegisteredRoutines                               -
                      + ",Setup,Doc,ShowRegisteredRoutines,Version"      -
@@ -845,9 +846,10 @@ $ !
 $ ! ==========
 $DCL$Thousands:  SUBROUTINE
 $ !#! Doc : Adds "thousands-separators" into numeric strings,
-$ !#!       e.g., "1234567890" becomes "1,234,567,890",
+$ !#!       e.g., "1234567890" becomes "1,234,567,890" and
+$ !#!             "-1234567890" becomes "-1,234,567,890"
 $ !#!   Example:
-$ !#!     $ DCL$CALL Thousands [ separator-char ] [ group-count ]
+$ !#!     $ DCL$CALL Thousands GloSymName IntegerBigNum [ separator-char ] [ group-count ]
 $ !#!   P1 : Name of the user global symbol to receive the result-list, default "DCL$SepString"
 $ !#!   P2 : Value (string) to be separated
 $ !#!   P3 : Separator character, default "," (comma)
@@ -857,6 +859,8 @@ $ SET NOON
 $ IF ( P1 .EQS. "" ) THEN P1 = "DCL$SepString"
 $ IF ( P3 .EQS. "" ) THEN P3 = COMMA
 $ IF ( P4 .EQS. "" ) THEN P4 = 3
+$ Negative = ( F$EXTRACT(0,1,P2) .EQS. MINUS )
+$ IF ( Negative ) THEN P2 = P2 - MINUS
 $ P2len = F$LENGTH( P2 )
 $ IF ( P2len .LE. P4 )  ! degenerate case, don't add separators...
 $ THEN concatenated = P2
@@ -895,6 +899,7 @@ $ k = k - 1
 $ IF ( k .GT. 0 ) THEN GOTO DCL$ThConcat
 $ !
 $DCL$ThDone:
+$ IF ( Negative ) THEN concatenated = MINUS + concatenated
 $ 'P1' == concatenated
 $ IF ( dcl$Verbose ) THEN SHOW SYMBOL /GLOBAL 'P1'
 $ !
@@ -937,6 +942,47 @@ $      ENDIF
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ToolsDebug
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$UnThousands:  SUBROUTINE
+$ !#! Doc : Removes "thousands-separators" from numeric strings,
+$ !#!       e.g., "1,234,567,890" becomes "1234567890" and
+$ !#!             "-1,234,567,890" becomes "-1234567890"
+$ !#!   Example:
+$ !#!     $ DCL$CALL UnThousands GloSymName IntegerBigNum [ separator-char ] [ group-count ]
+$ !#!   P1 : Name of the user global symbol to receive the result-list, default "DCL$UnSepString"
+$ !#!   P2 : Value (string) to be unseparated
+$ !#!   P3 : Separator character, default "," (comma)
+$ !#!   P4 : Stride, number of characters per separated group, default 3
+$ !
+$ SET NOON
+$ IF ( P1 .EQS. "" ) THEN P1 = "DCL$UnSepString"
+$ IF ( P3 .EQS. "" ) THEN P3 = COMMA
+$ IF ( P4 .EQS. "" ) THEN P4 = 3
+$ Negative = ( F$EXTRACT(0,1,P2) .EQS. MINUS )
+$ IF ( Negative ) THEN P2 = P2 - MINUS
+$ unseparated = P2
+$ ! Limit the number of separator removals, thus times through the loop...
+$ limit = F$LENGTH( P2 ) / P4
+$ k = 0
+$ !
+$DCL$UnThLoop:
+$ IF ( F$LOCATE( P3, unseparated ) .LT. F$LENGTH( unseparated ) ) .AND. ( k .LE. limit )
+$ THEN unseparated = unseparated - P3
+$      k = k + 1
+$ ELSE GOTO DCL$UnThDone
+$ ENDIF
+$ GOTO DCL$UnThLoop
+$ !
+$DCL$UnThDone:
+$ IF ( Negative ) THEN unseparated = MINUS + unseparated
+$ 'P1' == unseparated
+$ IF ( dcl$Verbose ) THEN SHOW SYMBOL /GLOBAL 'P1'
+$ !
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$UnThousands
 $ ! ==========
 $ !
 $ !
