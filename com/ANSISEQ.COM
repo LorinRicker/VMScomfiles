@@ -100,9 +100,9 @@ $ wso "%ANSISEQ-I-DEFSYM, defined ANSI Escape Sequences, including color..."
 $ !
 $ IF ( P1 .NES. "" )
 $ THEN ! test-output mode
-$      IF ( P1 .EQS. "DARK" )
-$      THEN wso _clrscrL
-$      ELSE wso _clrscrD
+$      IF ( P2 .EQS. "DARK" )
+$      THEN clrd
+$      ELSE clrl
 $      ENDIF
 $                  wso " Frequently supported renditions --"
 $                  wso "  Supported? Attribute"
