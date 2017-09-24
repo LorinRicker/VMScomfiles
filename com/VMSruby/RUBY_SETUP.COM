@@ -1,4 +1,4 @@
-$ ! RUBY_SETUP.COM                                                 'F$VERIFY(0)'
+$ ! RUBY_SETUP.COM --
 $ !
 $ ! Copyright © 2015-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -19,32 +19,36 @@ $ ! P2 = Personal Ruby subdirectory
 $ !
 $ DJ = "DEFINE /JOB /NOLOG "
 $ !
-$ RubyVolumeOkay == "FALSE"
-$ dir = P2 - "[" - "]"
-$ d0  = F$EDIT( F$ELEMENT(0,".",dir), "UPCASE" )
-$ d1  = F$EDIT( F$ELEMENT(1,".",dir), "UPCASE" )
-$ IF ( d1 .EQS. "RUBY" ) .AND. ( d0 .EQS. UName )
-$ THEN testf = P1 + ":[" + d0 + "]"
-$      IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
-$      THEN DJ ruby$base "''P1':[''d0'.''d1'.]" /TRANS=CONCEALED
-$           DJ ruby$mine "''P1':[''d0'.''d1']"
-$           DJ ruby$lib  "''P1':[''d0'.''d1'.LIB]"
-$      ENDIF
-$      RubyVolumeOkay == "TRUE"
-$ ELSE IF ( d0 .EQS. "RUBY" )
-$      THEN testf = P1 + ":[000000]"
-$           IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
-$           THEN DJ ruby$base "''P1':[''d1'.]" /TRANS=CONCEALED
-$                DJ ruby$mine "''P1':[''d1']"
-$                DJ ruby$lib  "''P1':[''d1'.LIB]"
-$           ENDIF
-$           RubyVolumeOkay == "TRUE"
-$      ENDIF
-$ ENDIF
 $ IF .NOT. F$GETDVI(P1,"ODS5")
 $ THEN wso "%''Fac'-W-NOT_ODS5, volume ''P1' is ODS2, mixed-case filenames not supported"
 $      RubyVolumeODS5 == "FALSE"
 $ ELSE RubyVolumeODS5 == "TRUE"
+$ ENDIF
+$ !
+$ RubyVolumeOkay == "FALSE"
+$ dsk  = P1 - ":"
+$ dir  = P2 - "[" - "]"
+$ d0   = F$ELEMENT(0,".",dir)
+$ d0lc = F$EDIT( d0, "LOWERCASE" )
+$ d1   = F$ELEMENT(1,".",dir)
+$ d1lc = F$EDIT( d1, "LOWERCASE" )
+$ IF ( d1lc .EQS. "ruby" ) .AND. ( d0lc .EQS. F$EDIT( UName, "LOWERCASE" ) )
+$ THEN testf = dsk + ":[" + d0 + "]"
+$      IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
+$      THEN DJ ruby$base "''dsk':[''d0'.''d1'.]" /TRANS=CONCEALED
+$           DJ ruby$mine "''dsk':[''d0'.''d1']"
+$           DJ ruby$lib  "''dsk':[''d0'.''d1'.LIB]"
+$      ENDIF
+$      RubyVolumeOkay == "TRUE"
+$ ELSE IF ( d0lc .EQS. "ruby" )
+$      THEN testf = dsk + ":[000000]"
+$           IF ( F$SEARCH( "''testf'''d1'.dir" ) .NES. "" )
+$           THEN DJ ruby$base "''dsk':[''d1'.]" /TRANS=CONCEALED
+$                DJ ruby$mine "''dsk':[''d1']"
+$                DJ ruby$lib  "''dsk':[''d1'.LIB]"
+$           ENDIF
+$           RubyVolumeOkay == "TRUE"
+$      ENDIF
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! VolCheck
@@ -58,7 +62,7 @@ $ !
 $ ! No Ruby-startup comfile?  Don't even bother continuing:
 $ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
 $ !
-$ UName = F$EDIT( F$GETJPI("","USERNAME"), "TRIM,UPCASE" )
+$ UName = F$EDIT( F$GETJPI( "", "USERNAME" ), "TRIM,LOWERCASE" )
 $ Proc  = F$ENVIRONMENT("PROCEDURE")
 $ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
 $ node  = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
@@ -72,7 +76,7 @@ $ RubyVolumeODS5 == 0
 $ !
 $ReCheck:
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
-$ THEN IF Verbose THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
+$ THEN wso "%''Fac'-I-Ruby, setting up for Ruby/VMS..."
 $      RubyX == "$ruby$root:[bin]ruby"
 $ !
 $      f = "COM:RUBYCMD"
@@ -83,8 +87,13 @@ $           ruby       == "@''f' RUN"
 $      ELSE IF Verbose THEN wso "%''Fac'-E-FNF, cannot find command file ''f'.COM"
 $      ENDIF
 $ !
-$      vol  = F$TRNLNM("SYS$SYSDEVICE","LNM$SYSTEM") - ":"
-$      rdir = "[''UName'.RUBY]"
+$      ldfile = "COM:MKRUBY_LD"
+$      IF ( F$SEARCH( "''ldfile'.COM" ) .NES. "" )
+$      THEN @'ldfile' "LDA1024:" "''UName'"
+$           vol = F$TRNLNM( "DISK$RUBY" )
+$      ELSE vol = F$TRNLNM( "SYS$LOGIN_DEVICE" ) - ":"
+$      ENDIF
+$      rdir = "[''UName'.ruby]"
 $      CALL VolCheck "''vol'" "''rdir'"
 $      IF .NOT. RubyVolumeOkay
 $      THEN vol = F$TRNLNM("SYS$LOGIN_DEVICE","LNM$JOB") - ":"
@@ -122,5 +131,5 @@ $ !
 $      wso "%''Fac'-I-VERSION, version of VMS Ruby is:"
 $      RubyX -v   ! show version
 $ ENDIF
-$ EXIT 1     ! 'F$VERIFY(0)'
+$ EXIT 1     !
 $ !

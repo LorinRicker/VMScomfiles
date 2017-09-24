@@ -1,4 +1,4 @@
-$ ! COMMON_LOGICALS.COM -- define common logical names             'F$VERIFY(0)'
+$ ! COMMON_LOGICALS.COM -- define common logical names
 $ !
 $ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -56,7 +56,7 @@ $MLend:
 $ IF Debug .AND. ( CL$newdircount .GT. 0 ) -
   THEN DIRECTORY /SIZE /DATE /OWNER /PROTECTION 'LBase']*.DIR /SINCE=TODAY
 $ IF F$TYPE( CL$newdircount ) THEN DELETE /SYMBOL /GLOBAL CL$newdircount
-$ EXIT 1   ! 'F$VERIFY(0)'
+$ EXIT 1   !
 $ !
 $ !
 $ !

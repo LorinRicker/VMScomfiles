@@ -1,4 +1,4 @@
-$ ! LOGICALS.COM -- make unconditional logical name assignments    'F$VERIFY(0)'
+$ ! LOGICALS.COM -- make unconditional logical name assignments
 $ !
 $ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled

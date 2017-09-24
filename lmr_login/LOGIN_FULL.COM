@@ -1,4 +1,4 @@
-$ ! [L_RICKER]LOGIN.COM --                                         'F$VERIFY(0)'
+$ ! [L_RICKER]LOGIN_FULL.COM --                                    'F$VERIFY(0)'
 $ !
 $ ! Copyright © 1986-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -155,6 +155,10 @@ $ GOTO 'LGI$Mode'
 $ ! ----------------------------------------------------------------------
 $ !
 $INTERACTIVE:
+$ IF ( Verbosity .OR. Debug )
+$ THEN SET VERIFY
+$ ELSE SET NOVERIFY
+$ ENDIF
 $ CALL SearchAt lmr$login:common$login.com
 $ CALL SearchAt lmr$login:logicals.com   ! now calls common_logicals.com
 $ !
@@ -236,7 +240,7 @@ $      DEASSIGN /PROCESS sys$error
 $      CLOSE f
 $ ENDIF
 $ DCL$CALL DeleteGloSyms "Verbosity"
-$ EXIT 1
+$ EXIT 1  ! 'F$VERIFY(0)'
 $ !
 $Ctrl_Y:
 $ RETURN %X2C

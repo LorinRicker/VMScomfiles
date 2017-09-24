@@ -1,4 +1,4 @@
-$ ! MKRUBY_LD.COM                                                  'F$VERIFY(0)'
+$ ! MKRUBY_LD.COM
 $ !
 $ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -52,5 +52,5 @@ $ !
 $ ! Perform any file/dir protection-mask adjustments manually...
 $ ! Copy *.rb files to target directories manually...
 $ !
-$ EXIT 1     ! 'F$VERIFY(0)'
+$ EXIT 1
 $ !

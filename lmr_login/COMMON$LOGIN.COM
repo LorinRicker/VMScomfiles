@@ -1,4 +1,4 @@
-$ ! COMMON$LOGIN.COM --                                           'F$VERIFY(0)'
+$ ! COMMON$LOGIN.COM --
 $ !
 $ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
