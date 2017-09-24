@@ -106,6 +106,19 @@ $ DEFINE work            'Lbase'.work]
 $ DEFINE X               sys$scratch:X.tmp
 $ DEFINE Z               sys$scratch:Z.tmp
 $ !
+$ inifile = "lmr$login:show_cluster$init.ini"
+$ IF F$SEARCH( inifile ) .NES. ""
+$ THEN inifname = F$PARSE( inifile, , , "NAME" )
+$      DEFINE /PROCESS /SUPERVISOR /NOLOG 'inifname' 'inifile'
+$      sclu*ster == "SHOW CLUSTER /CONTINUOUS"
+$ ENDIF
+$ !
+$ inifile = "lmr$login:sysmanini.ini"
+$ IF F$SEARCH( inifile ) .NES. ""
+$ THEN inifname = F$PARSE( inifile, , , "NAME" )
+$      DEFINE /PROCESS /SUPERVISOR /NOLOG 'inifname' 'inifile'
+$ ENDIF
+$ !
 $ IF F$TRNLNM("ER$development")
 $ THEN DEFINE Lorin   L_Ricker
 $      DEFINE Rick    R_Evans
