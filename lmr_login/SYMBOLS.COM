@@ -173,6 +173,8 @@ $ cftp         == "COPY /FTP /LOG"
 $ glo*bal      == "SHOW SYMBOL /GLOBAL"
 $ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
+$ svar*iable   == "PIPE SHOW SYMBOL * | ''SIN' "
+$ ssym*bol     == "''svariable'"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
 $ sdtmp         = "sys$scratch:showdump.tmp"
 $ whereisdump  == "PIPE SHOW DEVICE /FILE sys$sysdevice: /OUTPUT=''sdtmp' ; SEARCH ''sdtmp; sysdump ; DELETE /NOLOG ''sdtmp';0"
