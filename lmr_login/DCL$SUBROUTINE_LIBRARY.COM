@@ -12,8 +12,11 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ dcl$slversion   = "01.14.01"         ! maintain with edits
-$ dcl$sldatestamp = "17-SEP-2017"
+$ ! ----------------------------------------------------------------
+$ dcl$slversion   = "02.01.01"         ! maintain with edits
+$ dcl$sldatestamp = "12-OCT-2017"
+$ ! ----------------------------------------------------------------
+$ !
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
   .OR. ( F$LOCATE( dcl$slversion, dcl$lastversion ) .GE. F$LENGTH( dcl$lastversion ) )
@@ -42,6 +45,16 @@ $ UNDERSCORE = "_"
 $ BREADCRUMB = "«" + "»"
 $ DOCMARKER  = "$ !#! "
 $ DOCMARKlen = F$LENGTH( DOCMARKER )
+$ !
+$ ! ----------------------------------------------------------------
+$ ! Be sure that this global symbol is created upon SETUP;
+$ ! default condition is to "comment out debugging code"...
+$ ! See DCL$ToolsDebug for toggle control.
+$ DCL$BANG == "!"          ! bang "turns-on commented-out lines"
+$ !! This construct/use courtesy of Nic Clews, from his "DCL Tricks"
+$ !! presentation at VMS Boot Camp 2017.  Use/example:
+$ !! 'DCL$BANG' write sys$output "%DCL$BANG-I-DEBUG, sample debug info..."
+$ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
@@ -929,12 +942,14 @@ $ ENDIF
 $ IF ( P2 .EQS. "" ) THEN P2 = 0
 $ IF P1
 $ THEN DEFINE /NOLOG /PROCESS TOOLS$Debug 'P1'
+$      DCL$BANG == ""           ! empty-string "turns-off commented-out lines"
 $      SET PREFIX "(!8%T) "     !augments SET VERIFY/F$VERIFY() display - "(HH:MM:SS) "
 $      IF P2
 $      THEN SHOW LOGICAL /PROCESS /FULL TOOLS$Debug
 $           wso "%TOOLS$DEBUG-I-ON, /PROCESS logical TOOLS$DEBUG is now ON"
 $      ENDIF
 $ ELSE IF F$TRNLNM("TOOLS$Debug","LNM$PROCESS") .NES. "" THEN DEASSIGN /PROCESS TOOLS$Debug
+$      DCL$BANG == "!"          ! bang "turns-on commented-out lines"
 $      SET NOPREFIX
 $      IF P2
 $      THEN wso "%TOOLS$DEBUG-I-OFF, /PROCESS logical TOOLS$DEBUG is now OFF"
