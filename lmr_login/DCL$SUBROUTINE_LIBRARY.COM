@@ -13,9 +13,23 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "02.01.01"         ! maintain with edits
-$ dcl$sldatestamp = "12-OCT-2017"
+$ dcl$slversion   = "02.02.01"         ! maintain with edits
+$ dcl$sldatestamp = "31-OCT-2017"
 $ ! ----------------------------------------------------------------
+$ !
+$ ! ----------------------------------------------------------------------
+$ ! Update this list as new subroutines are added -- keep this sorted:
+$ RegisteredRoutines = ","                                              -
+                     +  "Alias,BatchAfterDate"                          -
+                     + ",CmdParse,CommandLine,DefineANSIdef"            -
+                     + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
+                     + ",Holds_RID,LogRollover,MakeDir,PureDCL"         -
+                     + ",Thousands,ToolsDebug,UnThousands"
+$ ! and with this group always last:
+$ RegisteredRoutines = RegisteredRoutines                               -
+                     + ",Setup,Doc,ShowRegisteredRoutines,Version"      -
+                     + ","
+$ ! ----------------------------------------------------------------------
 $ !
 $ dcl$lastversion = F$TRNLNM( "DCL$SLversion" )
 $ IF ( F$TRNLNM( "DCL$SLversion" ) .EQS. "" ) -
@@ -56,19 +70,6 @@ $ !! presentation at VMS Boot Camp 2017.  Use/example:
 $ !! 'DCL$BANG' write sys$output "%DCL$BANG-I-DEBUG, sample debug info..."
 $ ! ----------------------------------------------------------------
 $ !
-$ ! ----------------------------------------------------------------------
-$ ! Update this list as new subroutines are added -- keep this sorted:
-$ RegisteredRoutines = COMMA                                            -
-                     +  "Alias,BatchAfterDate"                          -
-                     + ",CmdParse,CommandLine,DefineANSIdef"            -
-                     + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
-                     + ",LogRollover,MakeDir,PureDCL"                   -
-                     + ",Thousands,ToolsDebug,UnThousands"
-$ ! and with this group always last:
-$ RegisteredRoutines = RegisteredRoutines                               -
-                     + ",Setup,Doc,ShowRegisteredRoutines,Version"      -
-                     + COMMA
-$ ! ----------------------------------------------------------------------
 $ ! ==========
 $ IF DCL$Verbose
 $ THEN wso F$FAO( "%!AS-I-RRLEN, RegisteredRoutine length = !SL", -
@@ -674,6 +675,41 @@ $ IF dcl$Verbose THEN wso F$FAO( "%DCL$DISCOVERDISKS-I-ECHO, ''P1' == ""!AS""", 
                                   'P1' )
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$DiscoverDisks
+$ ! ==========
+$ !
+$ !
+$ ! ==========
+$DCL$Holds_RID:  SUBROUTINE
+$ !#! Doc : Returns TRUE/FALSE to indicate whether or not a process/PID
+$ !#!       holds (is granted) a particular Rights Identifier.
+$ !#!       Returns: "UNDEFINED" if RID does not exist (undefined in RIGHTSLIST.DAT),
+$ !#!                "TRUE" if RID is held by process,
+$ !#!                "FALSE" if RID is not held by process.
+$ !#!   Example:
+$ !#!     $ DCL$CALL Holds_RID "Rights_Id_Name"        ! for "this" process
+$ !#!     $ DCL$CALL Holds_RID "Rights_Id_Name" "PID"  ! for some other PID
+$ !#!   P1 : Name of the Rights Identifier to check.
+$ !#!   P2 : PID of the process to check, or missing (null) for "this" process;
+$ !#!        calling process needs WORLD privilege authorized if checking another user's PID.
+$ !#!   P3 : Name of the user global symbol to receive the result-list, default "DCL$RID_HELD".
+$ !
+$ SET NOON
+$ IF ( P3 .EQS. "" ) THEN P3 = "DCL$RID_HELD"
+$ IF ( F$IDENTIFIER( P1, "NAME_TO_NUMBER" ) .EQ. 0 )
+$ THEN 'P3' == "UNDEFINED"
+$      EXIT 1
+$ ENDIF
+$ CheckRID = COMMA + P1 + COMMA
+$ IF ( P2 .NES. "" ) THEN prv = F$SETPRV( "WORLD" )
+$ UserRID = COMMA + F$GETJPI( P2, "RIGHTSLIST" ) + COMMA
+$ IF ( F$TYPE( prv ) .EQS. "STRING" ) THEN prv = F$SETPRV( prv )
+$ URIDlen = F$LENGTH( UserRID )
+$ IF ( F$LOCATE( CheckRID, UserRID ) .LT. URIDlen )
+$ THEN 'P3' == "TRUE"
+$ ELSE 'P3' == "FALSE"
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$Holds_RID
 $ ! ==========
 $ !
 $ !
