@@ -13,8 +13,8 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "02.02.01"         ! maintain with edits
-$ dcl$sldatestamp = "31-OCT-2017"
+$ dcl$slversion   = "02.03.01"         ! maintain with edits
+$ dcl$sldatestamp = "06-NOV-2017"
 $ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
@@ -717,36 +717,60 @@ $ ! ==========
 $DCL$LogRollover:  SUBROUTINE
 $ !#! Doc : Roll-over (refresh) a VMS log or journal file
 $ !#!   Example:
-$ !#!     $ DCL$CALL LogRollover «»
+$ !#!     $ DCL$CALL LogRollover [ ALL |                                         -
+$ !#!                              OPERATOR | SECURITY | ERRORLOG | ACCOUNTING ] -
+$ !#!                            [ fileversions_to_keep ]
 $ !#!   P1 : Which log- or journal-file to turn over:
-$ !#!          "OPERATOR  |SECURITY  |ERRORLOG  |ACCOUNTING"
+$ !#!          "ALL | OPERATOR | SECURITY | ERRORLOG | ACCOUNTING"
+$ !#!   P2 : Number of file versions to keep after purge (>= "1")
+$ !#!        if missing or "" (empty-string) or not-an-integer, then don't purge
 $ !
 $ SET NOON
-$ «»
+$ IF ( P2 .NES. "" )
+$ THEN nkeep = F$INTEGER( P2 )
+$ ELSE nkeep = 0  ! don't purge anything...
+$ ENDIF
+$ CmdSet = "ALL       |OPERATOR  |SECURITY  |ERRORLOG  |ACCOUNTING"
+$ CALL DCL$CmdParse "''P1'" "LRAnswer" "ALL" "''CmdSet'"
+$ IF ( LRAnswer .EQS. "ALL" )
+$ THEN DoAll = "TRUE"
+$      GOTO DCL$LROperator  ! first one of all of them...
+$ ELSE DoAll = "FALSE"
+$      GOTO DCL$LR'LRanswer'
+$ ENDIF
+$ !
 $DCL$LROperator:
+$ TargetFile = F$TRNLNM( "OPC$LOGFILE_NAME", "LNM$SYSTEM" )
+$ IF ( TargetFile .EQS. "" ) THEN TargetFile = "SYS$MANAGER:OPERATOR.LOG"
 $ LRprv = F$SETPRV( "OPER,SYSPRV" )
 $ REPLY /ENABLE=CENTRAL
 $ REPLY /LOG                 ! close old OPERATOR.LOG, open new one...
+$ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
 $ REPLY /DISABLE=CENTRAL
-$ ! cleanup?
-$ GOTO DCL$LRDone
+$ LRprv = F$SETPRV( LRprv )
+$ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
 $DCL$LRSecurity:
+$ TargetFile = "SYS$MANAGER:SECURITY.AUDIT$JOURNAL"
 $ LRprv = F$SETPRV( "SYSPRV,SECURITY" )
 $ SET AUDIT /SERVER=NEW_LOG  ! close old SECURITY.AUDIT$JOURNAL, open a new one...
-$ ! cleanup?
-$ GOTO DCL$LRDone
+$ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
+$ LRprv = F$SETPRV( LRprv )
+$ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
 $DCL$LRErrorlog:
+$ TargetFile = "SYS$ERRORLOG:ERRLOG.SYS_OLD"
 $ LRprv = F$SETPRV( "SYSPRV" )
 $ RENAME /LOG SYS$ERRORLOG:ERRLOG.SYS SYS$ERRORLOG:*.SYS_OLD
-$ ! cleanup?
-$ GOTO DCL$LRDone
+$ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
+$ LRprv = F$SETPRV( LRprv )
+$ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
 $DCL$LRAccounting:
+$ TargetFile = "SYS$MANAGER:ACCOUNTNG.DAT"
 $ LRprv = F$SETPRV( "OPER,SYSPRV" )
 $ SET ACCOUNTING /NEW_FILE /LOG  ! close old ACCOUNTNG.DAT, open a new one...
-$ ! cleanup?
-$ GOTO DCL$LRDone
+$ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
+$ LRprv = F$SETPRV( LRprv )
+$ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
 $DCL$LRDone:
-$ IF ( F$TYPE( LRprv ) .NES. "" ) THEN LRprv = F$SETPRV( LRprv )
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$LogRollover
 $ ! ==========
