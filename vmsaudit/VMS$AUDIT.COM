@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.12-01 (14-Jun-2017)"
+$ VA$ProcVersion = "V2.13-01 (17-Nov-2017)"
 $ VA$Copyright   = "Copyright © 2014-2017"
 $ !
 $ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -15,8 +15,10 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ !  use:  $ @VMS$AUDIT [ BRIEF (D) | EXTENDED
-$ !                       | QUICK   | CLUSTER | REMOTE
+$ !  use:  $ @VMS$AUDIT [ BRIEF | EXTENDED
+$ !                       | QUICK (D/stand-alone)
+$ !                       | CLUSTER (D/VMScluster)
+$ !                       | REMOTE
 $ !                       | TYPE    | EDIT
 $ !                       | BACKUP  | RESTORE
 $ !                       | ZIP     | UNZIP
@@ -28,6 +30,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  17-NOV-2017 : Change default reports to CLUSTER for any VMScluster configuration,
+$ !                QUICK for a stand-alone VMS system.
+$ !                Also revise SHOW CPU reporting.
 $ !  14-JUN-2017 : Create CONTEXT.COM, mostly to define VMS$AUDITCONFIG job logical
 $ !                name; include CONTEXT.COM in archives collection.  Also, ditch
 $ !                including [.DFU]-kit from the VMS$AUDIT archives.
@@ -635,6 +640,8 @@ DO SHOW NETWORK
 
 DO SHOW ERROR
 
+DO SHOW CPU
+
 DO SHOW MEMORY /PHYSICAL
 DO SHOW MEMORY /FILES
 DO SHOW MEMORY /CACHE
@@ -657,6 +664,9 @@ DO PIPE SHOW NETWORK -
    ; WRITE sys$output F$FAO("============!/")
 
 DO PIPE SHOW ERROR -
+   ; WRITE sys$output F$FAO("============!/")
+
+DO PIPE SHOW CPU -
    ; WRITE sys$output F$FAO("============!/")
 
 DO SHOW MEMORY /PHYSICAL
@@ -823,6 +833,10 @@ $ VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONL
 $ !
 $ ! ========================
 $ ! Parse the command-line parameters --
+$ IF ( F$GETSYI("VAXCLUSTER") .GE. 0 )  ! VMScluster or stand-alone?
+$ THEN DefCmd = "CLUSTER"
+$ ELSE DefCmd = "QUICK"
+$ ENDIF
 $ IF ( P1 .EQS. "?" ) THEN P1 = "HELP"
 $ CmdSet = "BRIEF  |" -
          + "FULL   |" -
@@ -838,7 +852,7 @@ $ CmdSet = "BRIEF  |" -
          + "FTP    |" -
          + "CLEANUP|" -
          + "HELP   "
-$ CALL Parse "''P1'" Cmd "BRIEF" "''CmdSet'"
+$ CALL Parse "''P1'" Cmd "''DefCmd'" "''CmdSet'"
 $ GOTO 'Cmd'$
 $ !
 $ ! ========================
@@ -1064,7 +1078,8 @@ $ ! ========================
 $ ! II. System Configuration -- Hardware, Storage, Cluster and Shadowing/Controller
 $ CALL AuditStep "SHOW DEVICE D /MOUNTED"
 $ !
-$ CALL AuditStep "SHOW CPU /FULL"
+$ CALL AuditStep "SHOW CPU"        ! Summary for easy-reading
+$ CALL AuditStep "SHOW CPU /FULL"  ! TMI - detailed
 $ CALL AuditStep "SHOW MEMORY /FULL"
 $ !
 $ ! VI.i. System Disk Protection
@@ -1417,8 +1432,10 @@ $ ! ========================
 $H$:
 $HELP$:
 $ TYPE /PAGE sys$input
-  use:  $ [1m@VMS$AUDIT [ BRIEF (D) | EXTENDED 
-                       | QUICK   | CLUSTER | REMOTE
+  use:  $ [1m@VMS$AUDIT [ BRIEF | EXTENDED 
+                       | QUICK (D)
+                       | CLUSTER (D)
+                       | REMOTE
                        | TYPE    | EDIT
                        | BACKUP  | RESTORE
                        | ZIP     | UNZIP
@@ -1442,7 +1459,9 @@ $ TYPE /PAGE sys$input
                     and DECnet configuration information (if available).
 
         [1mQUICK[0m    -- Generates a Quick Report for the current system/node.
+                          This report is the [1mdefault[0m for a stand-alone VMS system.
         [1mCLUSTER[0m  -- Generates a Quick Report for the entire VMScluster.
+                          This report is the [1mdefault[0m for a VMScluster.
         [1mREMOTE[0m   -- Generates a Quick Report for a remote system/node.
 
         [1mTYPE[0m     -- Reviews the current Audit Report File using the
