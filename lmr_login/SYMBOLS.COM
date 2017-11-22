@@ -80,6 +80,7 @@ $ !    ----P1-  -P2---------------------------------- -P3------- -P4------- -P5-
 $      rubycmd  ruby$mine:process.rb                  proc*ess
 $      rubycmd  ruby$mine:process.rb                  killmy     "--kill"
 $      rubycmd  ruby$mine:eva.rb                      eva
+$      rubycmd  ruby$mine:addtimes.rb                 addt*imes
 $      rubycmd  ruby$mine:fspec.rb                    fspec
 $      rubycmd  ruby$mine:msgd.rb                     msgd
 $      rubycmd  ruby$mine:tonerow.rb                  tone*row
