@@ -102,7 +102,7 @@ $ comlist = "''LBase'.login]symbols.com;"                               -
           +    ",show_cluster$init.ini;,fixprivs.com;"                  -
           + ",''LBase'.com]privilege.com;,cd.com;,where.com;"           -
           +    ",boottime.com;,fix$bck.com;,zips.com;,tools$debug.com;" -
-          +    ",dclwho.com;,makedir.com;"                              -
+          +    ",dclwho.com;,makedir.com;,do_continuous.com;"           -
           + ",''LBase'.com.filetools]*.com;,*.tpu;"                     -
           + ",sys$login:eve$init.eve;,sys$login:edtini.edt;"
 $ !!DEFINE /USER_MODE /PROCESS sys$output NLA0:
