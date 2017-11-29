@@ -175,6 +175,7 @@ $ glo*bal      == "SHOW SYMBOL /GLOBAL"
 $ ftpcl8       == "ftp class8.parsec.com"
 $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user/cmd-line
 $ svar*iable   == "PIPE SHOW SYMBOL * | ''SIN' "
+$ hyper*thread == "PIPE SHOW CPU 0 /FULL | ''SIN' ""Cothd:"""  ! system's CPUs configured for hyperthreading?
 $ ssym*bol     == "''svariable'"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
 $ sdtmp         = "sys$scratch:showdump.tmp"
