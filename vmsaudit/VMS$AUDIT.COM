@@ -1,9 +1,9 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.13-01 (17-Nov-2017)"
-$ VA$Copyright   = "Copyright © 2014-2017"
+$ VA$ProcVersion = "V2.14-01 (08-Dec-2017)"
+$ VA$Copyright   = "Copyright © 2014-2018"
 $ !
-$ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2014-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -30,6 +30,9 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  07-DEC-2017 : Demote SHOW INTRUSION command from SYSMAN (where it was done and
+$ !                displayed redundantly for each cluster member) to a single command
+$ !                invocation where it reports for the entire cluster-wide perspective.
 $ !  17-NOV-2017 : Change default reports to CLUSTER for any VMScluster configuration,
 $ !                QUICK for a stand-alone VMS system.
 $ !                Also revise SHOW CPU reporting.
@@ -646,8 +649,6 @@ DO SHOW MEMORY /PHYSICAL
 DO SHOW MEMORY /FILES
 DO SHOW MEMORY /CACHE
 
-DO SHOW INTRUSION
-
 EXIT
 $ ! ================================================
 $ ELSE ! ---- V7.1 and beyond ----
@@ -674,14 +675,14 @@ DO SHOW MEMORY /FILES
 DO PIPE SHOW MEMORY /CACHE -
    ; WRITE sys$output F$FAO("============!/")
 
-DO PIPE SHOW INTRUSION -
-   ; WRITE sys$output F$FAO("============!/")
-
 EXIT
 $ ! ================================================
 $ ENDIF
 $ !
 $ !   Then several items which are done once for whole cluster:
+$ !
+$ SHOW INTRUSION  ! this report view is cluster-wide (or system-wide)
+$ !
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
 $ IF ( VMS$ver .GES. "V7.1" )
