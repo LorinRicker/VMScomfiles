@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.15-02 (12-Dec-2017)"
+$ VA$ProcVersion = "V2.15-03 (12-Dec-2017)"
 $ VA$Copyright   = "Copyright © 2014-2018"
 $ !
 $ ! Copyright © 2014-2018 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -35,6 +35,7 @@ $ !                %SHOW-F-NOINTRUDERS, no intrusion records match specification
 $ !                so must handle error-trap better.
 $ !                Also "(...F$GETSYI("VAXCLUSTER") .GT. 0 )" check was wrong, use
 $ !                .GT. not .GE. ...
+$ !                Also change SHOW CPU /FULL to /BRIEF, better display, not TMI.
 $ !  07-DEC-2017 : Demote SHOW INTRUSION command from SYSMAN (where it was done and
 $ !                displayed redundantly for each cluster member) to a single command
 $ !                invocation where it reports for the entire cluster-wide perspective.
@@ -1091,8 +1092,8 @@ $ ! ========================
 $ ! II. System Configuration -- Hardware, Storage, Cluster and Shadowing/Controller
 $ CALL AuditStep "SHOW DEVICE D /MOUNTED"
 $ !
-$ CALL AuditStep "SHOW CPU"        ! Summary for easy-reading
-$ CALL AuditStep "SHOW CPU /FULL"  ! TMI - detailed
+$ CALL AuditStep "SHOW CPU"         ! Summary for easy-reading
+$ CALL AuditStep "SHOW CPU /BRIEF"  ! not TMI - just about right
 $ CALL AuditStep "SHOW MEMORY /FULL"
 $ !
 $ ! VI.i. System Disk Protection
