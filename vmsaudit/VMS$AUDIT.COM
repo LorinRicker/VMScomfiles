@@ -1,6 +1,6 @@
 $ ! VMS$AUDIT.COM --                                               'F$VERIFY(0)'
 $ !
-$ VA$ProcVersion = "V2.14-01 (08-Dec-2017)"
+$ VA$ProcVersion = "V2.15-02 (12-Dec-2017)"
 $ VA$Copyright   = "Copyright © 2014-2018"
 $ !
 $ ! Copyright © 2014-2018 by Lorin Ricker.  All rights reserved, with acceptance,
@@ -30,6 +30,11 @@ $ !
 $ !
 $ ! ========================
 $ ! Release History:
+$ !  12-DEC-2017 : For SHOW INTRUSION, "no intrusions" is a fatal error message(!),
+$ !                %SHOW-F-NOINTRUDERS, no intrusion records match specification --
+$ !                so must handle error-trap better.
+$ !                Also "(...F$GETSYI("VAXCLUSTER") .GT. 0 )" check was wrong, use
+$ !                .GT. not .GE. ...
 $ !  07-DEC-2017 : Demote SHOW INTRUSION command from SYSMAN (where it was done and
 $ !                displayed redundantly for each cluster member) to a single command
 $ !                invocation where it reports for the entire cluster-wide perspective.
@@ -681,7 +686,14 @@ $ ENDIF
 $ !
 $ !   Then several items which are done once for whole cluster:
 $ !
+$ ! "No intrusions" is a Fatal error message(!):
+$ !   %SHOW-F-NOINTRUDERS, no intrusion records match specification
+$ ! so handle error-trap:
+$ SET NOON
+$ WRITE sys$output F$FAO("============!/")
 $ SHOW INTRUSION  ! this report view is cluster-wide (or system-wide)
+$ WRITE sys$output ""
+$ ON ERROR THEN EXIT %X2C
 $ !
 $ IF F$TYPE( QUESTALL$THRESHOLD ) .EQS. "" THEN QUESTALL$THRESHOLD == 500
 $ CALL AuditStep "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD' TRUE" "" "@''DD'QUE$STALLED ''QUESTALL$THRESHOLD'"
@@ -834,7 +846,7 @@ $ VA$AuditReport == F$PARSE("''Fac'_''Node'","''Dev'''Dir'.REPORT",,,"SYNTAX_ONL
 $ !
 $ ! ========================
 $ ! Parse the command-line parameters --
-$ IF ( F$GETSYI("VAXCLUSTER") .GE. 0 )  ! VMScluster or stand-alone?
+$ IF ( F$GETSYI("VAXCLUSTER") .GT. 0 )  ! VMScluster or stand-alone?
 $ THEN DefCmd = "CLUSTER"
 $ ELSE DefCmd = "QUICK"
 $ ENDIF
