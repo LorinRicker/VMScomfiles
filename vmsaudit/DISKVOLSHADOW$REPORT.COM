@@ -39,6 +39,7 @@ $ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ COMMA      = ","
 $ DOLLAR     = "$"
 $ UNDERSCORE = "_"
+$ PERCENT    = "%"
 $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
@@ -102,7 +103,7 @@ $      shadow = "Just a disk"
 $      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
 $      THEN shadow = "Virt/Shadow Set"
 $           mbrcount = F$STRING( F$GETDVI( dev, "SHDW_MBR_COUNT" ) ) -
-                     + ":" + F$STRING( F$GETDVI( dev, "SHDW_DEVICE_COUNT" ) )
+                     + " of " + F$STRING( F$GETDVI( dev, "SHDW_DEVICE_COUNT" ) )
 $           IF ( F$GETDVI( dev, "SHDW_MINIMERGE_ENABLE" ) )
 $           THEN hbmm = " HBMM"
 $           ELSE hbmm = ""
@@ -117,8 +118,8 @@ $                ELSE mbrsite = ""
 $                ENDIF
 $                copypct  = F$GETDVI( dev, "SHDW_MBR_COPY_DONE" )
 $                IF ( copypct .EQ. 100 )
-$                THEN copypct = F$STRING( copypct ) + "%"
-$                ELSE copypct = "copy/merging: " + F$STRING( copypct ) + "%" -
+$                THEN copypct = F$STRING( copypct ) + PERCENT
+$                ELSE copypct = "copy/merging: " + F$STRING( copypct ) + PERCENT -
                               + " on " + F$GETDVI( dev, "SHDW_COPIER_NODE" )
 $                ENDIF
 $                attr = copypct + " merged" + mbrsite
