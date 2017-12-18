@@ -71,7 +71,7 @@ $ ENDIF
 $PCont2:
 $ !
 $ devfldlen = 16
-$ headfill  = 30
+$ headfill  = 20
 $ !
 $ header = F$FAO( "!#* !22AS !18AS !48AS",  -
                   devfldlen+5, "logical", "vol-shadow", -
@@ -101,16 +101,18 @@ $      ENDIF
 $      attr = ""
 $      shadow = "Just a disk"
 $      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
-$      THEN shadow = "Virt/Shadow Set"
+$      THEN shadow   = "Virt/Shadow Set"
+$           master   = F$GETDVI( dev, "SHDW_MASTER_MBR" ) - UNDERSCORE
 $           mbrcount = F$STRING( F$GETDVI( dev, "SHDW_MBR_COUNT" ) ) -
                      + " of " + F$STRING( F$GETDVI( dev, "SHDW_DEVICE_COUNT" ) )
 $           IF ( F$GETDVI( dev, "SHDW_MINIMERGE_ENABLE" ) )
 $           THEN hbmm = " HBMM"
 $           ELSE hbmm = ""
 $           ENDIF
-$           attr = "members: " + mbrcount + hbmm
+$           attr = "members " + mbrcount + COMMA + " master " + master + " " + hbmm
 $      ELSE IF ( F$GETDVI( dev, "SHDW_MEMBER" ) )
 $           THEN shadow   = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
+$                master   = ""
 $                mbrsite  = F$GETDVI( dev, "SHDW_SITE" )
 $                IF ( mbrsite .GT. 0 )
 $                THEN mbrsite = ", site " + F$STRING( mbrsite )
