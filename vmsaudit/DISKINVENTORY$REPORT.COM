@@ -1,6 +1,6 @@
 $ ! DISKINVENTORY$REPORT.COM --                                    'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -120,9 +120,9 @@ $                ELSE char = char + COMMA + eod
 $                ENDIF
 $           ENDIF
 $      ENDIF
-$      shadow = ""
+$      shadow = "Just a disk"
 $      IF ( F$GETDVI( dev, "SHDW_MASTER" ) )
-$      THEN shadow = "VolShadow Master"
+$      THEN shadow = "Virt/Shadow Set"
 $      ELSE IF ( F$GETDVI( dev, "SHDW_MEMBER" ) )
 $           THEN shadow   = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) - UNDERSCORE
 $                cluster  = ""
