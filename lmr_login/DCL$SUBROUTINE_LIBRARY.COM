@@ -13,8 +13,8 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "02.03.01"         ! maintain with edits
-$ dcl$sldatestamp = "06-NOV-2017"
+$ dcl$slversion   = "02.04.01"         ! maintain with edits
+$ dcl$sldatestamp = "22-DEC-2017"
 $ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
@@ -749,13 +749,21 @@ $ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
 $ REPLY /DISABLE=CENTRAL
 $ LRprv = F$SETPRV( LRprv )
 $ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
+$ !
 $DCL$LRSecurity:
 $ TargetFile = "SYS$MANAGER:SECURITY.AUDIT$JOURNAL"
 $ LRprv = F$SETPRV( "SYSPRV,SECURITY" )
-$ SET AUDIT /SERVER=NEW_LOG  ! close old SECURITY.AUDIT$JOURNAL, open a new one...
+$ ! From HELP SET AUDIT /SERVER:  "By default, the size of the new auditing log file
+$ ! is based on the size of the previous auditing logs. ... The following sequence of
+$ ! commands can be used to reset the space monitoring thresholds and then to create
+$ ! a smaller log file:"
+$ SET AUDIT /JOURNAL=SECURITY /THRESHOLD=WARN=200   ! <-- Reset space monitoring...
+$ ! Close the old SECURITY.AUDIT$JOURNAL, open a new one...
+$ SET AUDIT /SERVER=NEW_LOG  
 $ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
 $ LRprv = F$SETPRV( LRprv )
 $ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
+$ !
 $DCL$LRErrorlog:
 $ TargetFile = "SYS$ERRORLOG:ERRLOG.SYS_OLD"
 $ LRprv = F$SETPRV( "SYSPRV" )
@@ -763,6 +771,7 @@ $ RENAME /LOG SYS$ERRORLOG:ERRLOG.SYS SYS$ERRORLOG:*.SYS_OLD
 $ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
 $ LRprv = F$SETPRV( LRprv )
 $ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
+$ !
 $DCL$LRAccounting:
 $ TargetFile = "SYS$MANAGER:ACCOUNTNG.DAT"
 $ LRprv = F$SETPRV( "OPER,SYSPRV" )
@@ -770,6 +779,7 @@ $ SET ACCOUNTING /NEW_FILE /LOG  ! close old ACCOUNTNG.DAT, open a new one...
 $ IF ( nkeep .GT. 0 ) THEN PURGE /KEEP='nkeep' 'TargetFile'
 $ LRprv = F$SETPRV( LRprv )
 $ IF ( .NOT. DoAll ) THEN GOTO DCL$LRDone   ! else fall-through...
+$ !
 $DCL$LRDone:
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$LogRollover
