@@ -10,7 +10,7 @@ $INTERACTIVE:
 $ SET TERMINAL /INQUIRE /INSERT
 $ SET CONTROL=(Y,T)
 $ !
-$ CALL CreDir "SCRATCH" "SYS$SCRATCH"
+$ CALL CreDir "SYS$SCRATCH"
 $ CALL CreDir "LOGS"
 $ CALL CreDir "COM"
 $ !
@@ -36,7 +36,8 @@ $ !
 $ ! Linux/Unix-style command aliases (symbols) --
 $ cd       == "SET DEFAULT"
 $ pwd      == "SHOW DEFAULT"
-$ cls      == "TYPE /PAGE=CLEARSCREEN NLA0:"
+$ cls      == "TYPE /PAGE=CLEAR_SCREEN NLA0:"
+$ !           See also [...BEGINNER]ANSISEQ.COM for a better approach to clr-screen
 $ cp       == "COPY"
 $ rm       == "DELETE"
 $ mv       == "RENAME"
