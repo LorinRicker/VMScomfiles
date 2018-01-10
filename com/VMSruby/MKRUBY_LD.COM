@@ -1,6 +1,6 @@
 $ ! MKRUBY_LD.COM
 $ !
-$ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2017-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -12,9 +12,11 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
+$ ! use: @MKRUBY_LD [ ldunit ] [ username ] 
+$ !
 $ IF ( P1 .NES. "" )
 $ THEN rubyldunit = "''P1'"
-$ ELSE rubyldunit = "LDA1024:"
+$ ELSE rubyldunit = "$254$LDA1024:"
 $ ENDIF
 $ IF ( P2 .NES. "" )
 $ THEN UName = "''P2'"
@@ -41,8 +43,9 @@ $ !
 $ IF ( .NOT. F$GETDVI( rubyldunit, "MNT" ) )
 $ THEN prv = F$SETPRV( "SYSPRV,SYSNAM,VOLPRO" )
 $      MOUNT /SYSTEM /NOASSIST 'rubyldunit' 'rubyldvol' 'rubydisklnm'
-$      DEFINE /SYSTEM /NOLOG RUBY$MINE sys$login_device:'rubydisk'
-$      SHOW LOGICAL /SYSTEM /FULL *RUBY*
+$      DEFINE /SYSTEM  /NOLOG RUBY$DISK   'rubyldunit'
+$      DEFINE /PROCESS /NOLOG RUBY$LDDISK sys$login_device:'rubydisk'
+$      SHOW LOGICAL /FULL *RUBY*
 $      prv = F$SETPRV( prv )
 $ ENDIF
 $ !
