@@ -12,7 +12,7 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ ! use: @MKLD [ ldDisk ] [ ldUnit ] [ ldVolLbl ] [ DevSize ]
+$ ! use: @MKLD [ ldDisk ] [ ldUnit ] [ ldVolLbl ] [ [/]SYSTEM ]
 $ !
 $ ON CONTROL THEN GOSUB CtrlY
 $ ON ERROR THEN EXIT %X2C
@@ -22,6 +22,11 @@ $ Verbose = F$TRNLNM( "TOOLS$DEBUG" )
 $ !
 $ proc = F$ENVIRONMENT( "PROCEDURE" )
 $ Fac  = F$PARSE( proc, , , "NAME", "SYNTAX_ONLY" )
+$ !
+$ IF ( P4 .NES. "" )
+$ THEN P4 = P4 - "/"  ! "/SYSTEM" --> "SYSTEM"
+$      SysMount = F$EXTRACT( 0, 3, P4 ) .EQS. "SYS"
+$ ENDIF
 $ !
 $ thisDisk   = F$TRNLNM("SYS$LOGIN_DEVICE")
 $ UName      = F$EDIT( F$GETJPI( "", "USERNAME" ), "TRIM,LOWERCASE" )
@@ -41,34 +46,31 @@ $ defldUnit   = "LDA1000:"
 $ defDevSize  = "16000"
 $ !
 $ IF ( P1 .NES. "" )
-$ THEN ldDisk = "''P1'"
+$ THEN answer = "''P1'"
 $ ELSE READ sys$command answer /END_OF_FILE=Done -
          /PROMPT="LDA disk filename [''defldDisk']: "
-$      ldDisk = F$PARSE( answer, defldDisk, ldDir ) - ";"
 $ ENDIF
+$ ldDisk = F$PARSE( answer, defldDisk, ldDir ) - ";"
 $ IF ( P2 .NES. "" )
-$ THEN ldUnit = "''P2'"
+$ THEN answer = "''P2'"
 $ ELSE READ sys$command answer /END_OF_FILE=Done -
          /PROMPT="LDA unit [''defldUnit']: "
-$      ldUnit = F$PARSE( answer, defldUnit, , "DEVICE", "SYNTAX_ONLY" )
 $ ENDIF
+$ ldUnit = F$PARSE( answer, defldUnit, , "DEVICE", "SYNTAX_ONLY" )
 $ defldVolLbl = F$PARSE( ldDisk, , , "NAME", "SYNTAX_ONLY" )
 $ IF ( P3 .NES. "" )
-$ THEN ldVolLbl = "''P3'"
+$ THEN answer = "''P3'"
 $ ELSE READ sys$command answer /END_OF_FILE=Done -
          /PROMPT="Volume label for ''ldUnit' [''defldVolLbl']: "
-$      ldVolLbl = F$PARSE( answer, defldVolLbl, , "NAME", "SYNTAX_ONLY" )
-$      ldLNM    = "LDISK$" + ldVolLbl
 $ ENDIF
+$ ldVolLbl = F$PARSE( answer, defldVolLbl, , "NAME", "SYNTAX_ONLY" )
+$ ldLNM    = "LDISK$" + ldVolLbl
 $ !
 $ IF ( F$SEARCH( ldDisk ) .EQS. "" )
 $ THEN ! LD-disk file doesn't yet exist, so create it:
-$      IF ( P4 .NES. "" )
-$      THEN DevSize = "''P4'"
-$      ELSE READ sys$command answer /END_OF_FILE=Done -
-              /PROMPT="Size in blocks for ''ldUnit' [''defdevsize']: "
-$           DevSize = F$PARSE( answer, defdevsize, , "NAME", "SYNTAX_ONLY" )
-$      ENDIF
+$      READ sys$command answer /END_OF_FILE=Done -
+         /PROMPT="Size in blocks for ''ldUnit' [''defdevsize']: "
+$      DevSize = F$PARSE( answer, defdevsize, , "NAME", "SYNTAX_ONLY" )
 $      IF Verbose THEN wso "%''Fac'-I-ECHO, $ LD CREATE /SIZE=''DevSize' /CONTIGUOUS /LOG ''ldDisk'"
 $      LD CREATE /SIZE='DevSize' /CONTIGUOUS /LOG 'ldDisk'
 $      IniDisk = "TRUE"  ! ...will need to INIT it too
@@ -90,17 +92,22 @@ $      INITIALIZE /STRUCTURE=5 'alloc''ldUnit' 'ldVolLbl'
 $ ENDIF
 $ !
 $ IF ( .NOT. F$GETDVI( ldUnit, "MNT" ) )
-$ THEN prv = F$SETPRV( "SYSPRV,SYSNAM,VOLPRO" )
-$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
-$      MOUNT /NOASSIST 'alloc''ldUnit' 'ldVolLbl' 'ldLNM'
-$      IF ( F$TRNLNM( "LDDISK$''ldVolLbl'" ) .EQS. "" )
-$      THEN IF Verbose THEN wso "%''Fac'-I-ECHO, $ DEFINE /JOB /NOLOG LDFILE$''ldVolLbl' ''ldDisk'"
-$           DEFINE /JOB /NOLOG LDFILE$'ldVolLbl' 'ldDisk'
+$ THEN IF ( SysMount )
+$      THEN Qual  = "/SYSTEM"
+$           DQual = Qual + "/EXECUTIVE_MODE"
+$           prv = F$SETPRV( "CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
+$      ELSE Qual  = ""
+$           DQual = "/JOB"
 $      ENDIF
-$      SHOW LOGICAL /JOB /FULL *DISK$'ldVolLbl'
+$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST''Qual' ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
+$      MOUNT /NOASSIST 'Qual' 'alloc''ldUnit' 'ldVolLbl' 'ldLNM'
+$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ DEFINE /JOB /NOLOG LDFILE$''ldVolLbl' ''ldDisk'"
+$      DEFINE /JOB /NOLOG LDFILE$'ldVolLbl' 'ldDisk'
+$      IF ( SysMount ) THEN DQual = Qual
+$      SHOW LOGICAL 'DQual' /FULL *DISK$'ldVolLbl'
 $      SHOW LOGICAL /JOB /FULL LDFILE$*
 $      SHOW LOGICAL /JOB /FULL LDISKS
-$      prv = F$SETPRV( prv )
+$      IF ( SysMount ) THEN prv = F$SETPRV( prv )
 $ ENDIF
 $ !
 $ IF ( IniDisk )
