@@ -1,6 +1,6 @@
 $ ! [L_RICKER]LOGIN_FULL.COM --                                    'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1986-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1986-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -174,7 +174,11 @@ $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $ !
+$ !    Mount DISK$RUBY (RUBYMINE):
 $      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
+$ !    Mount Logical Disk(s):
+$      mkld 'LBase'.LDISKS]LMRDISK LDA1000: LMRDISK  ! /SYSTEM ... for now, process-local as demo
+$ !
 $      CALL SearchAt dcl$init
 $      !!! CALL SearchAt mgr$login
 $      CALL SearchAt com:tpu.com

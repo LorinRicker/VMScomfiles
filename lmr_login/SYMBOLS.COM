@@ -1,6 +1,6 @@
 $ ! SYMBOLS.COM - define personal commands
 $ !
-$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -258,10 +258,14 @@ $      DCL$CALL Alias "xftp"         "@com:file$ftp"
 $ ENDIF
 $ chksum == "CHECKSUM /ALGORITHM=MD5 /SHOW=ALL"
 $ !
-$ ! Logicals:
-$ DCL$CALL Alias "md*ir"     "@com:makedir"
-$ ml*ogical == mdir + " *"
-$ lnm == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
+$ ! == Logical Disks ===============================================
+$ DCL$CALL ALias "mkld"       "@com:mkld"
+$ ! == Make SubDirectories  ========================================
+$ DCL$CALL Alias "mkd*ir"     "@com:makedir"
+$ ! == Logicals ====================================================
+$ ml*ogical == mkdir + " *"
+$ lnm       == "SHOW LOGICAL /FULL /TABLE=LNM$FILE_DEV "
+$ ! ================================================================
 $ !
 $ ! Tools:
 $ DCL$CALL Alias "cap*ture"    "@com:capture.com"     !capture SYS$OUTPUT to file
