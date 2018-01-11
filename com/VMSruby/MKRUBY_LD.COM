@@ -1,4 +1,4 @@
-$ ! MKRUBY_LD.COM
+$ ! MKRUBY_LD.COM                                                  ! 'F$VERIFY(0)'
 $ !
 $ ! Copyright © 2017-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -14,9 +14,13 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! use: @MKRUBY_LD [ ldunit ] [ username ] 
 $ !
+$ ON CONTROL THEN GOSUB CtrlY
+$ ON ERROR THEN EXIT %X2C
+$ !
 $ IF ( P1 .NES. "" )
 $ THEN rubyldunit = "''P1'"
-$ ELSE rubyldunit = "$254$LDA1024:"
+$ ELSE rubyldunit = "LDA1024:"
+$      alloc      = "$254$"
 $ ENDIF
 $ IF ( P2 .NES. "" )
 $ THEN UName = "''P2'"
@@ -38,13 +42,12 @@ $ IF ( .NOT. F$GETDVI( rubyldunit, "EXISTS" ) ) -
   THEN LD CONNECT SYS$LOGIN_DEVICE:'rubydisk' 'rubyldunit' 'rubyldlnm'
 $ !
 $ ! Logical Disk is initialized "only once":
-$ ! INITIALIZE 'rubyldunit' /STRUCTURE=5 'rubyldvol'
+$ ! INITIALIZE 'alloc''rubyldunit' /STRUCTURE=5 'rubyldvol'
 $ !
 $ IF ( .NOT. F$GETDVI( rubyldunit, "MNT" ) )
 $ THEN prv = F$SETPRV( "SYSPRV,SYSNAM,VOLPRO" )
-$      MOUNT /SYSTEM /NOASSIST 'rubyldunit' 'rubyldvol' 'rubydisklnm'
-$      DEFINE /SYSTEM  /NOLOG RUBY$DISK   'rubyldunit'
-$      DEFINE /PROCESS /NOLOG RUBY$LDDISK sys$login_device:'rubydisk'
+$      MOUNT /SYSTEM /NOASSIST 'alloc''rubyldunit' 'rubyldvol' 'rubydisklnm'
+$      DEFINE /PROCESS /NOLOG LDDISK$RUBY sys$login_device:'rubydisk'
 $      SHOW LOGICAL /FULL *RUBY*
 $      prv = F$SETPRV( prv )
 $ ENDIF
@@ -55,5 +58,9 @@ $ !
 $ ! Perform any file/dir protection-mask adjustments manually...
 $ ! Copy *.rb files to target directories manually...
 $ !
-$ EXIT 1
+$Done:
+$ EXIT 1  ! 'F$VERIFY(0)'
+$ !
+$CtrlY:
+$ RETURN %X2C
 $ !
