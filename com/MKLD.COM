@@ -26,6 +26,7 @@ $ !
 $ IF ( P4 .NES. "" )
 $ THEN P4 = P4 - "/"  ! "/SYSTEM" --> "SYSTEM"
 $      SysMount = F$EXTRACT( 0, 3, P4 ) .EQS. "SYS"
+$ ELSE SysMount = "FALSE"
 $ ENDIF
 $ !
 $ thisDisk   = F$TRNLNM("SYS$LOGIN_DEVICE")
@@ -94,17 +95,17 @@ $ !
 $ IF ( .NOT. F$GETDVI( ldUnit, "MNT" ) )
 $ THEN IF ( SysMount )
 $      THEN Qual  = "/SYSTEM"
-$           DQual = Qual + "/EXECUTIVE_MODE"
+$           DefQual = Qual + "/EXECUTIVE_MODE"
 $           prv = F$SETPRV( "CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
 $      ELSE Qual  = ""
-$           DQual = "/JOB"
+$           DefQual = "/JOB"
 $      ENDIF
-$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST''Qual' ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
+$      wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST''Qual' ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
 $      MOUNT /NOASSIST 'Qual' 'alloc''ldUnit' 'ldVolLbl' 'ldLNM'
 $      IF Verbose THEN wso "%''Fac'-I-ECHO, $ DEFINE /JOB /NOLOG LDFILE$''ldVolLbl' ''ldDisk'"
 $      DEFINE /JOB /NOLOG LDFILE$'ldVolLbl' 'ldDisk'
-$      IF ( SysMount ) THEN DQual = Qual
-$      SHOW LOGICAL 'DQual' /FULL *DISK$'ldVolLbl'
+$      IF ( SysMount ) THEN DefQual = Qual
+$      SHOW LOGICAL 'DefQual' /FULL *DISK$'ldVolLbl'
 $      SHOW LOGICAL /JOB /FULL LDFILE$*
 $      SHOW LOGICAL /JOB /FULL LDISKS
 $      IF ( SysMount ) THEN prv = F$SETPRV( prv )
