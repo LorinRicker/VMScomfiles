@@ -19,12 +19,18 @@ $ ON ERROR THEN EXIT %X2C
 $ !
 $ wso = "WRITE sys$output"
 $ Verbose = F$TRNLNM( "TOOLS$DEBUG" )
+$ HYPHEN  = "-"
+$ SLASH   = "/"
 $ !
 $ proc = F$ENVIRONMENT( "PROCEDURE" )
 $ Fac  = F$PARSE( proc, , , "NAME", "SYNTAX_ONLY" )
 $ !
+$ p1val = P1 - HYPHEN - HYPHEN - SLASH
+$ p1val = F$EXTRACT( 0, 1, F$EDIT( p1val, "UPCASE,COLLAPSE" ) )
+$ IF ( p1val .EQS. "H" ) .OR. ( p1val .EQS. "?" ) THEN GOTO Help
+$ !
 $ IF ( P4 .NES. "" )
-$ THEN P4 = P4 - "/"  ! "/SYSTEM" --> "SYSTEM"
+$ THEN P4 = P4 - SLASH  ! "/SYSTEM" --> "SYSTEM"
 $      SysMount = F$EXTRACT( 0, 3, P4 ) .EQS. "SYS"
 $ ELSE SysMount = "FALSE"
 $ ENDIF
@@ -130,4 +136,50 @@ $ EXIT 1  ! 'F$VERIFY(0)'
 $ !
 $CtrlY:
 $ RETURN %X2C
+$ !
+$Help:
+$ TYPE /PAGE sys$input
+
+  MKLD.COM is a script which conditionally creates, connects, initializes
+  and mounts Logical Disks -- files which have an internal ODS-5 file
+  system which function as file-based disk volumes, managed with the free-
+  ware LD utility and logical disk driver.
+
+  use:  $ [1m@MKLD[0m [ [1mldDisk[0m ] [ [1mldUnit[0m ] [ [1mldVolLbl[0m ] [ [[1m/[0m][1mSYSTEM[0m ]
+
+  where:
+
+  [1mldDisk[0m --  The filename of the logical disk file to be managed.
+             This filename is assumed (by convention) to have a
+             file type of .DSK, and is assumed to be found in a
+             user-private subdirectory [<username>.LDISKS] (which
+             is created as a courtesy).
+
+             If this logical disk file does not exist, it is created,
+             LD-connected, initialized with an ODS-5 file system (and
+             volume id), and mounted.
+
+             If this logical disk already exists, it will be LD-connected
+             (if necessary), is assumed to be initialized with a file
+             system, and then is mounted.
+
+  [1mldUnit[0m --  The physical device name for the logical disk, in the
+             form LDAxxxx:, where "xxxx" is the unit number for
+             that logical disk -- This is chosen in the range
+             1..9999, and once chosen, is usually treated as the
+             "assigned" or conventional unit number for that logical
+             disk.  This script also prepends the allocation class
+             "$254$" to this physical device name, e.g. $254$LDA1024:
+
+  [1mldVolLbl[0m -- The logical disk's Volume Id (string) which is determined
+             and assigned when the logical disk is INITIALIZEd (as an
+             ODS-5 structure by default).
+
+  [1m/SYSTEM[0m -- An option which mounts the logical disk volume system-wide,
+             and requires CMEXEC, SYSNAM, SYSPRV and VOLPRO privileges.
+
+  Values for any missing, required command-line arguments will be prompted.
+
+$ !
+$ EXIT 1  ! 'F$VERIFY(0)'
 $ !
