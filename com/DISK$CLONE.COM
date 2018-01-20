@@ -74,7 +74,7 @@ $ !
 $ wso ""
 $ wso F$FAO( "!AS-I-BACKUP, starting clone !AS -> !AS", -
              Fac, SrcDisk, TarDisk )
-$ BACKUP 'SrcDisk' /IMAGE 'TarDisk' /NOINITIALIZE  ! preserve larger size, etc.
+$ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK 'TarDisk' /NOINITIALIZE  ! preserve larger size, etc.
 $ !
 $ DISMOUNT 'TarDisk'
 $ wso ""
