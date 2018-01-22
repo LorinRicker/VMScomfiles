@@ -30,7 +30,7 @@ $ p1val = P1 - HYPHEN - HYPHEN - SLASH
 $ p1val = F$EXTRACT( 0, 1, F$EDIT( p1val, "UPCASE,COLLAPSE" ) )
 $ IF ( p1val .EQS. "H" ) .OR. ( p1val .EQS. "?" ) THEN GOTO Help
 $ !
-$ prv = F$SETPRV( "CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
+$ prv = F$SETPRV( "BYPASS,CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
 $ !
 $ VolLbl  = F$EDIT( P2, "UPCASE,COLLAPSE" )
 $ SrcDisk = F$EDIT( P1, "UPCASE,COLLAPSE" ) - COLON
@@ -61,6 +61,7 @@ $ ELSE ODSn = "2"
 $ ENDIF
 $ ClustSize = F$STRING( F$GETDVI( SrcDisk, "CLUSTER" ) )
 $ !
+$ SET NOON  ! don't let BACKUP errors/status abort...
 $ StartTime = F$TIME()
 $ wso F$FAO( "%!AS-I-START, disk clone !AS -> !AS started at !AS", -
              Fac, SrcDisk, TarDisk, -
@@ -74,7 +75,8 @@ $ !
 $ wso ""
 $ wso F$FAO( "!AS-I-BACKUP, starting clone !AS -> !AS", -
              Fac, SrcDisk, TarDisk )
-$ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK 'TarDisk' /NOINITIALIZE  ! preserve larger size, etc.
+$ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK /PROGRESS=120 -
+    'TarDisk' /NOINITIALIZE  ! preserve larger size, etc.
 $ !
 $ DISMOUNT 'TarDisk'
 $ wso ""
