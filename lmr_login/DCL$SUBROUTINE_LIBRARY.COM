@@ -1,6 +1,6 @@
 $ ! DCL$SUBROUTINE_LIBRARY.COM --                                  'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2012-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2012-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -13,14 +13,14 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "02.04.01"         ! maintain with edits
-$ dcl$sldatestamp = "22-DEC-2017"
+$ dcl$slversion   = "02.05.01"         ! maintain with edits
+$ dcl$sldatestamp = "22-JAN-2018"
 $ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
 $ ! Update this list as new subroutines are added -- keep this sorted:
 $ RegisteredRoutines = ","                                              -
-                     +  "Alias,BatchAfterDate"                          -
+                     +  "Alias,AmI_Subprocess,BatchAfterDate"           -
                      + ",CmdParse,CommandLine,DefineANSIdef"            -
                      + ",DefineClearscreen,DeleteGloSyms,DiscoverDisks" -
                      + ",Holds_RID,LogRollover,MakeDir,PureDCL"         -
@@ -174,6 +174,27 @@ $      ENDIF
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$Alias
+$ !
+$ !
+$ ! ==========
+$DCL$AmI_Subprocess:  SUBROUTINE
+$ !#! Doc : Returns TRUE/FALSE indication (plus MASTER_PID and PID values) to indicate
+$ !#!       that "this process" (the calling process) is a SUBprocess or not.
+$ !#!   Example:
+$ !#!     $ DCL$CALL AmI_Subprocess
+$ !#!   P1 : global command symbol for return boolean/pids value, default is IAm$SubProcess
+$ !
+$ SET NOON
+$ IF ( P1 .EQS. "" ) THEN P1 = "IAm$SubProcess"
+$ mpid = F$GETJPI("","MASTER_PID")
+$ spid = F$GETJPI("","PID")
+$ IF ( spid .NES. mpid )
+$ THEN 'P1' == "TRUE,mpid:''mpid',pid:''spid'"   !this process is a subprocess
+$ ELSE 'P1' == "FALSE,mpid:''mpid',pid:''spid'"  !this process is parent/top/master
+$ ENDIF
+$ EXIT 1
+$ ENDSUBROUTINE  ! DCL$AmI_Subprocess
+$ ! ==========
 $ !
 $ !
 $ ! ==========
