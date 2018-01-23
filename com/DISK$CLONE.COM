@@ -121,6 +121,11 @@ $ ELSE ODSn = "2"
 $ ENDIF
 $ ClustSize = F$STRING( F$GETDVI( SrcDisk, "CLUSTER" ) )
 $ !
+$ procname = "DC$''SrcDisk'"
+$ procpid  = F$GETJPI( "", "PID" )
+$ SET PROCESS /NAME="''procname'"
+$ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
+$ !
 $ SET NOON  ! don't let BACKUP errors/status abort...
 $ StartTime = F$TIME()
 $ wso ""
@@ -194,6 +199,7 @@ $ !
 $CtrlY:
 $ RETURN %X2C
 $ !
+$ !
 $Help:
 $ TYPE /PAGE sys$input
 
@@ -204,7 +210,31 @@ $ TYPE /PAGE sys$input
   disk geometry and characteristics, but inherits the source disks's
   ODS-2/5 structure, cluster-size and volume label.
 
-  use: $ @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]...
+  use:
+    $ @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]... [/LOG]
+
+  where:
+
+  SourceDisk (P1) -- The source-disk (volume) to copy/clone to target(s).
+               This volume may be either a VMS Shadow-Set Volume (DSA2:)
+               or a "just-a-disk" non-shadowed volume ($1$DGA24: or DKA1:).
+
+  VolumeLabel (P2) -- The volume label of the SourceDisk, which will be
+               used to identify the cloned target disk(s).
+
+  TargetDisk1 (P3) -- One or more target disks; if more than one target
+  TargetDisk2  disk, then specify as a comma-separated list ($1$DGA24:
+  TargetDiskN  or $1$DGA24:,$1$DGA224: or $1$DGA24:,$1$DGA224:,$1$DGA424:).
+               Each of these target disks will be initialized to set their
+               capacities (available disk blocks) to the maximum(s) avail-
+               able, but will also receive the source disk's /STRUCTURE
+               (either ODS-5 or ODS-2), /CLUSTER_SIZE and volume label.
+
+  /LOG (P4) -- Option to redirect clone operations (subprocess) output
+               to a log-file (rather than to the user's terminal); if
+               used, this qualifier creates the log-file in the user's
+               LOGS: subdirectory (via logical name LOGS), with filename
+               "DISK$CLONE_<srcdisk>_<vollabel>.LOG".
 
 $ !
 $ EXIT 1  ! 'F$VERIFY(0)'
