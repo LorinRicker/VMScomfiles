@@ -174,11 +174,6 @@ $      THEN SET PROMPT="''LMR$promptstr'"
 $      ELSE SET PROMPT="''LNode'$ "
 $      ENDIF
 $ !
-$ !    Mount DISK$RUBY (RUBYMINE):
-$      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
-$ !    Mount Logical Disk(s):
-$      mkld 'LBase'.LDISKS]LMRDISK LDA1000: LMRDISK  ! /SYSTEM ... for now, process-local as demo
-$ !
 $      CALL SearchAt dcl$init
 $      !!! CALL SearchAt mgr$login
 $      CALL SearchAt com:tpu.com
@@ -189,6 +184,11 @@ $      THEN DEFINE /JOB /NOLOG dbg$init 'dbginit'
 $           wso "%LOGIN-I-DBG$INIT, VMS debugger initialization: "
 $           wso "                   DBG$INIT = """,F$TRNLNM("dbg$init"),""""
 $      ENDIF
+$ !    Mount DISK$RUBY (RUBYMINE):
+$      CALL SearchAt com:Ruby_Setup.com              ! now in [.COM.VMSRUBY]
+$ !    Mount other Logical Disk(s):
+$      !!! «»mkld 'LBase'.LDISKS]LMRDISK LDA1000: LMRDISK  ! /SYSTEM ... for now, process-local as demo
+$ !
 $ ENDIF
 $ !
 $LogSpecific:

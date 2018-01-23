@@ -58,6 +58,7 @@ $ ENDIF
 $ !
 $ IF ( F$TYPE(LMR_Name) .EQS. "" ) THEN LMR_Name = UName
 $ parent == "ATTACH ""''F$PROCESS()'"""  !use whatever SET PROCESS set (not PName)
+$ launch == "SPAWN /NOWAIT /NOTIFY /INPUT=NL:"
 $ !
 $ ! == Ruby ========================================================
 $ IF ( F$TRNLNM("ruby$root") .NES. "" )
@@ -177,6 +178,9 @@ $ ssys*tem     == "PIPE SHOW SYSTEM | ''SIN' "  !requires a string-arg from user
 $ svar*iable   == "PIPE SHOW SYMBOL * | ''SIN' "
 $ hyper*thread == "PIPE SHOW CPU 0 /FULL | ''SIN' ""Cothd:"""  ! system's CPUs configured for hyperthreading?
 $ sshad*ow     == "PIPE SHOW SHADOW dsa | ''SIN' ""Volume Label:"",""Device "" /MATCH=OR /STATISTICS"
+$ VSac*tive    == "SHOW SHADOW /ACTIVE"
+$ VSby*pri     == "SHOW SHADOW /BY_PRIORITY"
+$ !
 $ ssym*bol     == "''svariable'"
 $ SUBM*IT      == "SUBMIT /NOTIFY /NOPRINT /LOG_FILE=logs:"
 $ sdtmp         = "sys$scratch:showdump.tmp"
