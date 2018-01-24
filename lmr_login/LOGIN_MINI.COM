@@ -1,6 +1,6 @@
 $ ! LOGIN_MINI.COM -- Lorin's minimal login                        'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 1999-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -31,7 +31,7 @@ $ !
 $ DEFINE = "DEFINE /JOB /NOLOG "
 $ !
 $ DEFINE filetools 'Lbase'.COM.FILETOOLS]
-$ @'LBase'.LOGIN]COMMON_LOGICALS "COM||,filetools" "LOGIN|lmr$login"
+$ @'LBase'.LOGIN]COMMON_LOGICALS "COM||,va,filetools" "LOGIN|lmr$login"
 $ !
 $ ! ----------------------------------------------------------------------
 $ ReLogin = ( F$EXTRACT( 0, 2, P1 ) .EQS. "RE" )  !REDEFINE, REFRESH, RE-whatever
