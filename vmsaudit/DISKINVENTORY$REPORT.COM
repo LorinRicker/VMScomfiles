@@ -99,7 +99,7 @@ $      ELSE devlnm = volnam
 $      ENDIF
 $      cluster  = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
 $      cluslen  = F$LENGTH( cluster )
-$      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
+$      maxfiles = F$FAO( "!UL", F$GETDVI( dev, "MAXFILES" ) )
 $      maxflen  = F$LENGTH( maxfiles )
 $      odslvl = "2:-"
 $      char = ""

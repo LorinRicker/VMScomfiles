@@ -1,6 +1,6 @@
 $ ! DISKLIMITS$REPORT.COM --                                        'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2017-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -96,12 +96,12 @@ $ THEN ! Full accounting for a mounted disk:
 $      volnam = F$GETDVI( dev, "VOLNAM" )
 $      cluster  = F$STRING( F$GETDVI( dev, "CLUSTER" ) )
 $      cluslen  = F$LENGTH( cluster )
-$      maxfiles = F$STRING( F$GETDVI( dev, "MAXFILES" ) )
-$      maxblks  = F$STRING( F$GETDVI( dev, "MAXBLOCK" ) )
+$      maxfiles = F$FAO( "!UL", F$GETDVI( dev, "MAXFILES" ) )
+$      maxblks  = F$FAO( "!UL", F$GETDVI( dev, "MAXBLOCK" ) )
 $      IF minVMS73
 $      THEN ! these $GETDVI item-codes weren't available pre-V7.3:
-$           expsize  = F$STRING( F$GETDVI( dev, "EXPSIZE" ) )
-$           volsize  = F$STRING( F$GETDVI( dev, "VOLSIZE" ) )
+$           expsize  = F$FAO( "!UL", F$GETDVI( dev, "EXPSIZE" ) )
+$           volsize  = F$FAO( "!UL", F$GETDVI( dev, "VOLSIZE" ) )
 $      ELSE expsize  = "n/a"
 $           volsize  = "n/a"
 $      ENDIF

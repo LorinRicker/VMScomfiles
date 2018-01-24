@@ -1,6 +1,6 @@
 $ ! DISKSPACE$REPORT.COM --                                        'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2014-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -112,7 +112,7 @@ $ DCL$CALL Thousands "DS$usedblks"  "''usedblks'"
 $ usedlen = F$LENGTH( DS$usedblks )
 $ DCL$CALL Thousands "DS$totalblks" "''totalblks'"
 $ totalen = F$LENGTH( DS$totalblks )
-$ wso F$FAO( "!#* !AS !12AS !#* !AS !3SL% | !#* !AS !3SL% | !#* !AS |", -
+$ wso F$FAO( "!#* !AS !12AS !#* !AS !3UL% | !#* !AS !3UL% | !#* !AS |", -
              devfldlen-devlen, dev, volname, -
              fldlen-freelen, DS$freeblks, freepct, -
              fldlen-usedlen, DS$usedblks, usedpct, -
