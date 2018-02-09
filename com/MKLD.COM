@@ -12,26 +12,37 @@ $ ! part thereof.  You have specific rights and obligations under this GPL
 $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
-$ ! use: @MKLD [ ldDisk ] [ ldUnit ] [ ldVolLbl ] [ [/]SYSTEM ]
+$ ! use: @MKLD [ CREATE | MOUNT (D) | HELP ] -
+$ !            [ ldDisk ] [ ldUnit ] [ ldVolLbl ] [ [/]SYSTEM ]
 $ !
 $ ON CONTROL THEN GOSUB CtrlY
 $ ON ERROR THEN EXIT %X2C
 $ !
 $ wso = "WRITE sys$output"
 $ Verbose = F$TRNLNM( "TOOLS$DEBUG" )
-$ HYPHEN  = "-"
-$ SLASH   = "/"
+$ COLON     = ":"
+$ HYPHEN    = "-"
+$ SEMICOLON = ";"
+$ SLASH     = "/"
+$ !
+$ IF ( F$TYPE( DCL$CALL ) .EQS. "" )
+$ THEN @lmr$login:DCL$SUBROUTINE_LIBRARY Setup TRUE
+$ ENDIF
 $ !
 $ proc = F$ENVIRONMENT( "PROCEDURE" )
 $ Fac  = F$PARSE( proc, , , "NAME", "SYNTAX_ONLY" )
 $ !
 $ p1val = P1 - HYPHEN - HYPHEN - SLASH
 $ p1val = F$EXTRACT( 0, 1, F$EDIT( p1val, "UPCASE,COLLAPSE" ) )
+$ CmdSet = "CREATE|MOUNT "
+$ DCL$CALL CmdParse "''p1val'" mkld$Cmd "MOUNT" "''CmdSet'"
+$ CreateIt = ( mkld$Cmd .EQS. "CREATE" )
+$ MountIt  = ( mkld$Cmd .EQS. "CREATE" ) .OR. ( mkld$Cmd .EQS. "MOUNT" )
 $ IF ( p1val .EQS. "H" ) .OR. ( p1val .EQS. "?" ) THEN GOTO Help
 $ !
-$ IF ( P4 .NES. "" )
-$ THEN P4 = P4 - SLASH  ! "/SYSTEM" --> "SYSTEM"
-$      SysMount = F$EXTRACT( 0, 3, P4 ) .EQS. "SYS"
+$ IF ( P5 .NES. "" )
+$ THEN P5 = P5 - SLASH  ! "/SYSTEM" --> "SYSTEM"
+$      SysMount = F$EXTRACT( 0, 3, P5 ) .EQS. "SYS"
 $ ELSE SysMount = "FALSE"
 $ ENDIF
 $ !
@@ -52,36 +63,45 @@ $ alloc       = "$254$"    ! for CLASS8 system, CLASS cluster
 $ defldUnit   = "LDA1000:"
 $ defDevSize  = "16000"
 $ !
-$ IF ( P1 .NES. "" )
-$ THEN answer = "''P1'"
-$ ELSE READ sys$command answer /END_OF_FILE=Done -
-         /PROMPT="LDA disk filename [''defldDisk']: "
-$ ENDIF
-$ ldDisk = F$PARSE( answer, defldDisk, ldDir ) - ";"
 $ IF ( P2 .NES. "" )
 $ THEN answer = "''P2'"
 $ ELSE READ sys$command answer /END_OF_FILE=Done -
+         /PROMPT="Filename for Logical Disk (LDA) [''defldDisk']: "
+$ ENDIF
+$ ldDisk = F$PARSE( answer, defldDisk, ldDir ) - SEMICOLON
+$ !
+$ IF ( P3 .NES. "" )
+$ THEN answer = "''P3'"
+$ ELSE READ sys$command answer /END_OF_FILE=Done -
          /PROMPT="LDA unit [''defldUnit']: "
+$ ENDIF
+$ IF ( answer .NES. "" )
+$ THEN IF ( F$EXTRACT( 0, 3, F$EDIT( answer, "COLLAPSE,UPCASE" ) ) .NES. "LDA" )
+$      THEN answer = "LDA" + answer - COLON + COLON
+$      ENDIF
 $ ENDIF
 $ ldUnit = F$PARSE( answer, defldUnit, , "DEVICE", "SYNTAX_ONLY" )
 $ defldVolLbl = F$PARSE( ldDisk, , , "NAME", "SYNTAX_ONLY" )
-$ IF ( P3 .NES. "" )
-$ THEN answer = "''P3'"
+$ !
+$ IF ( P4 .NES. "" )
+$ THEN answer = "''P4'"
 $ ELSE READ sys$command answer /END_OF_FILE=Done -
          /PROMPT="Volume label for ''ldUnit' [''defldVolLbl']: "
 $ ENDIF
 $ ldVolLbl = F$PARSE( answer, defldVolLbl, , "NAME", "SYNTAX_ONLY" )
 $ ldLNM    = "LDISK$" + ldVolLbl
 $ !
-$ IF ( F$SEARCH( ldDisk ) .EQS. "" )
-$ THEN ! LD-disk file doesn't yet exist, so create it:
-$      READ sys$command answer /END_OF_FILE=Done -
-         /PROMPT="Size in blocks for ''ldUnit' [''defdevsize']: "
-$      DevSize = F$PARSE( answer, defdevsize, , "NAME", "SYNTAX_ONLY" )
-$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ LD CREATE /SIZE=''DevSize' /CONTIGUOUS /LOG ''ldDisk'"
-$      LD CREATE /SIZE='DevSize' /CONTIGUOUS /LOG 'ldDisk'
-$      IniDisk = "TRUE"  ! ...will need to INIT it too
-$ ELSE IniDisk = "FALSE"
+$ IniDisk = "FALSE"
+$ IF ( CreateIt )
+$ THEN IF ( F$SEARCH( ldDisk ) .EQS. "" )
+$      THEN ! LD-disk file doesn't yet exist, so create it:
+$           READ sys$command answer /END_OF_FILE=Done -
+              /PROMPT="Size in blocks for ''ldUnit' [''defdevsize']: "
+$           DevSize = F$PARSE( answer, defdevsize, , "NAME", "SYNTAX_ONLY" )
+$           IF Verbose THEN wso "%''Fac'-I-ECHO, $ LD CREATE /SIZE=''DevSize' /CONTIGUOUS /LOG ''ldDisk'"
+$           LD CREATE /SIZE='DevSize' /CONTIGUOUS /LOG 'ldDisk'
+$           IniDisk = "TRUE"  ! ...will need to INIT it too
+$      ENDIF
 $ ENDIF
 $ !
 $ IF ( .NOT. F$GETDVI( ldUnit, "EXISTS" ) )
@@ -98,23 +118,25 @@ $      IF Verbose THEN wso "%''Fac'-I-ECHO, $ INITIALIZE /STRUCTURE=5 ''alloc'''
 $      INITIALIZE /STRUCTURE=5 'alloc''ldUnit' 'ldVolLbl'
 $ ENDIF
 $ !
-$ IF ( .NOT. F$GETDVI( ldUnit, "MNT" ) )
-$ THEN IF ( SysMount )
-$      THEN Qual  = "/SYSTEM"
-$           DefQual = Qual + "/EXECUTIVE_MODE"
-$           prv = F$SETPRV( "CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
-$      ELSE Qual  = ""
-$           DefQual = "/JOB"
+$ IF ( MountIt )
+$ THEN IF ( .NOT. F$GETDVI( ldUnit, "MNT" ) )
+$      THEN IF ( SysMount )
+$           THEN Qual  = "/SYSTEM"
+$                DefQual = Qual + "/EXECUTIVE_MODE"
+$                prv = F$SETPRV( "CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
+$           ELSE Qual  = ""
+$                DefQual = "/JOB"
+$           ENDIF
+$           wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST''Qual' ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
+$           MOUNT /NOASSIST 'Qual' 'alloc''ldUnit' 'ldVolLbl' 'ldLNM'
+$           IF Verbose THEN wso "%''Fac'-I-ECHO, $ DEFINE /JOB /NOLOG LDFILE$''ldVolLbl' ''ldDisk'"
+$           DEFINE /JOB /NOLOG LDFILE$'ldVolLbl' 'ldDisk'
+$           IF ( SysMount ) THEN DefQual = Qual
+$           SHOW LOGICAL 'DefQual' /FULL *DISK$'ldVolLbl'
+$           SHOW LOGICAL /JOB /FULL LDFILE$*
+$           SHOW LOGICAL /JOB /FULL LDISKS
+$           IF ( SysMount ) THEN prv = F$SETPRV( prv )
 $      ENDIF
-$      wso "%''Fac'-I-ECHO, $ MOUNT /NOASSIST''Qual' ''alloc'''ldUnit' ''ldVolLbl' ''ldLNM'"
-$      MOUNT /NOASSIST 'Qual' 'alloc''ldUnit' 'ldVolLbl' 'ldLNM'
-$      IF Verbose THEN wso "%''Fac'-I-ECHO, $ DEFINE /JOB /NOLOG LDFILE$''ldVolLbl' ''ldDisk'"
-$      DEFINE /JOB /NOLOG LDFILE$'ldVolLbl' 'ldDisk'
-$      IF ( SysMount ) THEN DefQual = Qual
-$      SHOW LOGICAL 'DefQual' /FULL *DISK$'ldVolLbl'
-$      SHOW LOGICAL /JOB /FULL LDFILE$*
-$      SHOW LOGICAL /JOB /FULL LDISKS
-$      IF ( SysMount ) THEN prv = F$SETPRV( prv )
 $ ENDIF
 $ !
 $ IF ( IniDisk )
@@ -137,6 +159,7 @@ $ !
 $CtrlY:
 $ RETURN %X2C
 $ !
+$ !
 $Help:
 $ TYPE /PAGE sys$input
 
@@ -145,9 +168,17 @@ $ TYPE /PAGE sys$input
   system which function as file-based disk volumes, managed with the free-
   ware LD utility and logical disk driver.
 
-  use:  $ [1m@MKLD[0m [ [1mldDisk[0m ] [ [1mldUnit[0m ] [ [1mldVolLbl[0m ] [ [[1m/[0m][1mSYSTEM[0m ]
+  use:  $ [1m@MKLD[0m [ [1mCREATE[0m | [1mMOUNT[0m (D) | [1mHELP[0m ] -
+                [ [1mldDisk[0m ] [ [1mldUnit[0m ] [ [1mldVolLbl[0m ] [ [[1m/[0m][1mSYSTEM[0m ]
 
   where:
+
+  [1mCREATE[0m --  Forces a new (or new version of) Logical Disk to be created.
+             A created Logical Disk will be mounted (and /SYSTEM if this
+             qualifier is specified).
+  [1mMOUNT[0m --   Mounts a Logical Disk, presuming that it's been created; this
+             command does not create a Logical Disk if it doesn't exist.
+  [1mHELP[0m --    This help text.
 
   [1mldDisk[0m --  The filename of the logical disk file to be managed.
              This filename is assumed (by convention) to have a
