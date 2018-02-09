@@ -59,6 +59,9 @@ $ @lmr$login:common_logicals -
       "com||,va,filetools,vmsruby,site$utils" -
       "com|cmd" lib logs sys$scratch
 $ !
+$ ! For Logical Disks (LDAxxx:) --
+$ DEFINE ldisks 'Lbase'.LDISKS]
+$ !
 $ ! Convenience logicals for VMS$AUDIT --
 $ IF ( F$SEARCH("SYS$LOGIN:VMSAUDITS.DIR") .NES. "" )
 $ THEN DEFINE va  'LBase'.vmsaudits]
@@ -94,6 +97,7 @@ $ GOTO 'F$MODE()'
 $ !
 $INTERACTIVE:
 $ DEFINE = "DEFINE /PROCESS /NOLOG "
+$ !
 $ DEFINE dcl$keypad      lmr$login:DK$dcl_keypad.gold
 $ DEFINE dcl$init        lmr$login:DK$dcl.com
 $ DEFINE lists           'Lbase'.lists]
