@@ -27,7 +27,7 @@ $ hline   = F$FAO( "!72*-" )
 $ !
 $ Self = F$ENVIRONMENT( "PROCEDURE" )
 $ Fac  = F$PARSE( Self, , , "NAME", "SYNTAX_ONLY" )
-$ self = Self - F$PARSE( Self, , , "VERSION" )
+$ Self = Self - F$PARSE( Self, , , "VERSION" )
 $ !
 $ p1val = P1 - HYPHEN - HYPHEN - SLASH
 $ p1val = F$EXTRACT( 0, 1, F$EDIT( p1val, "UPCASE,COLLAPSE" ) )
@@ -62,7 +62,7 @@ $      LogFile = F$FAO( "/OUTPUT=LOGS:!AS_!AS_!AS.LOG", -
                         Fac, sdisk, vlbl )
 $ ELSE LogFile = ""
 $ ENDIF
-$ DCL$CALL AmI_Subprocess
+$ DCL$CALL AmI_Subprocess  ! 'F$VERIFY(0)'
 $ IF ( IAm$Subprocess )
 $ THEN GOTO clone2continue
 $ ELSE IF ( LogFile .NES. "" )
@@ -70,11 +70,15 @@ $      THEN msg = LogFile - "/OUTPUT="
 $           wso F$FAO( "%!AS-I-OUTPUT_LOG, output logfile is !AS", -
                        Fac, msg )
 $      ENDIF
-$      SPAWN /NOWAIT /NOTIFY /INPUT=NLA0: 'LogFile' -
-          'Self' "''P1'" "''P2'" "''P3'"
+$      wso ""
+$      wso hline
+$      fork = "SPAWN /NOWAIT /NOTIFY /INPUT=NLA0: "
+$      fork @'LogFile' 'Self' "''P1'" "''P2'" "''P3'"
+$      EXIT 1
 $ ENDIF
 $ !
 $clone2continue:
+$ ON ERROR THEN EXIT %X2C
 $ prv = F$SETPRV( "BYPASS,CMEXEC,SYSNAM,SYSPRV,VOLPRO" )
 $ !
 $ VolLbl  = F$EDIT( P2, "UPCASE,COLLAPSE" )
@@ -92,6 +96,11 @@ $ THEN wso F$FAO( "%!AS-F-WRONGVOLLBL, specified volume lable !AS does not match
 $      EXIT %X2C
 $ ENDIF
 $ !
+$ procname = "DC$''SrcDisk'" - "DISK$"
+$ procpid  = F$GETJPI( "", "PID" )
+$ SET PROCESS /NAME="''procname'"
+$ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
+$ !
 $ IF ( F$TRNLNM( SrcDisk ) .EQS. "" ) THEN SrcDisk = SrcDisk + COLON
 $ TarDisk = F$EDIT( P3, "UPCASE,COLLAPSE" )
 $ j = 1
@@ -99,8 +108,7 @@ $ tdisks = ""
 $loop1:
 $ TarDisk'j' = F$ELEMENT( j-1, COMMA, P3 )
 $ IF ( TarDisk'j' .EQS. COMMA ) THEN GOTO loop1end
-$ TarDisk'j' = TarDisk'j' - COLON
-$ IF ( F$TRNLNM( TarDisk ) .EQS. "" ) THEN TarDisk = TarDisk + COLON
+$ IF ( F$TRNLNM( TarDisk'j' ) .EQS. "" ) THEN TarDisk'j' = TarDisk'j' + COLON
 $ ! Sanity check --
 $ IF ( F$GETDVI( TarDisk'j', "EXISTS" ) )
 $ THEN IF ( tdisks .NES. "" )
@@ -121,12 +129,6 @@ $ ELSE ODSn = "2"
 $ ENDIF
 $ ClustSize = F$STRING( F$GETDVI( SrcDisk, "CLUSTER" ) )
 $ !
-$ procname = "DC$''SrcDisk'"
-$ procpid  = F$GETJPI( "", "PID" )
-$ SET PROCESS /NAME="''procname'"
-$ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
-$ !
-$ SET NOON  ! don't let BACKUP errors/status abort...
 $ StartTime = F$TIME()
 $ wso ""
 $ wso hline
@@ -136,7 +138,8 @@ $ wso F$FAO( "%!AS-I-START, disk clone !AS -> !AS started at !AS", -
 $ !
 $ j = 1
 $loop2:
-$ IF ( F$TYPE( TarDisk'j' ) .EQS. "" ) THEN GOTO loop2end
+$ IF ( F$TYPE( TarDisk'j' ) .EQS. COMMA ) THEN GOTO loop2end
+$ IF ( .NOT. F$GETDVI( TarDisk'j', "EXISTS" ) ) THEN GOTO loop2end
 $ ! Initialize each/all of the target disks for this Volume Shadow Set --
 $ ! This avoids the "wrong virtual unit" problem %MOUNT-F-WRONGVU ("device
 $ ! is already a member of another virtual unit") ... see HELP/MESSAGE text
@@ -151,6 +154,7 @@ $loop2end:
 $ !
 $ MOUNT /FOREIGN 'TarDisk1'  ! target of the clone...
 $ !
+$ SET NOON  ! don't let BACKUP errors/status abort...
 $ wso ""
 $ wso hline
 $ wso F$FAO( "!AS-I-BACKUP, starting clone !AS -> !AS", -
