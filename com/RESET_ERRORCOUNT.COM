@@ -1,6 +1,6 @@
 $ ! RESET_ERRORCOUNT.COM --                                        'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2017-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -47,8 +47,12 @@ $ ELSE erroutf = "SYS$SCRATCH:''Fac'.TMP"
 $      outqual = "/OUTPUT=''erroutf'"
 $ ENDIF
 $ !
-$ SHOW ERROR 'outqual'
+$ ! Display...
+$ SHOW ERROR
+$ wso ""
 $ !
+$ ! then capture for processing...
+$ SHOW ERROR 'outqual'
 $ OPEN ef 'erroutf' /READ /ERROR=FNFerror
 $ READ ef Rec /END_OF_FILE=Done       ! discard header-line "Device ... Error Count"
 $ ! or it contains "%SHOW-S-NOERRORS, no device errors found", so done...
