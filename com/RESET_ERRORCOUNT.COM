@@ -40,7 +40,7 @@ $ IF ( F$EXTRACT( 0, 1, P1 ) .EQS. "H" ) .OR. ( F$EXTRACT( 0, 1, P1 ) .EQS. "?" 
 $ confirm = ( P1 .EQS. "" ) .OR. ( F$EXTRACT( 0, 4, P1 ) .EQS. "CONF" )
 $ !
 $ IF Debug
-$ THEN erroutf = "''DD'''Fac'.TMP"
+$ THEN erroutf = "''DD'''Fac'.TEST"
 $      outqual = "/OUTPUT=NLA0:"  ! discard the SHOW ERROR output for this case...
 $      wso F$FAO( "%!AS-I-TEST_DATA, using test data file !AS", Fac, erroutf )
 $ ELSE erroutf = "SYS$SCRATCH:''Fac'.TMP"
