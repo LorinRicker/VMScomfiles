@@ -27,7 +27,8 @@ $ THEN UName = "''P2'"
 $ ELSE UName = F$EDIT( F$GETJPI( "", "USERNAME" ), "TRIM,LOWERCASE" )
 $ ENDIF
 $ !
-$ rubydisk    = "[''UName'.RUBY]RUBY$MINE.DSK"
+$ ldev        = F$TRNLNM( "SYS$LOGIN_DEVICE", "LNM$JOB" )
+$ rubydisk    = ldev + "[''UName'.RUBY]RUBY$MINE.DSK"
 $ rubydsize   = "32000"
 $ rubyldlnm   = "LDISK$RUBY"
 $ rubyldvol   = "RUBYMINE"
@@ -39,7 +40,7 @@ $ IF ( F$SEARCH( rubydisk ) .EQS. "" ) -
   THEN LD CREATE /SIZE='rubydsize' /CONTIGUOUS /LOG 'rubydisk'
 $ !
 $ IF ( .NOT. F$GETDVI( rubyldunit, "EXISTS" ) ) -
-  THEN LD CONNECT SYS$LOGIN_DEVICE:'rubydisk' 'rubyldunit' 'rubyldlnm'
+  THEN LD CONNECT 'ldev''rubydisk' 'rubyldunit' 'rubyldlnm'
 $ !
 $ ! Logical Disk is initialized "only once":
 $ ! INITIALIZE 'alloc''rubyldunit' /STRUCTURE=5 'rubyldvol'
@@ -47,8 +48,6 @@ $ !
 $ IF ( .NOT. F$GETDVI( rubyldunit, "MNT" ) )
 $ THEN prv = F$SETPRV( "SYSPRV,SYSNAM,VOLPRO" )
 $      MOUNT /SYSTEM /NOASSIST 'alloc''rubyldunit' 'rubyldvol' 'rubydisklnm'
-$      DEFINE /PROCESS /NOLOG LDDISK$RUBY sys$login_device:'rubydisk'
-$      SHOW LOGICAL /FULL *RUBY*
 $      prv = F$SETPRV( prv )
 $ ENDIF
 $ !
@@ -57,6 +56,9 @@ $ ! CREATE /DIRECTORY /LOG /OWNER=['UName'] 'rubyminedir'
 $ !
 $ ! Perform any file/dir protection-mask adjustments manually...
 $ ! Copy *.rb files to target directories manually...
+$ !
+$ DEFINE /JOB /NOLOG 'rubyldlnm' 'rubydisk'
+$ SHOW LOGICAL /FULL *RUBY*
 $ !
 $Done:
 $ EXIT 1  ! 'F$VERIFY(0)'
