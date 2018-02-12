@@ -17,8 +17,8 @@ $ !
 $ ON CONTROL THEN GOSUB CtrlY
 $ ON ERROR THEN EXIT %X2C
 $ !
-$ wso = "WRITE sys$output"
 $ Verbose = F$TRNLNM( "TOOLS$DEBUG" )
+$ wso     = "WRITE sys$output"
 $ COLON   = ":"
 $ COMMA   = ","
 $ HYPHEN  = "-"
@@ -96,12 +96,20 @@ $ THEN wso F$FAO( "%!AS-F-WRONGVOLLBL, specified volume lable !AS does not match
 $      EXIT %X2C
 $ ENDIF
 $ !
-$ procname = "DC$''SrcDisk'" - "DISK$"
 $ procpid  = F$GETJPI( "", "PID" )
+$ procname = "DC$''SrcDisk'" - "DISK$"
+$ procname = F$EXTRACT( 0, 15, procname )  ! process name <= 15 characters
 $ SET PROCESS /NAME="''procname'"
 $ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
+$ IF Verbose THEN SHOW PROCESS
 $ !
-$ IF ( F$TRNLNM( SrcDisk ) .EQS. "" ) THEN SrcDisk = SrcDisk + COLON
+$ SrcDiskLNM = F$TRNLNM( SrcDisk )
+$ IF ( SrcDiskLNM .NES. "" ) THEN SrcDisk = SrcDiskLNM - COLON + COLON
+$ IF Verbose
+$ THEN wso "SrcDisk = ",SrcDisk
+$      wso "SrcDiskLNM = ",SrcDiskLNM
+$ ENDIF
+$ !
 $ TarDisk = F$EDIT( P3, "UPCASE,COLLAPSE" )
 $ j = 1
 $ tdisks = ""
@@ -122,6 +130,8 @@ $ ENDIF
 $ j = j + 1
 $ GOTO loop1
 $loop1end:
+$ tdcount = j - 1
+$ IF Verbose THEN SHOW SYMBOL /LOCAL tdisks
 $ !
 $ IF F$GETDVI( SrcDisk, "ODS5" )
 $ THEN ODSn = "5"
@@ -145,7 +155,7 @@ $ ! This avoids the "wrong virtual unit" problem %MOUNT-F-WRONGVU ("device
 $ ! is already a member of another virtual unit") ... see HELP/MESSAGE text
 $ ! at the end of this file, especially the third reason/case.
 $ tdisk = TarDisk'j'
-$ wso F$FAO( "!AS-I-INIT, initializing !AS !AS /STRUCTURE=!AS /CLUSTER_SIZE=!AS", -
+$ wso F$FAO( "%!AS-I-INIT, initializing !AS !AS /STRUCTURE=!AS /CLUSTER_SIZE=!AS", -
              Fac, tdisk, VolLbl, ODSn, ClustSize )
 $ INITIALIZE 'tdisk' 'VolLbl' /STRUCTURE='ODSn' /CLUSTER_SIZE='ClustSize'
 $ j = j + 1
@@ -157,14 +167,22 @@ $ !
 $ SET NOON  ! don't let BACKUP errors/status abort...
 $ wso ""
 $ wso hline
-$ wso F$FAO( "!AS-I-BACKUP, starting clone !AS -> !AS", -
+$ wso F$FAO( "%!AS-I-BACKUP, starting clone !AS -> !AS", -
              Fac, SrcDisk, TarDisk1 )
+$ IF Verbose
+$ THEN msg  = F$FAO( "%!AS-I-ECHO, ", Fac )
+$      msgl = F$LENGTH( msg )
+$      wso F$FAO( "!AS$ BACKUP !AS /IMAGE /IGNORE=INTERLOCK /PROGRESS=120 -", -
+                  msg, SrcDisk )
+$      wso F$FAO( "!#* !AS /NOINITIALIZE  !! preserve larger size, etc.", -
+                  msgl+4, TarDisk1 )
+$ ENDIF
 $ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK /PROGRESS=120 -
     'TarDisk1' /NOINITIALIZE  ! preserve larger size, etc.
 $ !
 $ DISMOUNT 'TarDisk1'
 $ wso ""
-$ wso F$FAO( "!AS-I-DISMOUNT, target !AS is dismounted, ready for checkout...", -
+$ wso F$FAO( "%!AS-I-DISMOUNT, target !AS is dismounted, ready for checkout...", -
              Fac, TarDisk1 )
 $ !
 $ EndTime = F$TIME()
@@ -176,22 +194,25 @@ $ wso F$FAO( "%!AS-I-END, disk clone !AS -> !AS completed at !AS", -
 $ wso F$FAO( "%!AS-I-ELAPSED, elapsed time: !AS", -
              Fac, F$DELTA_TIME( StartTime, EndTime, "DCL" ) )
 $ !
-$ tdisk = TarDisk'j'
 $ wso ""
 $ wso hline
 $ wso "Recommendation:  Manually do --"
-$ wso "  a) Mount the just-cloned ''tdisk' process-private and write-only:"
-$ wso "     $ MOUNT /NOWRITE ''tdisk' ''VolLbl'"
+$ wso "  a) Mount the just-cloned ''TarDisk1' process-private and write-only:"
+$ wso "     $ MOUNT /NOWRITE ''TarDisk1' ''VolLbl'"
 $ wso "     to check-out the integrity/completeness of the backup/clone operation."
-$ IF Src_is_VolShadow
-$ THEN wso "  and/or --"
+$ IF Src_is_VolShadow .OR. ( tdcount .GT. 1 )
+$ THEN IF ( Src_is_VolShadow )
+$      THEN sdisk = SrcDisk
+$      ELSE sdisk = "DSAxxx:"  ! as an example...
+$      ENDIF
+$      wso "  and/or --"
 $      wso "  b) Dismount the old Shadow-Set Volume from the cluster:"
-$      wso "     $ DISMOUNT /CLUSTER ''SrcDisk'"
-$      wso "     (Note: Any open files on that volume may prevent the dismount.)"
+$      wso "     $ DISMOUNT /CLUSTER ''sdisk'"
+$      wso "         Note: Any open files on this volume may prevent the dismount."
 $      wso "     Then (re)mount the Shadow-Set cluster-wide using the newly-cloned"
-$      wso "     ''tdisk' as the first member, plus any other shadow-set members"
-$      wso "     to start the Copy/Merge operation for ''SrcDisk':"
-$      wso "     $ MOUNT /CLUSTER /NOASSIST /NOREBUILD ''SrcDisk' /SHADOW=(''tdisks') ''VolLbl'"
+$      wso "     ''TarDisk1' as the first member, plus any other shadow-set members,"
+$      wso "     to Copy/Merge operation for ''sdisk' --"
+$      wso "     $ MOUNT /CLUSTER /NOASSIST /NOREBUILD ''sdisk' /SHADOW=(''tdisks') ''VolLbl'"
 $ ENDIF
 $ wso hline
 $ wso ""
