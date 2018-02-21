@@ -123,23 +123,18 @@ $ THEN inifname = F$PARSE( inifile, , , "NAME" )
 $      DEFINE /PROCESS /SUPERVISOR /NOLOG 'inifname' 'inifile'
 $ ENDIF
 $ !
-$ IF F$TRNLNM("ER$development")
-$ THEN DEFINE Lorin   L_Ricker
-$      DEFINE Rick    R_Evans
-$      CALL NCDefine OUTLAW|BANDIT Dean    D_Woodward
-$ !
-$ ELSE IF F$TRNLNM("site$sources") .EQS. ""
-$      THEN Src = F$SEARCH("disks$mounted:[smart]sources.dir")
-$           IF Src .NES. ""
-$           THEN Src = F$PARSE(Src,,,"DEVICE","SYNTAX_ONLY")
-$                DEFINE site$sources 'Src'[smart.sources.] /TRANS=CONCEAL
-$           ENDIF
+$ IF F$TRNLNM("site$sources") .EQS. ""
+$ THEN Src = F$SEARCH("disks$mounted:[smart]sources.dir")
+$      IF Src .NES. ""
+$      THEN Src = F$PARSE(Src,,,"DEVICE","SYNTAX_ONLY")
+$           DEFINE site$sources 'Src'[smart.sources.] /TRANS=CONCEAL
 $      ENDIF
 $ ENDIF
 $ !
 $ ! PARSEC
-$ IF ( F$EXTRACT(0,5,F$GETSYI("NODENAME")) .NES. "VMSPR" ) -
-  THEN DEFINE storage vmspr1::disk$storage:
+$ IF ( F$EXTRACT(0,6,F$GETSYI("NODENAME")) .NES. "VMSPR1" )
+$ THEN DEFINE /JOB /NOLOG storage vmspr1::disk$ftp:
+$ ENDIF
 $ !
 $ EXIT
 $ !
