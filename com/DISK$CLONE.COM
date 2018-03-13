@@ -25,6 +25,8 @@ $ HYPHEN  = "-"
 $ SLASH   = "/"
 $ hline   = F$FAO( "!72*-" )
 $ !
+$ ProgInt = "60"  ! show BACKUP /PROGRESS every N-seconds
+$ !
 $ Self = F$ENVIRONMENT( "PROCEDURE" )
 $ Fac  = F$PARSE( Self, , , "NAME", "SYNTAX_ONLY" )
 $ Self = Self - F$PARSE( Self, , , "VERSION" )
@@ -103,7 +105,9 @@ $ SET PROCESS /NAME="''procname'"
 $ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
 $ IF Verbose THEN SHOW PROCESS
 $ !
+$ SrcDisk = SrcDisk - COLON
 $ SrcDiskLNM = F$TRNLNM( SrcDisk )
+$ SrcDisk = SrcDisk + COLON
 $ IF ( SrcDiskLNM .NES. "" ) THEN SrcDisk = SrcDiskLNM - COLON + COLON
 $ IF Verbose
 $ THEN wso "SrcDisk = ",SrcDisk
@@ -116,10 +120,11 @@ $ tdisks = ""
 $loop1:
 $ TarDisk'j' = F$ELEMENT( j-1, COMMA, P3 )
 $ IF ( TarDisk'j' .EQS. COMMA ) THEN GOTO loop1end
-$ IF ( F$TRNLNM( TarDisk'j' ) .EQS. "" ) THEN TarDisk'j' = TarDisk'j' + COLON
+$ IF ( F$TRNLNM( TarDisk'j' ) .EQS. "" ) THEN TarDisk'j' = TarDisk'j' - COLON
 $ ! Sanity check --
 $ IF ( F$GETDVI( TarDisk'j', "EXISTS" ) )
-$ THEN IF ( tdisks .NES. "" )
+$ THEN TarDisk'j' = TarDisk'j' + COLON
+$      IF ( tdisks .NES. "" )
 $      THEN tdisks = tdisks + COMMA + TarDisk'j'
 $      ELSE tdisks = TarDisk'j'
 $      ENDIF
@@ -172,12 +177,12 @@ $ wso F$FAO( "%!AS-I-BACKUP, starting clone !AS -> !AS", -
 $ IF Verbose
 $ THEN msg  = F$FAO( "%!AS-I-ECHO, ", Fac )
 $      msgl = F$LENGTH( msg )
-$      wso F$FAO( "!AS$ BACKUP !AS /IMAGE /IGNORE=INTERLOCK /PROGRESS=120 -", -
+$      wso F$FAO( "!AS$ BACKUP !AS /IMAGE /IGNORE=INTERLOCK /PROGRESS=''ProgInt' -", -
                   msg, SrcDisk )
 $      wso F$FAO( "!#* !AS /NOINITIALIZE  !! preserve larger size, etc.", -
                   msgl+4, TarDisk1 )
 $ ENDIF
-$ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK /PROGRESS=120 -
+$ BACKUP 'SrcDisk' /IMAGE /IGNORE=INTERLOCK /PROGRESS='ProgInt' -
     'TarDisk1' /NOINITIALIZE  ! preserve larger size, etc.
 $ !
 $ DISMOUNT 'TarDisk1'
