@@ -188,7 +188,7 @@ $ procpid  = F$GETJPI( "", "PID" )
 $ procname = "DC$''SrcDisk'" - "DISK$"
 $ procname = F$EXTRACT( 0, 15, procname )  ! process name <= 15 characters
 $ SET PROCESS /NAME="''procname'"  ! okay for both subprocess and batch process...
-$ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid'"
+$ WRITE sys$error "%''Fac'-I-IDENT, process name: ''procname', PID: ''procpid', ''ProcMode' mode"
 $ SHOW PROCESS /SUBPROCESS
 $ !
 $ SrcDisk = SrcDisk - COLON
