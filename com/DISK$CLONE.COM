@@ -18,7 +18,7 @@ $ !         [ /CLUSTER=n ] [ /ODS=n ]                                -
 $ !         [ [ /BATCH ] [ /SUBMIT ] ]                               -
 $ !       ]
 $ !
-$ !  or: @DISK$CLONE /HELP
+$ !  or: @DISK$CLONE --HELP
 $ !
 $ !  Any of the qualifiers must be specifed with at least 3 characters,
 $ !  and any of them can begin with either one "-" or two hyphens "--"
@@ -443,7 +443,7 @@ $ TYPE /PAGE sys$input
 
      or:
 
-    $ @DISK$CLONE /HELP
+    $ @DISK$CLONE --HELP
 
          Any of the qualifiers must be specifed with at least 3 characters,
          and any of them can begin with either one "-" or two hyphens "--"
