@@ -13,13 +13,17 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! use: @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]... -
-$ !        [ [/VERBOSE] [/LOG] [/DRYRUN] [[/BATCH] [/SUBMIT]] ]
+$ !       [ [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                        -
+$ !         [ /CLUSTER=n ] [ /ODS=n ]                                -
+$ !         [ [ /BATCH ] [ /SUBMIT ] ]                               -
+$ !       ]
 $ !
 $ !  or: @DISK$CLONE /HELP
 $ !
-$ !      /HELP, /VERBOSE, /LOG, /DRYRUN, /BATCH, /SUBMIT can also be:
-$ !        --help, --verbose, --dryrun, --log, --batch, --submit,
-$ !        or -help or help, etc.
+$ !  Any of the qualifiers must be specifed with at least 3 characters,
+$ !  and any of them can begin with either one "-" or two hyphens "--"
+$ !  rather than a slash "/", e.g.:
+$ !  /LOG or -log or --log, /ODS=n or -ods=n or --ods=n, etc.
 $ !
 $DiskReport:  SUBROUTINE
 $ dev = P1
@@ -61,6 +65,43 @@ $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DiskReport
 $ !
+$QualValue:  SUBROUTINE
+$ ! Extract a value "=N" from one of the Qualifiers in "Quals"
+$ ! P1 : the qualifier ("CLU" or "ODS") to find and return value
+$ ! P2 : the qualifiers as passed as one concatenated string
+$ !
+$ ON ERROR THEN EXIT %X2C
+$ DIGITS = "1234567890"
+$ DIGLEN = F$LENGTH( DIGITS )
+$ sep = SPACE  ! between each qualifier
+$ val = ""
+$ i   = 0
+$QVloop:
+$ qual = F$ELEMENT( i, sep, P2 )
+$ IF ( qual .EQS. sep ) THEN GOTO QVDone  ! did not find "''P1'"
+$ IF ( F$EXTRACT( 0, 3, qual ) .EQS. P1 )
+$ THEN val = F$ELEMENT( 1, EQUALS, qual )       ! "QUAL=n" ?
+$       v1 = F$EXTRACT( 0, 1, val )
+$      IF ( F$LOCATE( v1, DIGITS ) .GE. DIGLEN )
+$      THEN val = F$ELEMENT( 1, COLON, qual )   ! "QUAL:n" ?
+$           IF ( F$LOCATE( v1, DIGITS ) .GE. DIGLEN ) THEN GOTO QVCheck
+$      ENDIF
+$      GOTO QVDone  ! got a value
+$ ELSE i = i + 1
+$      GOTO QVloop
+$ ENDIF
+$ !
+$QVCheck:
+$ IF ( val .EQS. "" ) THEN GOTO QVError
+$QVDone:
+$ DC$QualValue == val
+$ IF ( Verbose .OR. DryRun ) THEN wso F$FAO( "%!AS-I-ECHO, specified ""!AS"" value is ""!AS""", Fac, P1, val )
+$ EXIT 1  !'F$VERIFY(0)
+$QVError:
+$ wso F$FAO( "%!AS-E-BADQUAL, no qualifier ""!AS"" found, or bad value ""!AS""", Fac, P1, val )
+$ EXIT %X2C  !'F$VERIFY(0)
+$ ENDSUBROUTINE  ! QualValue
+$ !
 $ !
 $Main:
 $ ON CONTROL THEN GOSUB CtrlY
@@ -76,6 +117,7 @@ $ !
 $ wso      = "WRITE sys$output"
 $ COLON    = ":"
 $ COMMA    = ","
+$ EQUALS   = "="
 $ HYPHEN   = "-"
 $ SLASH    = "/"
 $ SPACE    = " "
@@ -117,20 +159,23 @@ $ !
 $ ! Any qual/option can appear as /QUAL, --option, -option or option ...
 $ Quals = ( P4 - SLASH - HYPHEN - HYPHEN ) + SPACE -
         + ( P5 - SLASH - HYPHEN - HYPHEN ) + SPACE -
-        + ( P6 - SLASH - HYPHEN - HYPHEN )
-$ Quals = F$EDIT( Quals, "UPCASE" )
+        + ( P6 - SLASH - HYPHEN - HYPHEN ) + SPACE -
+        + ( P7 - SLASH - HYPHEN - HYPHEN ) + SPACE -
+        + ( P8 - SLASH - HYPHEN - HYPHEN )
+$ Quals = F$EDIT( Quals, "UPCASE,TRIM,COMPRESS" )
 $ Qlen = F$LENGTH( Quals )
 $ !
 $ Verbose = ( F$LOCATE( "VER", Quals ) .LT. Qlen )
 $ DryRun  = ( F$LOCATE( "DRY", Quals ) .LT. Qlen )
+$ CluQual = ( F$LOCATE( "CLU", Quals ) .LT. Qlen )
+$ ODSQual = ( F$LOCATE( "ODS", Quals ) .LT. Qlen )
 $ IF ( F$LOCATE( "LOG", Quals ) .LT. Qlen ) .OR. ( Verbose )
 $ THEN Logging = 1
-$      sdisk = F$EDIT( P1, "UPCASE,COLLAPSE" ) - COLON
-$      vLbl  = F$EDIT( P2, "UPCASE,COLLAPSE" )
-$      LogFile = F$FAO( "LOGS:!AS_!AS.LOG", Fac, vlbl )
 $ ELSE Logging = 0
-$      LogFile = ""
 $ ENDIF
+$ sdisk   = F$EDIT( P1, "UPCASE,COLLAPSE" ) - COLON
+$ vLbl    = F$EDIT( P2, "UPCASE,COLLAPSE" )
+$ LogFile = F$FAO( "LOGS:!AS_!AS.LOG", Fac, vlbl )
 $ !
 $ GOTO 'ProcMode'
 $ !
@@ -149,6 +194,7 @@ $      DCentry = $ENTRY
 $      IF ( F$TYPE( docont ) .EQS. "STRING" )
 $      THEN WatchDC == "@com:do_continuous -d:60 ""pipe TYPE /TAIL ''LogFile' ; SHOW ENTRY /FULL ''DCentry'"""
 $      ELSE WatchDC == "pipe TYPE /TAIL ''LogFile' ; SHOW ENTRY /FULL ''DCentry'"
+$           SHOW SYMBOL /GLOBAL WatchDC
 $      ENDIF
 $      wso ""
 $      wso "%''Fac'-I-USE, to monitor clone/copy progress, use:"
@@ -164,9 +210,7 @@ $ !
 $ DCL$CALL AmI_Subprocess  ! 'F$VERIFY(0)'
 $ IF ( IAm$Subprocess )
 $ THEN GOTO clone2continue
-$ ELSE IF ( LogFile .NES. "" )
-$      THEN wso F$FAO( "%!AS-I-OUTPUT_LOG, output logfile is !AS", Fac, LogFile )
-$      ENDIF
+$ ELSE IF ( LogFile .NES. "" ) THEN wso F$FAO( "%!AS-I-OUTPUT_LOG, output logfile is !AS", Fac, LogFile )
 $      wso ""
 $      wso hline
 $      fork = "SPAWN /NOWAIT /NOTIFY /INPUT=NLA0: "
@@ -213,6 +257,29 @@ $      wso "     SrcDisk = ",SrcDisk
 $      wso "  SrcDiskLNM = ",SrcDiskLNM
 $ ENDIF
 $ !
+$ IF ODSQual
+$ THEN CALL QualValue "ODS" "''Quals'"
+$      ODSn = DC$QualValue
+$      ODSlegal = ",2,5,"     ! legal ODS levels ... ",2,5,6,"
+$                             !   ("6" is provisional for VSI's new Advanced ODS File System)
+$      ODSlen = F$LENGTH( ODSlegal )
+$      IF ( F$LOCATE( ",''ODSn',", ODSlegal ) .GE. ODSlen )  ! a bad ODS value?
+$      THEN wso F$FAO( "%!AS-E-BAD_ODSVALUE, illegal ODS value ""!AS""", -
+                       Fac, ODSn )
+$           EXIT %X2C
+$      ENDIF
+$ ELSE IF F$GETDVI( SrcDisk, "ODS5" )
+$      THEN ODSn = "5"
+$      ELSE ODSn = "2"
+$      ENDIF
+$ ENDIF
+$ !
+$ IF CluQual
+$ THEN CALL QualValue "CLU" "''Quals'"
+$      ClustSize = DC$QualValue
+$ ELSE ClustSize = F$STRING( F$GETDVI( SrcDisk, "CLUSTER" ) )
+$ ENDIF
+$ !
 $ TarDisk = F$EDIT( P3, "UPCASE,COLLAPSE" )
 $ j = 1
 $ TDisks = ""
@@ -236,12 +303,6 @@ $ GOTO loop1
 $loop1end:
 $ tdcount = j - 1
 $ IF ( Verbose ) THEN wso "      TDisks = ",TDisks
-$ !
-$ IF F$GETDVI( SrcDisk, "ODS5" )
-$ THEN ODSn = "5"
-$ ELSE ODSn = "2"
-$ ENDIF
-$ ClustSize = F$STRING( F$GETDVI( SrcDisk, "CLUSTER" ) )
 $ !
 $ StartTime = F$TIME()
 $ wso ""
@@ -348,7 +409,7 @@ $ ENDIF
 $ !
 $Done:
 $NETWORK:
-$ DCL$CALL DeleteGloSyms "DL$expsize,DL$maxfiles,DL$volsize,DL$maxblks"
+$ DCL$CALL DeleteGloSyms "DC$QualValue,DL$expsize,DL$maxfiles,DL$volsize,DL$maxblks"
 $ IF ( F$TYPE( prv ) .NES. "" ) THEN prv = F$SETPRV( prv )
 $ EXIT 1  ! 'F$VERIFY(0)'
 $ !
@@ -362,21 +423,32 @@ $ TYPE /PAGE sys$input
   DISK$CLONE.COM is a script which copies/clones one source disk (device)
   to another target disk, using BACKUP /IMAGE /NOINITIALIZE.
 
+  The copy/clone operation may be done as a subprocess (of the current
+  interactive process, which is the default), or for larger disks (long
+  clone run-times) as a batch job by specifying either /BATCH or /SUBMIT
+  as part of the command line.
+
   The target disk is pre-initialized to have its own, typically larger,
   disk geometry and characteristics, but inherits the source disks's
-  ODS-2/5 structure, cluster-size and volume label.
+  ODS-2/5 structure, cluster-size and volume label.  Either the ODS level
+  or the cluster-size can be overridden with /ODS=n and/or /CLUSTER=n
+  on the command line.
 
   use:
     $ @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]... -
-           [ [/VERBOSE] [/LOG] [/DRYRUN] [[/BATCH] [/SUBMIT]] ]
+           [ [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                        -
+             [ /CLUSTER=n ] [ /ODS=n ]                                -
+             [ [ /BATCH ] [ /SUBMIT ] ]                               -
+           ]
 
      or:
 
     $ @DISK$CLONE /HELP
 
-         /HELP, /VERBOSE, /LOG, /DRYRUN, /BATCH, /SUBMIT can also be:
-           --help, --verbose, --dryrun, --log, --batch, --submit,
-           or -help or help, etc.
+         Any of the qualifiers must be specifed with at least 3 characters,
+         and any of them can begin with either one "-" or two hyphens "--"
+         rather than a slash "/", e.g.:
+         /LOG or -log or --log, /ODS=n or -ods=n or --ods=n, etc.
 
   where:
 
@@ -394,6 +466,18 @@ $ TYPE /PAGE sys$input
                capacities (available disk blocks) to the maximum(s) avail-
                able, but will also receive the source disk's /STRUCTURE
                (either ODS-5 or ODS-2), /CLUSTER_SIZE and volume label.
+
+  /ODS=n    -- Specify (override) the ODS "On Disk Structure" level,
+  or /ODS:n    either "2" or "5".  Normally, the target disk inherits
+               the ODS-level of the source disk (and this is usually
+               what you want); however, you can override this for
+               unusual situations.
+
+  /CLUSTER=n -- Specify (override) the Cluster-Size (minimum allocation
+  or           unit/size in blocks; see DCL's HELP INITIALIZE /CLUSTER).
+  /CLUSTER:n   Normally, the target disk inherits the cluster-size of
+               the source disk (and this is usually what you want);
+               however, you can override this for special circumstances.
 
   /LOG      -- Option to redirect clone operations (subprocess) output to
                a log-file (rather than to the user's terminal); if used,
