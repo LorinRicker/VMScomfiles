@@ -136,18 +136,30 @@ $ GOTO 'ProcMode'
 $ !
 $ !
 $INTERACTIVE:
-$OTHER:  ! the subprocess vectors here...
-$ ! If "I" (the executing process) am top/parent process,
-$ ! launch Self as a subprocess;
-$ ! else, "I" am the subprocess... get to work!
+$ ! May need command alias(es):
+$ f = "COM:DO_CONTINUOUS.COM"
+$ IF ( F$SEARCH( f ) .NES. "" ) THEN docont == "@''f'"
 $ !
 $ SelfSubmit = ( F$LOCATE( "BAT", Quals ) .LT. Qlen ) -
           .OR. ( F$LOCATE( "SUB", Quals ) .LT. Qlen )
 $ IF ( SelfSubmit )
 $ THEN SUBMIT = "SUBMIT /NOTIFY /KEEP /NOPRINT /LOG=''LogFile'"
 $      SUBMIT 'Self' /PARAMETERS=("''P1'","''P2'","''P3'","''P4'","''P5'","''P6'","''P7'","''P8'")
+$      DCentry = $ENTRY
+$      IF ( F$TYPE( docont ) .EQS. "STRING" )
+$      THEN WatchDC == "@com:do_continuous -d:60 ""pipe TYPE /TAIL ''LogFile' ; SHOW ENTRY /FULL ''DCentry'"""
+$      ELSE WatchDC == "pipe TYPE /TAIL ''LogFile' ; SHOW ENTRY /FULL ''DCentry'"
+$      ENDIF
+$      wso ""
+$      wso "%''Fac'-I-USE, to monitor clone/copy progress, use:"
+$      wso "      $ [1m''WatchDC'[0m"
 $      EXIT 1
 $ ENDIF
+$ !
+$OTHER:  ! the subprocess vectors here...
+$ ! If "I" (the executing process) am top/parent process,
+$ ! launch Self as a subprocess;
+$ ! else, "I" am the subprocess... get to work!
 $ !
 $ DCL$CALL AmI_Subprocess  ! 'F$VERIFY(0)'
 $ IF ( IAm$Subprocess )
