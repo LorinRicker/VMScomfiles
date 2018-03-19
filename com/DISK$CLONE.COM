@@ -13,16 +13,15 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! use: @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]... -
-$ !       [ [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                        -
-$ !         [ /CLUSTER=n ] [ /ODS=n ]                                -
-$ !         [ [ /BATCH ] [ /SUBMIT ] ]                               -
-$ !       ]
+$ !        [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                             -
+$ !        [ /CLUSTER=n ] [ /ODS=n ]                                     -
+$ !        [ /BATCH ] [ /SUBMIT ]
 $ !
 $ !  or: @DISK$CLONE --HELP
 $ !
 $ !  Any of the qualifiers must be specifed with at least 3 characters,
 $ !  and any of them can begin with either one "-" or two hyphens "--"
-$ !  rather than a slash "/", e.g.:
+$ !  (as *nix-style options) rather than a slash "/", e.g.:
 $ !  /LOG or -log or --log, /ODS=n or -ods=n or --ods=n, etc.
 $ !
 $DiskReport:  SUBROUTINE
@@ -436,19 +435,18 @@ $ TYPE /PAGE sys$input
 
   use:
     $ @DISK$CLONE SourceDisk VolumeLabel TargetDisk1[,TargetDisk2]... -
-           [ [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                        -
-             [ /CLUSTER=n ] [ /ODS=n ]                                -
-             [ [ /BATCH ] [ /SUBMIT ] ]                               -
-           ]
+         [ /LOG ] [ /VERBOSE ] [ /DRYRUN ]                            -
+         [ /CLUSTER=n ] [ /ODS=n ]                                    -
+         [ /BATCH ] [ /SUBMIT ]
 
      or:
 
     $ @DISK$CLONE --HELP
 
-         Any of the qualifiers must be specifed with at least 3 characters,
-         and any of them can begin with either one "-" or two hyphens "--"
-         rather than a slash "/", e.g.:
-         /LOG or -log or --log, /ODS=n or -ods=n or --ods=n, etc.
+    Any of the qualifiers must be specifed with at least 3 characters,
+    and any of them can begin with either one "-" or two hyphens "--"
+    (as *nix-style options) rather than a slash "/", e.g.:
+    /LOG or -log or --log, /ODS=n or -ods=n or --ods=n, etc.
 
   where:
 
