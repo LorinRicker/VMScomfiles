@@ -1,6 +1,6 @@
 $ ! FILE$FIND.COM --                                               'F$VERIFY(0)'
 $ !
-$ ! Copyright © 2014-2017 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2014-2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -20,7 +20,7 @@ $ !
 $ ! usage:  @FILE$FIND [ VERSIONS (D) | SIZE              -
 $ !                      | AGED | BEFORE | SINCE | AFTER  -
 $ !                      | MOVE | NOBACKUP | VERLIMIT     -
-$ !                      | BIGDIRS |                      -
+$ !                      | BIGDIRS | FILECOUNT |          -
 $ !                      | HELP ]                         -
 $ !                    [ disk_device[,...] ]              -
 $ !                    [ scan_parameter ]                 -
@@ -31,6 +31,7 @@ $ !                                  AGED or BEFORE,
 $ !                                  SINCE or AFTER,
 $ !                                  MOVE, NOBACKUP,
 $ !                                  VERLIMIT, BIGDIRS,
+$ !                                  FILECOUNT,
 $ !                                  HELP
 $ !        P2 -- Disk device list to scan for files over the specified
 $ !              or default version limit; default is SYS$SYSDEVICE;
@@ -43,65 +44,54 @@ $ !                  AGED or BEFORE: Files created before this date/time
 $ !                  AFTER or SINCE: Files created after this date/time
 $ !        P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
 $ !
-$Cmd$Parse: SUBROUTINE
-$ ! P1: command to parse
-$ ! P2: global symbol to receive answer
-$ ! P3: default command
-$ ! P4: command-set ("C1|C2[|Cn...]") -- options must be same-length fields
-$ !     or "@symbol" where "symbol" contains command-set (this accommodates
-$ !     very long command-sets, > 255 characters)
-$ ! P5: command separator
-$ IF P1 .EQS. "" THEN P1 = P3
-$ IF P2 .EQS. "" THEN P2 = "Cmd"
-$ IF P5 .EQS. "" THEN P5 = "|"
-$ IF F$EXTRACT(0,1,P4) .EQS. "@"
-$ THEN sym = P4 - "@"
-$      P4 = 'sym'
-$ ENDIF
-$ P4 = F$EDIT(P4,"UPCASE")
-$ S  = F$LOCATE(P5,P4) + 1               !Determine field length
-$ P4 = P5 + P4                           !Add separator to front of list...
-$ T  = P5 + F$EDIT(P1,"COLLAPSE,UPCASE") !...and to target
-$ L  = F$LOCATE( F$EDIT(T,"COLLAPSE,UPCASE"), P4 )      !Test substring
-$ IF ( L .LT. F$LENGTH(P4) ) .AND. ( L-(L/S)*S .EQ. 0 ) !Found?
-$ THEN L = ( ( L + 1 ) / S ) + 1                        !Calculate offset
-$      !Return both the full command and its element #:
-$      'P2'     == F$EDIT( F$ELEMENT(L,P5,P4), "COLLAPSE" )
-$      'P2'_Num == L  !1-based: 1=first command, 2=second, ...
-$      EXIT 1
-$ ELSE 'P2'     == "$Err$"
-$      'P2'_Num == -1
-$      WRITE sys$output "\''P1'\ (expecting: ''F$EDIT(P4,"COLLAPSE")')"
-$      EXIT 229522  !%DCL-E-IVVERB, unrecognized command verb
-$ ENDIF
-$ ENDSUBROUTINE
+$ScanFILECOUNT:  SUBROUTINE
+$ ! P1 = Disk device to scan
+$ ! P2 = (unused)
+$ ! P3 = (unused)
+$ ! P4 = Nodename
 $ !
-$MakeDiskList: SUBROUTINE
-$ ON ERROR THEN GOTO MDLEnd
-$ FF$DiskList == ""
-$MDL0:
-$ dsk = F$DEVICE( , "DISK" )
-$ IF ( dsk .EQS. "" ) THEN GOTO MDLEnd
-$ IF ( .NOT. F$GETDVI( dsk, "MNT" ) )     -  ! not mounted?
-  .OR. ( F$GETDVI( dsk, "FOR" ) )         -  ! mounted foreign?
-  .OR. ( F$GETDVI( dsk, "SWL" ) )         -  ! software-locked?
-  .OR. ( F$GETDVI( dsk, "SHDW_MEMBER" ) ) -  ! a shadow-set member (not the shadow-set itself)?
-  THEN GOTO MDL0                             ! ... skip it
-$ dsk = dsk - UNDERSCORE
-$ IF ( FF$DiskList .NES. "" )
-$ THEN FF$DiskList == FF$DiskList + COMMA + dsk
-$ ELSE FF$DiskList == dsk
-$ ENDIF
-$ GOTO MDL0
-$MDLEnd:
-$ IF Verbose
-$ THEN wso F$FAO( "%!AS-I-ECHO, FF$DiskList ==", Fac )
-$      wso F$FAO( "  ""!AS""", FF$DiskList )
-$ ENDIF
+$ ON CONTROL_Y THEN GOSUB FCCtrl_Y
+$ dev         = P1
+$ node        = P4
+$ streamid    = 1
+$ fcount      = 0
+$ outfspec    = "''DD'''Fac'_FILECOUNT_''dev'.REPORT"
+$ !
+$ wso ""
+$ wso F$FAO( "%!AS-I-WAIT, file-count scan of !AS::!AS!/  to !AS ...", -
+              Fac, node, dev, outfspec )
+$ DEFINE sys$output 'outfspec'
+$ ON ERROR THEN GOTO SFCDone
+$ !
+$SFCLoop:
+$ f = F$SEARCH( "''dev':[*...]*.*;*", streamid )
+$ IF ( f .EQS. "" ) THEN GOTO SFCEndLoop
+$ fcount = fcount + 1
+$ GOTO SFCLoop
+$SFCEndLoop:
+$ !
+$ maxfiles = F$GETDVI( dev, "MAXFILES" )
+$ fcpercent = F$STRING( ( fcount * 100 ) / maxfiles )
+$ DCL$CALL Thousands FF$FCount "''fcount'"
+$ DCL$CALL Thousands FF$MaxFiles "''F$STRING( maxfiles )'"
+$ msg  = F$FAO( "%!AS-I-COUNT,", Fac )
+$ msgL = F$LENGTH( msg ) + 1
+$ wso ""
+$ wso F$FAO( "!AS counted !AS files", msg, FF$FCount )
+$ wso F$FAO( "!#* MaxFiles for !AS is !AS", -
+             msgL, dev, FF$MaxFiles )
+$ wso F$FAO( "!#* current file-count is ~!AS% of the maximum allowed", -
+             msgL, fcpercent )
+$ wso ""
+$ !
+$SFCDone:
+$ DEASSIGN sys$output
+$ CALL Report "''outfspec'" "''typereport'"
 $ EXIT 1
-$ ENDSUBROUTINE  ! MakeDiskList
 $ !
-$ !
+$FCCtrl_Y:
+$ RETURN %X2C
+$ ENDSUBROUTINE  ! ScanFILECOUNT
 $ !
 $ScanBIGDIRS: SUBROUTINE
 $ ! P1 = Disk device to scan
@@ -428,8 +418,13 @@ $ EXIT %X2C
 $ ENDSUBROUTINE  ! ScanVERSIONS
 $ !
 $Report: SUBROUTINE
+$ ! P1 : TRUE to force TYPE /PAGE, otherwise plain old TYPE
+$ IF P1
+$ THEN typeit = "TYPE /PAGE"
+$ ELSE typeit = "TYPE"
+$ ENDIF
 $ IF ( F$SEARCH("''P1';-1") .NES. "" ) THEN PURGE /NOLOG /KEEP=2 'P1'
-$ IF P2 THEN TYPE /PAGE 'P1'
+$ IF P2 THEN typeit 'P1'
 $ EXIT 1
 $ ENDSUBROUTINE  ! Report
 $ !
@@ -447,6 +442,25 @@ $ DD   = F$PARSE( Proc, , , "DEVICE", "SYNTAX_ONLY" ) -
        + F$PARSE( Proc, , , "DIRECTORY", "SYNTAX_ONLY" )
 $ Node = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ !
+$ reqdclslversion = "02.05.01"
+$dclslvercheck:
+$ dclslversion = F$TRNLNM( "DCL$SLversion" )
+$ IF ( dclslversion .NES. "" )
+$ THEN IF ( dclslversion .LTS. reqdclslversion )
+$      THEN wso "%''Fac'-E-WRONGVER, this procedure requires DCL$SUBROUTINE_LIBRARY.COM v''reqdclslversion'"
+$           EXIT %X2C
+$      ELSE GOTO dclcontinue
+$      ENDIF
+$ ELSE wso "%''Fac'-E-NOLIB, this procedure requires DCL$SUBROUTINE_LIBRARY.COM"
+$      dclslcomf = "lmr$login:DCL$SUBROUTINE_LIBRARY.COM"
+$      @'dclslcomf' Setup TRUE
+$      IF $STATUS
+$      THEN GOTO dclslvercheck
+$      ELSE EXIT %X2C
+$      ENDIF
+$ ENDIF
+$dclcontinue:
+$ !
 $ COMMA      = ","
 $ COLON      = ":"
 $ SEMICOLON  = ";"
@@ -458,9 +472,10 @@ $ !
 $ ! Principle of Least Privilege:
 $ Prv = F$SETPRV("READALL")
 $ !
-$ CmdSet = "VERSIONS|SIZE    |AGED    |BEFORE  |SINCE   |AFTER   |MOVE    |NOBACKUP|VERLIMIT|BIGDIRS |HELP    "
+$ CmdSet =  "VERSIONS |SIZE     |AGED     |BEFORE   |SINCE    |AFTER    " -
+         + "|MOVE     |NOBACKUP |VERLIMIT |BIGDIRS  |FILECOUNT|HELP     "
 $ !
-$ CALL Cmd$Parse "''P1'" "FF$Cmd" "VERSIONS" "''CmdSet'"
+$ DCL$CALL CmdParse "''P1'" "FF$Cmd" "VERSIONS" "''CmdSet'" "" "TRUE"
 $ IF ( FF$Cmd .EQS. "HELP"  ) THEN GOTO Help$
 $ IF ( FF$Cmd .EQS. "AGED"  ) THEN FF$Cmd == "BEFORE"
 $ IF ( FF$Cmd .EQS. "AFTER" ) THEN FF$Cmd == "SINCE"
@@ -473,7 +488,7 @@ $ ENDIF
 $ !
 $ IF ( P2 .NES. "" )
 $ THEN FF$DiskList == P2
-$ ELSE CALL MakeDiskList
+$ ELSE CALL DCL$CALL DiscoverDisks FF$DiskList "MNT"
 $      wso F$FAO( "%!AS-I-ALLDISKS, scanning !AS", Fac, FF$DiskList )
 $ ENDIF
 $ !
@@ -495,11 +510,12 @@ $      GOTO defdone
 $def_SINCE:
 $      defvalue = "1-JAN"
 $      GOTO defdone
+$def_BIGDIRS:
+$      defvalue = "500"
+$      GOTO defdone
+$def_FILECOUNT:
 $def_FILEATTR:
 $      defvalue = ""
-$      GOTO defdone
-$def_BIGDIRS:
-$      defvalue = "50"
 $      GOTO defdone
 $ ENDIF
 $ !
@@ -527,8 +543,7 @@ $ !
 $Done:
 $ SET NOON
 $ ! cleanup
-$ IF ( F$TYPE(FF$Cmd)      .NES. "" ) THEN DELETE /SYMBOL /GLOBAL FF$Cmd
-$ IF ( F$TYPE(FF$DiskList) .NES. "" ) THEN DELETE /SYMBOL /GLOBAL FF$DiskList
+$ DCL$CALL DeleteGloSyms "FF$Cmd,FF$Cmd_Num,FF$DiskList,FF$FCount,FF$MaxFiles"
 $ IF ( F$TYPE(tmpfspec) .NES. "" ) -
   THEN IF ( tmpfspec .NES. "" ) -
        THEN IF ( F$SEARCH(tmpfspec)  .NES. "" ) THEN DELETE /NOLOG 'tmpfspec';*
@@ -545,7 +560,7 @@ $ TYPE /PAGE sys$input
   use:  @FILE$FIND [ VERSIONS (D) | SIZE
                      | AGED | BEFORE | SINCE | AFTER
                      | MOVE | NOBACKUP | VERLIMIT
-                     | BIGDIRS |
+                     | BIGDIRS | FILECOUNT |
                      | HELP ]
                    [ disk_device[,...] ]
                    [ scan_parameter ]
@@ -555,6 +570,7 @@ $ TYPE /PAGE sys$input
                                    AGED or BEFORE,
                                    SINCE or AFTER,
                                    MOVE, NOBACKUP or VERLIMIT,
+                                   BIGDIRS, FILECOUNT,
                                    HELP
 
          P2 -- Disk device list to scan for files over the specified
@@ -576,6 +592,5 @@ $ TYPE /PAGE sys$input
                    VERLIMIT        including "" or "DUMMY", etc.
 
          P4 -- NOTYPE: just scan & create output file, don't TYPE/PAGE it
-
 
 $ GOTO Done
