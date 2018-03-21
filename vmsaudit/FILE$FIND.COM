@@ -64,7 +64,7 @@ $ DEFINE sys$output 'outfspec'
 $ ON ERROR THEN GOTO SFCDone
 $ !
 $SFCLoop:
-$ f = F$SEARCH( "''dev':[*...]*.*;*", streamid )
+$ f = F$SEARCH( "''dev':[000000...]*.*;*", streamid )
 $ IF ( f .EQS. "" ) THEN GOTO SFCEndLoop
 $ fcount = fcount + 1
 $ GOTO SFCLoop
