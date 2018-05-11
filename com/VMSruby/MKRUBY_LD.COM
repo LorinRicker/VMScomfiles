@@ -40,7 +40,7 @@ $ IF ( F$SEARCH( rubydisk ) .EQS. "" ) -
   THEN LD CREATE /SIZE='rubydsize' /CONTIGUOUS /LOG 'rubydisk'
 $ !
 $ IF ( .NOT. F$GETDVI( rubyldunit, "EXISTS" ) ) -
-  THEN LD CONNECT 'ldev''rubydisk' 'rubyldunit' 'rubyldlnm'
+  THEN LD CONNECT 'rubydisk' 'rubyldunit' 'rubyldlnm'
 $ !
 $ ! Logical Disk is initialized "only once":
 $ ! INITIALIZE 'alloc''rubyldunit' /STRUCTURE=5 'rubyldvol'

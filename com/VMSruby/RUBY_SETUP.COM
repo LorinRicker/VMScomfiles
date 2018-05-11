@@ -62,10 +62,11 @@ $ !
 $ ! No Ruby-startup comfile?  Don't even bother continuing:
 $ IF ( F$SEARCH(RubyStartup) .EQS. "" ) THEN EXIT
 $ !
-$ UName = F$EDIT( F$GETJPI( "", "USERNAME" ), "TRIM,LOWERCASE" )
-$ Proc  = F$ENVIRONMENT("PROCEDURE")
-$ Fac   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
-$ node  = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
+$ RubyDisk = "LDA1024:"   ! assigned/default by Lorin -- changeable per installation
+$ UName    = F$EDIT( F$GETJPI( "", "USERNAME" ), "TRIM,LOWERCASE" )
+$ Proc     = F$ENVIRONMENT("PROCEDURE")
+$ Fac      = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY")
+$ node     = F$EDIT( F$GETSYI("NODENAME"), "TRIM" )
 $ !
 $ wso = "WRITE sys$output"
 $ !
@@ -89,7 +90,7 @@ $      ENDIF
 $ !
 $      ldfile = "COM:MKRUBY_LD"
 $      IF ( F$SEARCH( "''ldfile'.COM" ) .NES. "" )
-$      THEN @'ldfile' "LDA1024:" "''UName'"
+$      THEN @'ldfile' "''RubyDisk'" "''UName'"
 $           vol = F$TRNLNM( "DISK$RUBY" )
 $      ELSE vol = F$TRNLNM( "SYS$LOGIN_DEVICE" ) - ":"
 $      ENDIF
