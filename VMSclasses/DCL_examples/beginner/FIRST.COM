@@ -2,7 +2,7 @@ $ ! FIRST.COM -- Our first class example                                  'F$VER
 $ !
 $ ! use:  @FIRST
 $ !
-$ cls = "TYPE /PAGE NLA0:"
+$ cls = "TYPE /PAGE=CLEAR_SCREEN NLA0:"
 $ wso = "WRITE SYS$OUTPUT"
 $ !
 $ cls
