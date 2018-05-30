@@ -13,8 +13,8 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "02.05.01"         ! maintain with edits
-$ dcl$sldatestamp = "22-JAN-2018"
+$ dcl$slversion   = "03.01.01"         ! maintain with edits
+$ dcl$sldatestamp = "30-MAY-2018"
 $ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
@@ -1019,32 +1019,36 @@ $ !#!       This subroutine does not fully supersede TOOLS$DEBUG.COM --
 $ !#!       Note that this implements only a portion of TOOLS$DEBUG.COM,
 $ !#!       specifically control of logical name TOOLS$DEBUG itself.
 $ !#!   Example:
-$ !#!     $ DCL$CALL ToolsDebug ON TRUE
+$ !#!     $ DCL$CALL ToolsDebug ON [ TRUE ] [ TRUE ]
 $ !#!     $ DCL$CALL ToolsDebug OFF
-$ !#!   P1 : TRUE/ON/1 enables debugging, FALSE/OFF/0 disables
-$ !#!   P2 : TRUE/YES/1 enables output verification of Tools$Debug state,
-$ !#!        FALSE/NO/0 disables same
+$ !#!   P1 : TRUE/ON/1 enables DCL verification, FALSE/OFF/0 disables
+$ !#!   P2 : TRUE/ON/1 enables DLC-Line tracing, FALSE/OFF/0 disables
 $ !
 $ SET NOON
 $ IF ( P1 .EQS. "ON" ) .OR. ( F$EXTRACT(0,1,P1) .EQS. "Y" ) .OR. ( P1 .EQ. 1 )
 $ THEN P1 = "TRUE"
 $ ELSE P1 = "FALSE"
 $ ENDIF
-$ IF ( P2 .EQS. "" ) THEN P2 = 0
+$ IF ( P2 .EQS. "ON" ) .OR. ( F$EXTRACT(0,1,P2) .EQS. "Y" ) .OR. ( P2 .EQ. 1 )
+$ THEN P2 = "TRUE"
+$ ELSE P2 = "FALSE"
+$ ENDIF
+$ IF ( P3 .EQS. "ON" ) .OR. ( F$EXTRACT(0,1,P3) .EQS. "Y" ) .OR. ( P3 .EQ. 1 )
+$ THEN P3 = "TRUE"
+$ ELSE P3 = "FALSE"
+$ ENDIF
 $ IF P1
-$ THEN DEFINE /NOLOG /PROCESS TOOLS$Debug 'P1'
-$      DCL$BANG == ""           ! empty-string "turns-off commented-out lines"
-$      SET PREFIX "(!8%T) "     !augments SET VERIFY/F$VERIFY() display - "(HH:MM:SS) "
-$      IF P2
-$      THEN SHOW LOGICAL /PROCESS /FULL TOOLS$Debug
-$           wso "%TOOLS$DEBUG-I-ON, /PROCESS logical TOOLS$DEBUG is now ON"
-$      ENDIF
-$ ELSE IF F$TRNLNM("TOOLS$Debug","LNM$PROCESS") .NES. "" THEN DEASSIGN /PROCESS TOOLS$Debug
+$ THEN DEFINE /NOLOG /PROCESS TOOLS$Debug "TRUE"
+$      DCL$BANG == ""             ! empty-string "turns-off commented-out lines"
+$      SHOW LOGICAL /PROCESS /FULL TOOLS$Debug
+$      wso "%TOOLS$DEBUG-I-ON, /PROCESS logical TOOLS$DEBUG is now ON"
+$ ELSE DEFINE /NOLOG /PROCESS TOOLS$Debug "FALSE"
 $      DCL$BANG == "!"          ! bang "turns-on commented-out lines"
-$      SET NOPREFIX
-$      IF P2
-$      THEN wso "%TOOLS$DEBUG-I-OFF, /PROCESS logical TOOLS$DEBUG is now OFF"
-$      ENDIF
+$      wso "%TOOLS$DEBUG-I-OFF, /PROCESS logical TOOLS$DEBUG is now OFF"
+$ ENDIF
+$ IF P2
+$ THEN SET PREFIX "(!8%T) "  !augments SET VERIFY/F$VERIFY() display - "(HH:MM:SS) "
+$ ELSE SET NOPREFIX
 $ ENDIF
 $ EXIT 1
 $ ENDSUBROUTINE  ! DCL$ToolsDebug

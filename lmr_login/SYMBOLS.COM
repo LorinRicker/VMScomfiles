@@ -101,12 +101,14 @@ $ ! ================================================================
 $ !
 $ ! System Manager:
 $ vmsins*tall == "@root:login VMSINSTAL"
-$ DCL$CALL Alias "dwho"           "@cmd:dclwho" "SHOW USERS"
+$ DCL$CALL Alias "boottime"       "@cmd:boottime.com"     "SHOW SYSTEM /NOPROCESS"
+$ DCL$CALL Alias "dwho"           "@cmd:dclwho"           "SHOW USERS"
 $ DCL$CALL Alias "disks*pace"     "@com:diskspace$report" "SHOW DEVICE D /MOUNTED"
 $ DCL$CALL Alias "diskl*imits"    "@com:disklimits$report"
 $ DCL$CALL Alias "diski*nventory" "@com:diskinventory$report"
 $ DCL$CALL Alias "diskm*enu"      "@com:diskmenu$report"
-$ DCL$CALL Alias "boottime"       "@cmd:boottime.com"
+$ DCL$CALL Alias "ff*ind"         "@com:file$find"
+$ DCL$CALL Alias "mem*ory"        "@com:showmemory"       "SHOW MEMORY /PHYSICAL
 $ break*in    == "SHOW INTRUSION /TYPE=ALL"
 $ delbr*eakin == "DELETE /INTRUSION_RECORD"
 $ !
@@ -257,7 +259,6 @@ $      DCL$CALL Alias "prot*ect"     "@com:file$protect"
 $      DCL$CALL Alias "slice"        "$com:slice"
 $      DCL$CALL Alias "sscon*vert"   "@com:file$ssconvert"
 $      DCL$CALL Alias "tail"         "$com:tail"
-$      DCL$CALL Alias "tool*sdebug"  "@com:tools$debug"
 $      DCL$CALL Alias "untang*le"    "@com:file$untangle"
 $      DCL$CALL Alias "xf*er"        "@com:file$xfer"
 $      DCL$CALL Alias "xftp"         "@com:file$ftp"
@@ -279,13 +280,13 @@ $ DCL$CALL Alias "day*s"       "$site$utils:dc$datecalc"
 $ DCL$CALL Alias "deltree"     "@site$utils:deltree"
 $ DCL$CALL Alias "flush"       "@com:flushscr.com"
 $ DCL$CALL Alias "key*words"   "@site$utils:sql$keywords.com"
-$ DCL$CALL Alias "sc*ontrol"   "@site$utils:source_control.com"
+$!! $ DCL$CALL Alias "sc*ontrol"   "@site$utils:source_control.com"
 $ DCL$CALL Alias "tcom"        "@com:typecom.com"
 $ DCL$CALL Alias scr*width     "@com:scrwidth.com"
 $ tlr == "LIBR /TEXT /REPLACE /LOG"
 $ !
-$ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES. "" ) -
-  THEN @site$utils:rapt_tools
+$!! $ IF ( F$TYPE(sql) .EQS. "" ) .AND. ( F$SEARCH("site$utils:rapt_tools.com") .NES. "" ) -
+$!!   THEN @site$utils:rapt_tools
 $ !
 $ ! ================================================================
 $ !
@@ -345,6 +346,9 @@ $ THEN IF Verbose THEN wso "%SYMBOLS-I-''LNode', license/PAK command alias --"
 $      mklic*ensepg == "@user_disk:[williams]pg_license"
 $      IF Verbose THEN SHOW SYMBOL /GLOBAL mklic*
 $ ENDIF
+$ !
+$ ! Do this one very last --
+$ tool*sdebug == "''DCL$CALL' ToolsDebug"  ! fully retires site$utils:tools$debug.com
 $ !
 $ ! ================================================================
 $ !

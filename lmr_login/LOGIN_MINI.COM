@@ -101,7 +101,7 @@ $ comlist = "''LBase'.login]symbols.com;"                               -
           +    ",dcl$subroutine_library.com;,common_logicals.com;"      -
           +    ",show_cluster$init.ini;,fixprivs.com;"                  -
           + ",''LBase'.com]privilege.com;,cd.com;,where.com;"           -
-          +    ",boottime.com;,fix$bck.com;,zips.com;,tools$debug.com;" -
+          +    ",boottime.com;,fix$bck.com;,zips.com;"                  -
           +    ",dclwho.com;,makedir.com;"                              -
           +    ",disk$clone.com;,do_continuous.com;"                    -
           + ",''LBase'.com.filetools]*.com;,*.tpu;"                     -
