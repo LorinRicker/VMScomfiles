@@ -17,6 +17,8 @@ $ !
 $ ON CONTROL_Y THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO DS$Done
 $ !
+$ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
+$ !
 $ DD$Disks  == ""
 $ wso        = "WRITE sys$output"
 $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
@@ -75,7 +77,10 @@ $ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DS$Done
 $ devcnt = devcnt + 1
 $ !
 $ volname  = F$GETDVI( dev, "VOLNAM" )
-$ totalblks = F$GETDVI( dev, "MAXBLOCK" )
+$ IF minVMS73
+$ THEN totalblks = F$GETDVI( dev, "VOLSIZE" )
+$ ELSE totalblks = F$GETDVI( dev, "MAXBLOCK" )
+$ ENDIF
 $ freeblks  = F$GETDVI( dev, "FREEBLOCKS" )
 $ usedblks  = totalblks - freeblks
 $ !
