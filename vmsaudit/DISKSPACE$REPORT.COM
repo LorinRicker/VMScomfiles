@@ -17,6 +17,7 @@ $ !
 $ ON CONTROL_Y THEN GOSUB Ctrl_Y
 $ ON ERROR THEN GOTO DS$Done
 $ !
+$ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ minVMS73 = ( VMS$ver .GES. "V7.3" ) 
 $ !
 $ DD$Disks  == ""
