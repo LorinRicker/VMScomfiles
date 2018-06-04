@@ -1,6 +1,6 @@
 $ ! SHOWMEMORY.COM                                                 'F$VERIFY(0)
 $ !
-$ ! Copyright © 1999-2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2016 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
