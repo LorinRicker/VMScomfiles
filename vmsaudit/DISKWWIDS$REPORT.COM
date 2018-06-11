@@ -1,4 +1,4 @@
-$ ! DISKWWID$REPORT.COM --                                         'F$VERIFY(0)'
+$ ! DISKWWIDS$REPORT.COM --                                        'F$VERIFY(0)'
 $ !
 $ ! Copyright © 2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
@@ -14,7 +14,7 @@ $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ !  Create spreadsheet inventories (CSV) of all disks
 $ !
-$ !  use: @DISKWWID$REPORT [disk[,disk]...]
+$ !  use: @DISKWWIDS$REPORT [disk[,disk]...]
 $ !
 $ !       If P1 is a comma-separated list of disk names, then only these devices
 $ !       are checked, otherwise all physical (non-DSA) devices are checked
