@@ -240,7 +240,7 @@ $ THEN @com:file$setup 'P1'
 $ ELSE DCL$CALL Alias "chk"          "@com:file$compare"
 $      IF F$TYPE(chk) .EQS. "STRING" -
        THEN chk == chk - ".COM" - " CHECK" + " CHECK"
-$      DCL$CALL Alias "comp*are"     "@com:file$compare"
+$      DCL$CALL Alias "comp*are"     "@com:file$compare" "DIFFERENCES /PARALLEL"
 $      IF F$TYPE(compare) .EQS. "STRING" -
        THEN comp*are == compare - ".COM" - " COMPARE" + " COMPARE"
 $      DCL$CALL Alias "frep*lace"    "@com:file$edit"
