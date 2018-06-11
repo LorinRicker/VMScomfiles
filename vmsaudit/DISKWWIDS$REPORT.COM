@@ -1,6 +1,6 @@
 $ ! DISKWWID$REPORT.COM --                                         'F$VERIFY(0)'
 $ !
-$ ! Copyright © 1999-2018 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -27,7 +27,7 @@ $ !
 $ ! === MAIN ===
 $ !
 $ ON CONTROL THEN GOSUB Ctrl_Y
-$ ON ERROR THEN GOTO DP$Done
+$ ON ERROR THEN GOTO DP$Exit
 $ !
 $ VMS$ver  = F$EDIT(F$GETSYI("VERSION"),"TRIM")
 $ minVMS80 = ( VMS$ver .GES. "V8.0" ) 
@@ -38,6 +38,7 @@ $ Fac        = F$PARSE(F$ENVIRONMENT("PROCEDURE"),,,"NAME","SYNTAX_ONLY")
 $ Node       = F$EDIT(F$GETSYI("SCSNODE"),"TRIM")
 $ COMMA      = ","
 $ DOLLAR     = "$"
+$ SLASH      = "/"
 $ UNDERSCORE = "_"
 $ !
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
@@ -72,17 +73,17 @@ $ !
 $ devfldlen = 16
 $ headfill  = 72
 $ !
-$ headln = F$FAO( "-- Disk Paths/WWIDs !#*-", headfill )
+$ headln = F$FAO( "-- Device WWIDs & Paths !#*-", headfill )
 $ !
-$ wso F$FAO( "%!AS-I-INVENTORY, Disk WWIDs on !AS", Fac, Node )
+$ wso F$FAO( "%!AS-I-WWID-FIBRE, Disk Device WWIDs and Fibre Channel info on !AS", Fac, Node )
 $ wso ""
 $ wso headln
 $ !
 $ loopcnt = 0
 $ devcnt  = 0
-$DP$Loop:
+$DP$Loop1:
 $ dev = F$ELEMENT( loopcnt, COMMA, DD$Disks )
-$ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DP$Done
+$ IF ( dev .EQS. COMMA ) .OR. ( dev .EQS. "" ) THEN GOTO DP$Done1
 $ loopcnt = loopcnt + 1
 $ !
 $ devl     = F$LENGTH( dev )
@@ -108,8 +109,6 @@ $           THEN shadow   = "member of " + F$GETDVI( dev, "SHDW_MASTER_NAME" ) -
 $           ELSE shadow   = "just a disk"
 $           ENDIF
 $           wwid   = F$GETDVI( dev, "WWID" )
-$           fcnode = F$GETDVI( dev, "FC_NODE_NAME" )
-$           fcport = F$GETDVI( dev, "FC_PORT_NAME" )
 $      ENDIF
 $ !
 $      wso F$FAO( "!3SL.!#* !AS !18AS !AS", devcnt, devfldlen-devl, dev, devlnm, shadow )
@@ -121,16 +120,32 @@ $           ENDIF
 $      ELSE wwid = "WWID: " + wwid
 $      ENDIF
 $      wso F$FAO( "!#* !AS", 12, wwid)
-$      IF ( fcnode .NES. "" )
-$      THEN F$FAO( "!#* Fibre-Channed node: !AS, port: !AS", fcnode, fcport )
-$      ENDIF
 $ ENDIF
-$ GOTO DP$Loop
+$ GOTO DP$Loop1
 $ !
-$DP$Done:
+$DP$Done1:
+$DP$Loop2:
+$ busdev = F$DEVICE( "*", "BUS", , 2 ) - UNDERSCORE
+$ IF ( busdev .EQS. "" ) THEN GOTO DP$Done2
+$ IF ( F$EXTRACT( 0, 2, busdev ) .NES. "FG" ) THEN GOTO DP$Loop2
+$ fcnode = F$GETDVI( busdev, "FC_NODE_NAME" )
+$ fcport = F$GETDVI( busdev, "FC_PORT_NAME" )
+$ IF ( fcport .EQS. fcnode )
+$ THEN fcport = ""  ! collapse duplicate info
+$      sep    = ""
+$ ELSE sep    = SLASH
+$ ENDIF
+$ IF ( fcnode .NES. "" )
+$ THEN wso F$FAO( "!#* !AS Fibre-Channel node/port: !AS !AS !AS", -
+                   6, busdev, fcnode, sep , fcport )
+$ ENDIF
+$ GOTO DP$Loop2
+$DP$Done2:
+$ !
 $ wso F$FAO( "!#*-", F$LENGTH( headln ) )
 $ wso ""
 $ !
+$DP$Exit:
 $ DCL$CALL DeleteGloSyms "DD$Disks"
 $ EXIT 1    ! 'F$VERIFY(0)'
 $ !

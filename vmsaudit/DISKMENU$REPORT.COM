@@ -34,13 +34,14 @@ $ ELSE typeit sys$input  ! "here-doc" with clearscreen
 
     [4mDisk Information Reports[0m
 
-    ([1m1[0m) [1mA[0mll       -- all reports
-    ([1m2[0m) [1mD[0misks     -- show mounted disk volumes
-    ([1m3[0m) [1mI[0mnventory -- display disk inventory & characteristics
-    ([1m4[0m) [1mL[0mimits    -- display disk size limits
-    ([1m5[0m) [1mS[0mpace     -- display volume space free, used & total
-    ([1m6[0m) [1mV[0molShadow -- display shadow volume set characteristics
-    ([1m7[0m) [1mP[0mrogress  -- show all shadow volumes merge progress
+    ([1m1[0m) [1mA[0mll         -- all reports
+    ([1m2[0m) [1mD[0misks       -- show mounted disk volumes
+    ([1m3[0m) [1mI[0mnventory   -- display disk inventory & characteristics
+    ([1m4[0m) [1mL[0mimits      -- display disk size limits
+    ([1m5[0m) [1mS[0mpace       -- display volume space free, used & total
+    ([1m6[0m) [1mV[0molShadow   -- display shadow volume set characteristics
+    ([1m7[0m) [1mW[0mWIDs/Fibre -- display wwids and Fibre Channel port info
+    ([1m8[0m) [1mP[0mrogress    -- show all shadow volumes merge progress
 
 
 $      READ sys$command P1 /PROMPT="Display [5/S]? " /END_OF_FILE=DMR$Done
@@ -85,11 +86,16 @@ $ @'DD'diskvolshadow$report
 $ IF .NOT. DoAllReports THEN GOTO DMR$Cont
 $ !
 $DMR$7:
+$DMR$W:
+$ @'DD'diskwwids$report
+$ IF .NOT. DoAllReports THEN GOTO DMR$Cont
+$ !
+$DMR$8:
 $DMR$P:
 $ IF DoAllReports THEN GOTO DMR$Cont
 $ dcf = "COM:DO_CONTINUOUS.COM"
 $ IF ( F$SEARCH(dcf) .NES. "" )
-$ THEN @'dcf' -D:15 "PIPE SHOW SHADOW /ACTIVE ; SHOW SHADOW /BY_PRIORITY"
+$ THEN @'dcf' -D:15 "PIPE SHOW SHADOW /BY_PRIORITY ; SHOW SHADOW /ACTIVE"
 $ ELSE PIPE SHOW SHADOW /ACTIVE ; SHOW SHADOW /BY_PRIORITY
 $ ENDIF
 $ !
