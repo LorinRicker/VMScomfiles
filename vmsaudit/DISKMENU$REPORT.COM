@@ -34,17 +34,18 @@ $ ELSE typeit sys$input  ! "here-doc" with clearscreen
 
     [4mDisk Information Reports[0m
 
-    ([1m1[0m) [1mA[0mll         -- all reports
-    ([1m2[0m) [1mD[0misks       -- show mounted disk volumes
-    ([1m3[0m) [1mI[0mnventory   -- display disk inventory & characteristics
-    ([1m4[0m) [1mL[0mimits      -- display disk size limits
-    ([1m5[0m) [1mS[0mpace       -- display volume space free, used & total
-    ([1m6[0m) [1mV[0molShadow   -- display shadow volume set characteristics
-    ([1m7[0m) [1mW[0mWIDs/Fibre -- display wwids and Fibre Channel port info
-    ([1m8[0m) [1mP[0mrogress    -- show all shadow volumes merge progress
+    ([1m1[0m) [1mA[0mll             -- all reports
+    ([1m2[0m) [1mD[0misks           -- show mounted disk volumes
+    ([1m3[0m) [1mI[0mnventory       -- display disk inventory & characteristics
+    ([1m4[0m) [1mL[0mimits          -- display disk size limits
+    ([1m5[0m) [1mR[0mebuild Volumes -- display volumes needing rebuild, plus option to do
+    ([1m6[0m) [1mS[0mpace           -- display volume space free, used & total
+    ([1m7[0m) [1mV[0molShadow       -- display shadow volume set characteristics
+    ([1m8[0m) [1mW[0mWIDs/Fibre     -- display wwids and Fibre Channel port info
+    ([1m9[0m) [1mP[0mrogress        -- show all shadow volumes merge progress
 
 
-$      READ sys$command P1 /PROMPT="Display [5/S]? " /END_OF_FILE=DMR$Done
+$      READ sys$command P1 /PROMPT="Display what [Space]? " /END_OF_FILE=DMR$Done
 $      P1 = F$EDIT( P1, "TRIM,UPCASE" )
 $      IF ( P1 .EQS. "" ) THEN P1 = "Space"
 $      choice = F$EXTRACT( 0, 1, P1 )
@@ -76,21 +77,26 @@ $ @'DD'disklimits$report
 $ IF .NOT. DoAllReports THEN GOTO DMR$Cont
 $ !
 $DMR$5:
+$DMR$R:
+$ @'DD'diskrebuilds$report
+$ IF .NOT. DoAllReports THEN GOTO DMR$Cont
+$ !
+$DMR$6:
 $DMR$S:
 $ @'DD'diskspace$report
 $ IF .NOT. DoAllReports THEN GOTO DMR$Cont
 $ !
-$DMR$6:
+$DMR$7:
 $DMR$V:
 $ @'DD'diskvolshadow$report
 $ IF .NOT. DoAllReports THEN GOTO DMR$Cont
 $ !
-$DMR$7:
+$DMR$8:
 $DMR$W:
 $ @'DD'diskwwids$report
 $ IF .NOT. DoAllReports THEN GOTO DMR$Cont
 $ !
-$DMR$8:
+$DMR$9:
 $DMR$P:
 $ IF DoAllReports THEN GOTO DMR$Cont
 $ dcf = "COM:DO_CONTINUOUS.COM"
