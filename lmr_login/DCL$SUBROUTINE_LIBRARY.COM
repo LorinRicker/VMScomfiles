@@ -13,8 +13,8 @@ $ ! which are binding if and when you accept, use, modify and/or distribute
 $ ! this software program (source code file) and/or derivatives thereof.
 $ !
 $ ! ----------------------------------------------------------------
-$ dcl$slversion   = "03.01.01"         ! maintain with edits
-$ dcl$sldatestamp = "30-MAY-2018"
+$ dcl$slversion   = "03.02.01"         ! maintain with edits
+$ dcl$sldatestamp = "11-JUN-2018"
 $ ! ----------------------------------------------------------------
 $ !
 $ ! ----------------------------------------------------------------------
@@ -648,7 +648,7 @@ $ DDpayload = ""
 $ alloclass = DOLLAR + F$STRING( F$GETSYI( "ALLOCLASS" ) ) + DOLLAR
 $ !
 $DCL$DDLoop:
-$ dev = F$DEVICE( "*", "DISK" ) - UNDERSCORE
+$ dev = F$DEVICE( "*", "DISK", , 1 ) - UNDERSCORE
 $ nakeddev = dev - "_" - alloclass - "''Node'$"           ! undecorate it...
 $ nakedlen = F$LENGTH( nakeddev )
 $ IF ( dev .EQS. "" ) THEN GOTO DCL$DDexit   ! done...
