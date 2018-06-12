@@ -1,6 +1,6 @@
 $ ! SHOWMEMORY.COM                                                 'F$VERIFY(0)
 $ !
-$ ! Copyright © 2016 by Lorin Ricker.  All rights reserved, with acceptance,
+$ ! Copyright © 2018 by Lorin Ricker.  All rights reserved, with acceptance,
 $ ! use, modification and/or distribution permissions as granted and controlled
 $ ! by and under the GPL described herein.
 $ !
@@ -45,8 +45,10 @@ $ !
 $ ! Given DCL's arithmetic (32-bit integers, watch for overflows),
 $ !  the following is approximate only --
 $ IF ( F$GETSYI( "ARCH_NAME" ) .EQS. "VAX" )
-$ THEN pagesize =  512  ! bytes per page, 32-bit architecture
-$ ELSE pagesize = 8192  !   "    "   "  , 64-bit architecture
+$ THEN pagesize     =  512  ! bytes per page, 32-bit architecture
+$      architecture = "32-bit"
+$ ELSE pagesize     = 8192  !   "    "   "  , 64-bit architecture
+$      architecture = "64-bit"
 $ ENDIF
 $ SPlen = F$LENGTH( F$STRING( memTotal ) )
 $ GOTO SP'SPlen'  ! ...simplest way to break down ranges...
@@ -87,6 +89,8 @@ $ wso F$FAO( "!5* !#* !8AS !#* !8AS !#* !8AS !#* !8AS", -
              fldlen-InUseLen, SM$memInUse, -
              fldlen-ModLen,   SM$memMod    )
 $ wso "''Node' -- Total RAM: ~''TotalRAM' ''UnitsRAM'"
+$ wso F$FAO( "!#* !AS architecture, !SL-byte page size", -
+             F$LENGTH(Node) + 4, architecture, pagesize )
 $ wso ""
 $ !
 $SM$Done:
