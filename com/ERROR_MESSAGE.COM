@@ -58,6 +58,8 @@ $ ON CONTROL_Y THEN EXIT %X2C  ! 'F$VERIFY(0)'
 $ ON ERROR THEN CONTINUE
 $ !
 $ File = F$SEARCH( P2, 0 )
+$ ! Skip SYS$MESSAGE:TECOMSG.EXE as it's not a compliant message file:
+$ IF ( F$PARSE( File, , , "NAME" ) .EQS. "TECOMSG" ) THEN GOTO Loop
 $ IF File .EQS. "" THEN GOTO LoopEnd
 $ SET MESSAGE 'File'
 $ IF $STATUS
