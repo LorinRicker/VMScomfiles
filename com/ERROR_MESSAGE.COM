@@ -112,7 +112,7 @@ $ ENDIF
 $ !
 $LoopEnd:
 $ SET MESSAGE /DELETE        ! don't leave user in last set message-file
-$ IF EM_Found THEN EXIT 1    ! 'F$VERIFY(0)'
+$ IF EM_Found THEN GOTO Done
 $ !
 $ IF Verbose
 $ THEN wso ""
