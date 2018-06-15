@@ -242,7 +242,8 @@ $      IF F$TYPE(chk) .EQS. "STRING" -
        THEN chk == chk - ".COM" - " CHECK" + " CHECK"
 $      DCL$CALL Alias "comp*are"     "@com:file$compare" "DIFFERENCES /PARALLEL"
 $      IF F$TYPE(compare) .EQS. "STRING" -
-       THEN comp*are == compare - ".COM" - " COMPARE" + " COMPARE"
+       THEN IF ( F$EXTRACT( 0, 1, compare ) .EQS. "@" ) -
+            THEN comp*are == compare - ".COM" - " COMPARE" + " COMPARE"
 $      DCL$CALL Alias "frep*lace"    "@com:file$edit"
 $      IF F$TYPE(freplace) .EQS. "STRING" -
        THEN frep*lace == freplace - ".COM" - " FINDREPLACE" + " FINDREPLACE"
@@ -250,7 +251,6 @@ $      DCL$CALL Alias "chop"         "$com:chop"
 $      DCL$CALL Alias "clean*up"     "@com:file$cleanup"
 $      DCL$CALL Alias "csum"         "@com:file$checksum"  "''chksum'"
 $      DCL$CALL Alias "fat*tributes" "@com:file$attributes"
-$      DCL$CALL Alias "fc*ompare"    "@com:file$compare"   "DIFFERENCES /PARALLEL"
 $      DCL$CALL Alias "fcou*nt"      "$com:filecount"
 $      DCL$CALL Alias "fix"          "@com:file$edit"
 $      DCL$CALL Alias "fli*st"       "@com:file$preplist"

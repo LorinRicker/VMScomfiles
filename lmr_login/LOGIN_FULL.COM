@@ -97,6 +97,9 @@ $ !
 $ ! ----------------------------------------------------------------------
 $ LGI$Mode == F$MODE()
 $ ! ----------------------------------------------------------------------
+$ !
+$ @lmr$login:setterminal
+$ !
 $ ! Copy-a-new-version-of-self support:
 $ IF ( P1 .EQS. "NEW" ) .OR. ( P1 .EQS. "COPY" )
 $ THEN IF ( F$SEARCH("sys$login:LOGIN_FULL.COM") .NES. "" )

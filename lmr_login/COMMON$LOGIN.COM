@@ -27,16 +27,7 @@ $ !
 $ Proc = F$ENVIRONMENT("PROCEDURE")
 $ FS   = F$PARSE(Proc,,,"NAME","SYNTAX_ONLY") + F$PARSE(Proc,,,"TYPE","SYNTAX_ONLY")
 $ !
-$ SET TERMINAL /INQUIRE   ! this reads/sets the page-&-width sizes
-$ TermType = "VT500"
-$ PgLength = F$GETDVI("TT","TT_PAGE")
-$ PgWidth  = F$GETDVI("TT","DEVBUFSIZ")
-$ ! SET TERMINAL: Setting page /WIDTH= clears the screen...
-$ !               and getting /PAGE= and /WIDTH= right is order-dependent,
-$ !               these must precede /DEVICE= !! -- so... in exactly this order:
-$ SET TERMINAL /PAGE='PgLength' /WIDTH='PgWidth' /DEVICE='TermType' -
-   /INSERT /BROADCAST /TYPE_AHEAD /ALTYPEAHD /APPLICATION_KEYPAD
-$ IF Verbosity THEN WRITE sys$output "%COMMON$LOGIN-I-TERM, terminal type set to ''TermType'"
+$ ! Moved SET TERMINAL commands/logic back into LOGIN_*.COM files...
 $ !
 $ IF F$TRNLNM("site$root") .EQS. "" .OR. ReLogin
 $ THEN dfn = "DEFINE /NOLOG /JOB /EXECUTIVE"  ! not /SYSTEM

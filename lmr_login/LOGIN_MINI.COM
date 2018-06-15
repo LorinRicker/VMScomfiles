@@ -66,9 +66,7 @@ $ !
 $ ON ERROR THEN GOTO Done
 $ ON CONTROL THEN GOSUB Ctrl_Y
 $ !
-$ SET TERMINAL /INQUIRE
-$ SET TERMINAL /INSERT /PAGE=48 /WIDTH=132 /DEVICE=VT300 -
-    /BROADCAST /TYPE_AHEAD /ALTYPEAHD /APPLICATION_KEYPAD
+$ @lmr$login:setterminal
 $ !
 $ IF F$TRNLNM("OSM$") .NES. "" THEN OSM == "$OSM_CONTROL"
 $ !
@@ -97,7 +95,7 @@ $OTHER:
 $ EXIT 1
 $ !
 $BAC$:
-$ comlist = "''LBase'.login]symbols.com;"                               -
+$ comlist = "''LBase'.login]symbols.com;,setterminal.com;"              -
           +    ",dcl$subroutine_library.com;,common_logicals.com;"      -
           +    ",show_cluster$init.ini;,fixprivs.com;"                  -
           + ",''LBase'.com]privilege.com;,cd.com;,where.com;"           -
